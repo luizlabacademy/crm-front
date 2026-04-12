@@ -2,6 +2,8 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useDashboardData } from "@/features/dashboard/api/useDashboardData";
 import { KpiCard } from "@/features/dashboard/components/KpiCard";
+import { FunnelPanel } from "@/features/dashboard/components/FunnelPanel";
+import { ConversionRateChart } from "@/features/dashboard/components/ConversionRateChart";
 import { RecentMessagesList } from "@/features/dashboard/components/RecentMessagesList";
 import { RecentOrdersList } from "@/features/dashboard/components/RecentOrdersList";
 import type { DashboardKpi } from "@/features/dashboard/types/dashboardTypes";
@@ -15,57 +17,54 @@ interface KpiDef {
   storageKey: string;
 }
 
-const KPI_DEFS: KpiDef[] = [
+const REVENUE_KPI_DEFS: KpiDef[] = [
   {
-    label: "Faturamento do dia",
+    label: "Vendas Hoje",
     key: "revenueToday",
     type: "currency",
     storageKey: "rev_today",
   },
   {
-    label: "Faturamento do mês",
+    label: "Vendas Mês",
     key: "revenueMonth",
     type: "currency",
     storageKey: "rev_month",
   },
   {
-    label: "Faturamento do ano",
+    label: "Vendas Ano",
     key: "revenueYear",
     type: "currency",
     storageKey: "rev_year",
   },
+];
+
+const SECONDARY_KPI_DEFS: KpiDef[] = [
   {
-    label: "Novos pedidos (mês)",
+    label: "Novos Pedidos",
     key: "newOrdersMonth",
     type: "count",
     storageKey: "orders_new",
   },
   {
-    label: "Pedidos pendentes",
+    label: "Com Pendências",
     key: "pendingOrders",
     type: "count",
     storageKey: "orders_pending",
   },
   {
-    label: "Pedidos fechados (mês)",
-    key: "closedOrdersMonth",
-    type: "count",
-    storageKey: "orders_closed",
-  },
-  {
-    label: "Novas mensagens (mês)",
+    label: "Novos Chats",
     key: "newMessagesMonth",
     type: "count",
     storageKey: "msgs_month",
   },
   {
-    label: "Atendimentos em curso",
+    label: "Chats Abertos",
     key: "activeLeads",
     type: "count",
     storageKey: "leads_active",
   },
   {
-    label: "Atendimentos concluídos (mês)",
+    label: "Chats Concluídos",
     key: "closedLeadsMonth",
     type: "count",
     storageKey: "leads_closed",
@@ -126,9 +125,9 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* KPI Grid — 3 columns on large, 2 on sm, 1 on mobile */}
+      {/* Revenue KPIs — 3 columns */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {KPI_DEFS.map((def) => (
+        {REVENUE_KPI_DEFS.map((def) => (
           <KpiCard
             key={def.storageKey}
             label={def.label}
@@ -140,6 +139,31 @@ export function DashboardPage() {
             storageKey={def.storageKey}
           />
         ))}
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border" />
+
+      {/* Secondary KPIs — last 4 in a single row on desktop */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {SECONDARY_KPI_DEFS.map((def) => (
+          <KpiCard
+            key={def.storageKey}
+            label={def.label}
+            value={kpis?.[def.key] ?? 0}
+            type={def.type}
+            isLoading={isLoading}
+            isError={isError && !isLoading}
+            onRetry={handleRefresh}
+            storageKey={def.storageKey}
+          />
+        ))}
+      </div>
+
+      {/* Funnel & Conversion panels — 2 columns on large */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <FunnelPanel />
+        <ConversionRateChart />
       </div>
 
       {/* Recent activity — 2 columns on large */}

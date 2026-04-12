@@ -76,3 +76,39 @@ export interface DashboardData {
   recentMessages: RecentMessage[];
   recentOrders: RecentOrder[];
 }
+
+// ─── Funnel types ─────────────────────────────────────────────────────────────
+
+export interface FunnelStep {
+  id: string;
+  label: string;
+  value: number;
+  percentage: number;
+  color: string;
+}
+
+export interface FunnelSummaryMetric {
+  id: string;
+  label: string;
+  value: string;
+  color?: string;
+}
+
+export interface FunnelData {
+  steps: FunnelStep[];
+  summary: FunnelSummaryMetric[];
+}
+
+// ─── Conversion rate chart types ──────────────────────────────────────────────
+
+export type ConversionPeriod = "daily" | "monthly" | "yearly";
+
+export interface ConversionDataPoint {
+  label: string;
+  conversionRate: number;
+}
+
+export interface ConversionRateData {
+  period: ConversionPeriod;
+  data: ConversionDataPoint[];
+}
