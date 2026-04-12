@@ -1,34 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import type {
-  PersonResponse,
-  PersonRequest,
+  PermissionResponse,
+  PermissionRequest,
   PageResponse,
-  TenantResponse,
-} from "@/features/persons/types/personTypes";
+} from "@/features/admin/permissions/types/permissionTypes";
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
-interface UsePersonsParams {
+interface UsePermissionsParams {
   page?: number;
   size?: number;
-  tenantId?: number | null;
 }
 
-export function usePersons(params: UsePersonsParams = {}) {
-  const { page = 0, size = 20, tenantId } = params;
-  return useQuery<PageResponse<PersonResponse>>({
-    queryKey: ["persons", { page, size, tenantId }],
+export function usePermissions(params: UsePermissionsParams = {}) {
+  const { page = 0, size = 20 } = params;
+  return useQuery<PageResponse<PermissionResponse>>({
+    queryKey: ["permissions", { page, size }],
     queryFn: async () => {
-      const { data } = await api.get<PageResponse<PersonResponse>>(
-        "/api/v1/persons",
-        {
-          params: {
-            page,
-            size,
-            ...(tenantId != null ? { tenantId } : {}),
-          },
-        },
+      const { data } = await api.get<PageResponse<PermissionResponse>>(
+        "/api/v1/permissions",
+        { params: { page, size } },
       );
       return data;
     },
@@ -37,11 +29,13 @@ export function usePersons(params: UsePersonsParams = {}) {
 
 // ─── Single ───────────────────────────────────────────────────────────────────
 
-export function usePerson(id: number | null) {
-  return useQuery<PersonResponse>({
-    queryKey: ["persons", id],
+export function usePermission(id: number | null) {
+  return useQuery<PermissionResponse>({
+    queryKey: ["permissions", id],
     queryFn: async () => {
-      const { data } = await api.get<PersonResponse>(`/api/v1/persons/${id}`);
+      const { data } = await api.get<PermissionResponse>(
+        `/api/v1/permissions/${id}`,
+      );
       return data;
     },
     enabled: id != null,
@@ -50,66 +44,55 @@ export function usePerson(id: number | null) {
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
-export function useCreatePerson() {
+export function useCreatePermission() {
   const queryClient = useQueryClient();
-  return useMutation<PersonResponse, Error, PersonRequest>({
+  return useMutation<PermissionResponse, Error, PermissionRequest>({
     mutationFn: async (body) => {
-      const { data } = await api.post<PersonResponse>("/api/v1/persons", body);
+      const { data } = await api.post<PermissionResponse>(
+        "/api/v1/permissions",
+        body,
+      );
       return data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["persons"] });
+      void queryClient.invalidateQueries({ queryKey: ["permissions"] });
     },
   });
 }
 
 // ─── Update ───────────────────────────────────────────────────────────────────
 
-export function useUpdatePerson() {
+export function useUpdatePermission() {
   const queryClient = useQueryClient();
   return useMutation<
-    PersonResponse,
+    PermissionResponse,
     Error,
-    { id: number; body: PersonRequest }
+    { id: number; body: PermissionRequest }
   >({
     mutationFn: async ({ id, body }) => {
-      const { data } = await api.put<PersonResponse>(
-        `/api/v1/persons/${id}`,
+      const { data } = await api.put<PermissionResponse>(
+        `/api/v1/permissions/${id}`,
         body,
       );
       return data;
     },
     onSuccess: (_data, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: ["persons"] });
-      void queryClient.invalidateQueries({ queryKey: ["persons", id] });
+      void queryClient.invalidateQueries({ queryKey: ["permissions"] });
+      void queryClient.invalidateQueries({ queryKey: ["permissions", id] });
     },
   });
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
-export function useDeletePerson() {
+export function useDeletePermission() {
   const queryClient = useQueryClient();
   return useMutation<void, Error, number>({
     mutationFn: async (id) => {
-      await api.delete(`/api/v1/persons/${id}`);
+      await api.delete(`/api/v1/permissions/${id}`);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["persons"] });
+      void queryClient.invalidateQueries({ queryKey: ["permissions"] });
     },
-  });
-}
-
-export function useTenants() {
-  return useQuery<PageResponse<TenantResponse>>({
-    queryKey: ["tenants"],
-    queryFn: async () => {
-      const { data } = await api.get<PageResponse<TenantResponse>>(
-        "/api/v1/tenants",
-        { params: { page: 0, size: 100 } },
-      );
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
   });
 }

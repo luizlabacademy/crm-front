@@ -1,39 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Plus, Pencil, Trash2, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  AlertCircle,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
-import { usePersons, useDeletePerson } from "@/features/persons/api/usePersons";
+import {
+  usePersons,
+  useDeletePerson,
+  useTenants,
+} from "@/features/persons/api/usePersons";
+import type { TenantResponse } from "@/features/persons/types/personTypes";
 import {
   getPersonDisplayName,
-  getPersonDocument,
   getPersonType,
 } from "@/features/persons/types/personTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { cn } from "@/lib/utils";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDocument(doc: string): string {
-  const digits = doc.replace(/\D/g, "");
-  if (digits.length === 11) {
-    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-  }
-  if (digits.length === 14) {
-    return digits.replace(
-      /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
-      "$1.$2.$3/$4-$5",
-    );
-  }
-  return doc;
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SkeletonRow() {
   return (
     <tr>
-      {Array.from({ length: 7 }).map((_, i) => (
+      {Array.from({ length: 6 }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-3 w-full animate-pulse rounded bg-muted" />
         </td>
@@ -60,6 +55,88 @@ function TypeBadge({ type }: { type: "physical" | "legal" }) {
     <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">
       {type === "physical" ? "Física" : "Jurídica"}
     </span>
+  );
+}
+
+interface TenantAutocompleteProps {
+  tenants: TenantResponse[];
+  value: number | null;
+  onChange: (tenantId: number | null) => void;
+}
+
+function TenantAutocomplete({
+  tenants,
+  value,
+  onChange,
+}: TenantAutocompleteProps) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const selected = tenants.find((tenant) => tenant.id === value);
+  const shownValue = open ? search : (selected?.name ?? "");
+  const filtered = tenants.filter((tenant) =>
+    tenant.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <div className="relative min-w-72">
+      <div className="relative">
+        <input
+          type="text"
+          value={shownValue}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Filtrar por tenant"
+          className="w-full rounded-md border border-input bg-background px-3 py-1.5 pr-8 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        <Search
+          size={14}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+      </div>
+
+      {open && (
+        <div className="absolute top-full left-0 right-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+          <button
+            type="button"
+            className="w-full px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent transition-colors"
+            onMouseDown={() => {
+              onChange(null);
+              setSearch("");
+              setOpen(false);
+            }}
+          >
+            Todos os tenants
+          </button>
+          {filtered.map((tenant) => (
+            <button
+              key={tenant.id}
+              type="button"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+              onMouseDown={() => {
+                onChange(tenant.id);
+                setSearch("");
+                setOpen(false);
+              }}
+            >
+              {tenant.name}{" "}
+              <span className="text-xs text-muted-foreground">
+                #{tenant.id}
+              </span>
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              Nenhum tenant encontrado.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -157,7 +234,6 @@ export function PersonListPage() {
   const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
-  const [tenantIdInput, setTenantIdInput] = useState("");
   const [tenantId, setTenantId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
@@ -171,23 +247,12 @@ export function PersonListPage() {
   });
 
   const deleteMutation = useDeletePerson();
+  const { data: tenantsData } = useTenants();
 
   const persons = data?.content ?? [];
+  const tenants = tenantsData?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
-
-  function handleTenantFilter(e: React.FormEvent) {
-    e.preventDefault();
-    const val = parseInt(tenantIdInput, 10);
-    setTenantId(isNaN(val) ? null : val);
-    setPage(0);
-  }
-
-  function handleClearFilter() {
-    setTenantIdInput("");
-    setTenantId(null);
-    setPage(0);
-  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -228,33 +293,16 @@ export function PersonListPage() {
       </div>
 
       {/* Filters */}
-      <form
-        onSubmit={handleTenantFilter}
-        className="flex items-center gap-2 flex-wrap"
-      >
-        <input
-          type="number"
-          value={tenantIdInput}
-          onChange={(e) => setTenantIdInput(e.target.value)}
-          placeholder="Filtrar por Tenant ID"
-          className="rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-48"
+      <div className="flex items-center gap-2 flex-wrap">
+        <TenantAutocomplete
+          tenants={tenants}
+          value={tenantId}
+          onChange={(newTenantId) => {
+            setTenantId(newTenantId);
+            setPage(0);
+          }}
         />
-        <button
-          type="submit"
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors"
-        >
-          Filtrar
-        </button>
-        {tenantId !== null && (
-          <button
-            type="button"
-            onClick={handleClearFilter}
-            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Limpar filtro
-          </button>
-        )}
-      </form>
+      </div>
 
       {/* Error */}
       {isError && (
@@ -280,9 +328,8 @@ export function PersonListPage() {
                 <th className="px-4 py-3 font-medium">ID</th>
                 <th className="px-4 py-3 font-medium">Nome</th>
                 <th className="px-4 py-3 font-medium">Tipo</th>
-                <th className="px-4 py-3 font-medium">Documento</th>
-                <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Cadastrado em</th>
+                <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium text-right">Ações</th>
               </tr>
             </thead>
@@ -292,7 +339,7 @@ export function PersonListPage() {
               ) : persons.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     <p>Nenhuma pessoa encontrada.</p>
@@ -308,7 +355,6 @@ export function PersonListPage() {
               ) : (
                 persons.map((person) => {
                   const name = getPersonDisplayName(person);
-                  const doc = getPersonDocument(person);
                   const type = getPersonType(person);
                   return (
                     <tr
@@ -324,14 +370,11 @@ export function PersonListPage() {
                       <td className="px-4 py-3">
                         <TypeBadge type={type} />
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {doc !== "—" ? formatDocument(doc) : "—"}
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                        {formatDateTime(person.createdAt)}
                       </td>
                       <td className="px-4 py-3">
                         <ActiveBadge active={person.active} />
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {formatDateTime(person.createdAt)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
@@ -343,7 +386,7 @@ export function PersonListPage() {
                             }
                             className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                           >
-                            <Pencil size={14} />
+                            <Pencil size={17} />
                           </button>
                           <button
                             type="button"
@@ -353,7 +396,7 @@ export function PersonListPage() {
                             }
                             className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={17} />
                           </button>
                         </div>
                       </td>

@@ -347,7 +347,7 @@ export function LeadListPage() {
                           onClick={() => void navigate(`/leads/${lead.id}`)}
                           className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                         >
-                          <MessageSquare size={14} />
+                          <MessageSquare size={17} />
                         </button>
                         <button
                           type="button"
@@ -355,7 +355,7 @@ export function LeadListPage() {
                           onClick={() => void navigate(`/leads/${lead.id}`)}
                           className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                         >
-                          <Eye size={14} />
+                          <Eye size={17} />
                         </button>
                         <button
                           type="button"
@@ -365,7 +365,7 @@ export function LeadListPage() {
                           }
                           className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                         >
-                          <Pencil size={14} />
+                          <Pencil size={17} />
                         </button>
                         <button
                           type="button"
@@ -378,7 +378,7 @@ export function LeadListPage() {
                           }
                           className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={17} />
                         </button>
                       </div>
                     </td>

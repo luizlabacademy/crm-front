@@ -47,6 +47,12 @@ export interface PageResponse<T> {
   totalPages: number;
 }
 
+export interface TenantResponse {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
 // ─── Derived helpers ──────────────────────────────────────────────────────────
 
 export type PersonType = "physical" | "legal";
