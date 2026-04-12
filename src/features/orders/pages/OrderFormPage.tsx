@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   useOrder,
   useCreateOrder,
