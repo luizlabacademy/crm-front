@@ -1,0 +1,74 @@
+{
+  "steps": [
+    {
+      "id": "enviado",
+      "label": "Enviado",
+      "value": 215000,
+      "percentage": 100,
+      "color": "#4FC3F7"
+    },
+    {
+      "id": "lido",
+      "label": "Lido",
+      "value": 168700,
+      "percentage": 78,
+      "color": "#66BB6A"
+    },
+    {
+      "id": "interagiu",
+      "label": "Interagiu",
+      "value": 112900,
+      "percentage": 53,
+      "color": "#42A5F5"
+    },
+    {
+      "id": "pedido",
+      "label": "Pedido",
+      "value": 66650,
+      "percentage": 31,
+      "color": "#AB47BC"
+    },
+    {
+      "id": "pago",
+      "label": "Pago",
+      "value": 41300,
+      "percentage": 19,
+      "color": "#FFA726"
+    },
+    {
+      "id": "entregue",
+      "label": "Entregue",
+      "value": 36100,
+      "percentage": 17,
+      "color": "#EF5350"
+    },
+    {
+      "id": "retencao",
+      "label": "Retenção",
+      "value": 25800,
+      "percentage": 12,
+      "color": "#78909C"
+    }
+  ],
+  "summary": [
+    { "id": "total_campanhas", "label": "Total Campanhas", "value": "3.180" },
+    {
+      "id": "total_faturado",
+      "label": "Total Faturado",
+      "value": "R$ 1.024.000",
+      "color": "#4FC3F7"
+    },
+    {
+      "id": "taxa_resposta",
+      "label": "Taxa de Resposta",
+      "value": "53%",
+      "color": "#66BB6A"
+    },
+    {
+      "id": "taxa_conversao",
+      "label": "Taxa de Conversão",
+      "value": "19%",
+      "color": "#FFA726"
+    }
+  ]
+}

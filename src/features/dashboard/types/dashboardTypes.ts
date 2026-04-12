@@ -60,6 +60,9 @@ export interface RecentMessage {
   customerName: string;
   preview: string;
   createdAt: string;
+  channel?: string;
+  unreadCount?: number;
+  sentiment?: "hot" | "warm" | "cold";
 }
 
 export interface RecentOrder {
@@ -69,6 +72,9 @@ export interface RecentOrder {
   totalCents: number;
   status: string;
   createdAt: string;
+  itemsCount?: number;
+  paymentMethod?: string;
+  priority?: "high" | "normal";
 }
 
 export interface DashboardData {
@@ -98,6 +104,16 @@ export interface FunnelData {
   steps: FunnelStep[];
   summary: FunnelSummaryMetric[];
 }
+
+export type FunnelPeriod =
+  | "30d"
+  | "60d"
+  | "90d"
+  | "180d"
+  | "1y"
+  | "2y"
+  | "5y"
+  | "all";
 
 // ─── Conversion rate chart types ──────────────────────────────────────────────
 

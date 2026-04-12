@@ -30,6 +30,12 @@ function initial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || "?";
 }
 
+function sentimentClass(sentiment?: RecentMessage["sentiment"]): string {
+  if (sentiment === "hot") return "bg-red-500";
+  if (sentiment === "warm") return "bg-amber-500";
+  return "bg-slate-400";
+}
+
 function SkeletonRow() {
   return (
     <div className="flex items-center gap-3 py-3">
@@ -48,11 +54,18 @@ export function RecentMessagesList({
   isLoading = false,
 }: RecentMessagesListProps) {
   const navigate = useNavigate();
+  const unreadTotal = messages.reduce(
+    (sum, item) => sum + (item.unreadCount ?? 0),
+    0,
+  );
 
   return (
     <div className="rounded-xl border border-border bg-card">
-      <div className="px-5 pt-4 pb-3 border-b border-border">
+      <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Últimas mensagens</h2>
+        <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+          {unreadTotal} não lidas
+        </span>
       </div>
 
       <div className="divide-y divide-border">
@@ -80,16 +93,33 @@ export function RecentMessagesList({
                 {initial(msg.customerName)}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">
-                  {msg.customerName}
-                </p>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${sentimentClass(msg.sentiment)}`}
+                  />
+                  <p className="truncate text-sm font-medium">
+                    {msg.customerName}
+                  </p>
+                  {msg.channel && (
+                    <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {msg.channel}
+                    </span>
+                  )}
+                </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {msg.preview}
                 </p>
               </div>
-              <span className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">
-                {formatRelative(msg.createdAt)}
-              </span>
+              <div className="shrink-0 flex flex-col items-end gap-1">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {formatRelative(msg.createdAt)}
+                </span>
+                {(msg.unreadCount ?? 0) > 0 && (
+                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                    {msg.unreadCount}
+                  </span>
+                )}
+              </div>
             </button>
           ))
         )}

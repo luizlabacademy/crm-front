@@ -15,7 +15,7 @@ interface RecentOrdersListProps {
 function SkeletonRow() {
   return (
     <tr>
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <div className="h-3 w-full animate-pulse rounded bg-muted" />
         </td>
@@ -32,6 +32,22 @@ function StatusBadge({ status }: { status: string }) {
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}
     >
       {label}
+    </span>
+  );
+}
+
+function PriorityBadge({ priority }: { priority?: RecentOrder["priority"] }) {
+  if (!priority) return null;
+  const className =
+    priority === "high"
+      ? "bg-red-100 text-red-700"
+      : "bg-emerald-100 text-emerald-700";
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${className}`}
+    >
+      {priority === "high" ? "Alta" : "Normal"}
     </span>
   );
 }
@@ -54,8 +70,11 @@ export function RecentOrdersList({
             <tr className="border-b border-border text-left text-xs text-muted-foreground">
               <th className="px-4 py-2 font-medium">#</th>
               <th className="px-4 py-2 font-medium">Cliente</th>
+              <th className="px-4 py-2 font-medium">Itens</th>
+              <th className="px-4 py-2 font-medium">Pagamento</th>
               <th className="px-4 py-2 font-medium text-right">Valor</th>
               <th className="px-4 py-2 font-medium">Status</th>
+              <th className="px-4 py-2 font-medium">Prioridade</th>
               <th className="px-4 py-2 font-medium">Data</th>
             </tr>
           </thead>
@@ -65,7 +84,7 @@ export function RecentOrdersList({
             ) : orders.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={8}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   Nenhum pedido encontrado.
@@ -84,11 +103,20 @@ export function RecentOrdersList({
                   <td className="px-4 py-3 max-w-[140px] truncate">
                     {order.customerName}
                   </td>
+                  <td className="px-4 py-3 text-muted-foreground tabular-nums">
+                    {order.itemsCount ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                    {order.paymentMethod ?? "-"}
+                  </td>
                   <td className="px-4 py-3 text-right tabular-nums">
                     {formatCurrency(order.totalCents)}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={order.status} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <PriorityBadge priority={order.priority} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                     {formatShortDate(order.createdAt)}

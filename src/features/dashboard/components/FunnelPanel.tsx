@@ -3,8 +3,20 @@ import { getFunnelData } from "@/features/dashboard/api/dashboardMockService";
 import { MetricSummaryCard } from "@/features/dashboard/components/MetricSummaryCard";
 import type {
   FunnelData,
+  FunnelPeriod,
   FunnelStep,
 } from "@/features/dashboard/types/dashboardTypes";
+
+const FUNNEL_PERIOD_OPTIONS: { value: FunnelPeriod; label: string }[] = [
+  { value: "30d", label: "Ultimos 30 dias" },
+  { value: "60d", label: "Ultimos 60 dias" },
+  { value: "90d", label: "Ultimo 90 dias" },
+  { value: "180d", label: "Ultimos 180 dias" },
+  { value: "1y", label: "Ultimo Ano" },
+  { value: "2y", label: "Ultimos 2 anos" },
+  { value: "5y", label: "Ultimos 5 anos" },
+  { value: "all", label: "Todos" },
+];
 
 // ─── Funnel step bar ─────────────────────────────────────────────────────────
 
@@ -25,7 +37,7 @@ function FunnelStepBar({ step, maxValue, index, total }: FunnelStepBarProps) {
   const barHeight = Math.max((step.value / maxValue) * 56, 36);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2">
       {/* Funnel bar */}
       <div className="flex-1 flex justify-center">
         <div
@@ -46,6 +58,12 @@ function FunnelStepBar({ step, maxValue, index, total }: FunnelStepBarProps) {
           </div>
         </div>
       </div>
+
+      {/* Connector line */}
+      <div
+        className="h-px w-10 shrink-0"
+        style={{ backgroundColor: step.color }}
+      />
 
       {/* Percentage indicator */}
       <div className="flex items-center gap-2 w-16 shrink-0">
@@ -85,12 +103,13 @@ function FunnelSkeleton() {
 
 export function FunnelPanel() {
   const [data, setData] = useState<FunnelData | null>(null);
+  const [period, setPeriod] = useState<FunnelPeriod>("30d");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getFunnelData()
+    getFunnelData(period)
       .then((result) => {
         if (!cancelled) setData(result);
       })
@@ -100,14 +119,25 @@ export function FunnelPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [period]);
 
   const maxValue = data ? Math.max(...data.steps.map((s) => s.value), 1) : 1;
 
   return (
     <div className="rounded-xl border border-border bg-card">
-      <div className="px-5 pt-4 pb-3 border-b border-border">
+      <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Funil de Conversão</h2>
+        <select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value as FunnelPeriod)}
+          className="rounded-md border border-border bg-background px-2.5 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring transition-colors"
+        >
+          {FUNNEL_PERIOD_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="p-5">

@@ -1,12 +1,21 @@
+import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getRecentMessagesData,
+  getRecentOrdersData,
+} from "@/features/dashboard/api/dashboardMockService";
 import { useDashboardData } from "@/features/dashboard/api/useDashboardData";
 import { KpiCard } from "@/features/dashboard/components/KpiCard";
 import { FunnelPanel } from "@/features/dashboard/components/FunnelPanel";
 import { ConversionRateChart } from "@/features/dashboard/components/ConversionRateChart";
 import { RecentMessagesList } from "@/features/dashboard/components/RecentMessagesList";
 import { RecentOrdersList } from "@/features/dashboard/components/RecentOrdersList";
-import type { DashboardKpi } from "@/features/dashboard/types/dashboardTypes";
+import type {
+  DashboardKpi,
+  RecentMessage,
+  RecentOrder,
+} from "@/features/dashboard/types/dashboardTypes";
 
 // ─── KPI definitions ──────────────────────────────────────────────────────────
 
@@ -52,7 +61,7 @@ const SECONDARY_KPI_DEFS: KpiDef[] = [
     storageKey: "orders_pending",
   },
   {
-    label: "Novos Chats",
+    label: "Novas Mensagens",
     key: "newMessagesMonth",
     type: "count",
     storageKey: "msgs_month",
@@ -75,6 +84,27 @@ const SECONDARY_KPI_DEFS: KpiDef[] = [
 
 export function DashboardPage() {
   const { data, isLoading, isError, refetch, isFetching } = useDashboardData();
+  const [mockMessages, setMockMessages] = useState<RecentMessage[]>([]);
+  const [mockOrders, setMockOrders] = useState<RecentOrder[]>([]);
+  const [isLoadingMocks, setIsLoadingMocks] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingMocks(true);
+    Promise.all([getRecentMessagesData(), getRecentOrdersData()])
+      .then(([messages, orders]) => {
+        if (cancelled) return;
+        setMockMessages(messages);
+        setMockOrders(orders);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingMocks(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function handleRefresh() {
     void refetch().then(({ isError: err }) => {
@@ -85,8 +115,8 @@ export function DashboardPage() {
   }
 
   const kpis = data?.kpis;
-  const recentMessages = data?.recentMessages ?? [];
-  const recentOrders = data?.recentOrders ?? [];
+  const recentMessages = mockMessages;
+  const recentOrders = mockOrders;
 
   return (
     <div className="space-y-6">
@@ -168,8 +198,11 @@ export function DashboardPage() {
 
       {/* Recent activity — 2 columns on large */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <RecentMessagesList messages={recentMessages} isLoading={isLoading} />
-        <RecentOrdersList orders={recentOrders} isLoading={isLoading} />
+        <RecentMessagesList
+          messages={recentMessages}
+          isLoading={isLoadingMocks}
+        />
+        <RecentOrdersList orders={recentOrders} isLoading={isLoadingMocks} />
       </div>
     </div>
   );
