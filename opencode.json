@@ -1,0 +1,54 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "*": "allow",
+    "bash": {
+      "*": "allow",
+
+      "git commit*": "ask",
+      "git push*": "ask",
+      "git revert*": "ask",
+      "git reset*": "ask",
+      "git rebase*": "ask",
+      "git checkout -B*": "ask",
+      "git clean*": "ask",
+      "git stash drop*": "ask",
+      "git cherry-pick*": "ask",
+      "git merge*": "ask",
+
+      "gh *": "ask",
+
+      "sudo *": "ask",
+      "su *": "ask",
+      "passwd *": "ask",
+      "useradd *": "ask",
+      "userdel *": "ask",
+      "usermod *": "ask",
+
+      "*../*": "ask",
+      "*..\\*": "ask",
+
+      "rm /*": "ask",
+      "rm -rf /*": "ask",
+      "mv /*": "ask",
+      "cp /*": "ask",
+
+      "* C:\\*": "ask",
+      "* D:\\*": "ask",
+
+      "rm *": "ask",
+      "rmdir *": "ask",
+      "del *": "ask",
+      "erase *": "ask",
+      "rd *": "ask",
+      "Remove-Item *": "ask",
+      "Clear-Content *": "ask",
+
+      "curl * | *": "ask",
+      "wget * | *": "ask",
+      "bash *": "ask",
+      "sh *": "ask",
+      "powershell *": "ask"
+    }
+  }
+}

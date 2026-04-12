@@ -14,9 +14,9 @@ Documentos relacionados:
 
 | Item | Valor |
 |------|-------|
-| Base URL (produção) | `http://luizlab.com:8080` |
+| Base URL (Staging) | `http://luizlab.com:8080` |
 | Base URL (local) | `http://localhost:8080` |
-| OpenAPI docs | `GET /v3/api-docs` |
+| OpenAPI docs | `GET http://luizlab.com:8080/v3/api-docs` |
 | Swagger UI | `/swagger-ui/index.html` |
 | Health check | `GET /health/live` → `{"status":"UP"}` |
 
@@ -25,6 +25,13 @@ Documentos relacionados:
 ## 3. Autenticação
 
 - **Endpoint**: `POST /api/v1/auth/token`
+  - Senha para teste em `Staging`:
+```JSON
+{
+  "email": "admin@saas.com",
+  "password": "123456"
+}
+```
 - **Request body**: `{ "email": "string", "password": "string" }`
 - **Response 200**: `{ "token": "string" }` (JWT)
 - Todos os demais endpoints exigem header `Authorization: Bearer <token>`.

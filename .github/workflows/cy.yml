@@ -1,0 +1,79 @@
+name: React CI/CD
+
+on:
+  push:
+    branches: [master]
+
+env:
+  APP_NAME: crm-front
+  APP_DIR: /opt/crm-front
+  BUILD_DIR: /opt/crm-front/dist
+  SERVICE_NAME: crm-front
+  SERVICE_FILE: /etc/systemd/system/crm-front.service
+  PORT: 3000
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Garantir diretório
+        run: sudo mkdir -p ${{ env.APP_DIR }}
+
+      - name: Criar ou atualizar service
+        run: |
+          sudo bash -c "cat > ${{ env.SERVICE_FILE }}" <<EOF
+          [Unit]
+          Description=CRM Front
+          After=network.target
+
+          [Service]
+          User=root
+          WorkingDirectory=${{ env.APP_DIR }}
+          ExecStart=/usr/bin/npx serve -s ${BUILD_DIR} -l ${PORT}
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+      - name: Reload systemd
+        run: sudo systemctl daemon-reload
+
+      - name: Enable service
+        run: sudo systemctl enable ${{ env.SERVICE_NAME }}
+
+      - name: Parar serviço se existir
+        run: sudo systemctl stop ${{ env.SERVICE_NAME }} || true
+
+      - name: Copiar build
+        run: |
+          sudo rm -rf ${{ env.BUILD_DIR }}
+          sudo cp -r dist ${{ env.BUILD_DIR }}
+
+      - name: Instalar serve (se necessário)
+        run: sudo npm install -g serve
+
+      - name: Iniciar serviço
+        run: sudo systemctl start ${{ env.SERVICE_NAME }}
+
+      - name: Ver status do serviço
+        run: sudo systemctl status ${{ env.SERVICE_NAME }} --no-pager
+
+      - name: Health check
+        run: curl -f http://localhost:${{ env.PORT }} || exit 1

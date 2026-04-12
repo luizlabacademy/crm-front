@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
+import { Toaster } from "sonner";
 import { QueryProvider } from "./query-provider";
 
 interface AppProvidersProps {
@@ -6,5 +7,10 @@ interface AppProvidersProps {
 }
 
 export function AppProviders({ children }: AppProvidersProps) {
-  return <QueryProvider>{children}</QueryProvider>;
+  return (
+    <QueryProvider>
+      {children}
+      <Toaster richColors position="top-right" />
+    </QueryProvider>
+  );
 }
