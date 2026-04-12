@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import {
+  BadgeDollarSign,
+  BanknoteArrowUp,
+  HandCoins,
+  CheckCircle2,
+  CircleAlert,
+  MessageSquare,
+  RefreshCw,
+  ShoppingCart,
+  MessageCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   getRecentMessagesData,
@@ -16,6 +26,7 @@ import type {
   RecentMessage,
   RecentOrder,
 } from "@/features/dashboard/types/dashboardTypes";
+import type { LucideIcon } from "lucide-react";
 
 // ─── KPI definitions ──────────────────────────────────────────────────────────
 
@@ -23,6 +34,7 @@ interface KpiDef {
   label: string;
   key: keyof DashboardKpi;
   type: "currency" | "count";
+  icon: LucideIcon;
   storageKey: string;
 }
 
@@ -31,18 +43,21 @@ const REVENUE_KPI_DEFS: KpiDef[] = [
     label: "Vendas Hoje",
     key: "revenueToday",
     type: "currency",
+    icon: HandCoins,
     storageKey: "rev_today",
   },
   {
     label: "Vendas Mês",
     key: "revenueMonth",
     type: "currency",
+    icon: BadgeDollarSign,
     storageKey: "rev_month",
   },
   {
     label: "Vendas Ano",
     key: "revenueYear",
     type: "currency",
+    icon: BanknoteArrowUp,
     storageKey: "rev_year",
   },
 ];
@@ -52,30 +67,35 @@ const SECONDARY_KPI_DEFS: KpiDef[] = [
     label: "Novos Pedidos",
     key: "newOrdersMonth",
     type: "count",
+    icon: ShoppingCart,
     storageKey: "orders_new",
   },
   {
     label: "Com Pendências",
     key: "pendingOrders",
     type: "count",
+    icon: CircleAlert,
     storageKey: "orders_pending",
   },
   {
     label: "Novas Mensagens",
     key: "newMessagesMonth",
     type: "count",
+    icon: MessageSquare,
     storageKey: "msgs_month",
   },
   {
     label: "Chats Abertos",
     key: "activeLeads",
     type: "count",
+    icon: MessageCircle,
     storageKey: "leads_active",
   },
   {
     label: "Chats Concluídos",
     key: "closedLeadsMonth",
     type: "count",
+    icon: CheckCircle2,
     storageKey: "leads_closed",
   },
 ];
@@ -163,6 +183,26 @@ export function DashboardPage() {
             label={def.label}
             value={kpis?.[def.key] ?? 0}
             type={def.type}
+            icon={def.icon}
+            variant="large"
+            isLoading={isLoading}
+            isError={isError && !isLoading}
+            onRetry={handleRefresh}
+            storageKey={def.storageKey}
+          />
+        ))}
+      </div>
+
+      {/* Secondary KPIs — last 4 in a single row on desktop */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {SECONDARY_KPI_DEFS.map((def) => (
+          <KpiCard
+            key={def.storageKey}
+            label={def.label}
+            value={kpis?.[def.key] ?? 0}
+            type={def.type}
+            icon={def.icon}
+            variant="compact"
             isLoading={isLoading}
             isError={isError && !isLoading}
             onRetry={handleRefresh}
@@ -173,22 +213,6 @@ export function DashboardPage() {
 
       {/* Divider */}
       <div className="border-t border-border" />
-
-      {/* Secondary KPIs — last 4 in a single row on desktop */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {SECONDARY_KPI_DEFS.map((def) => (
-          <KpiCard
-            key={def.storageKey}
-            label={def.label}
-            value={kpis?.[def.key] ?? 0}
-            type={def.type}
-            isLoading={isLoading}
-            isError={isError && !isLoading}
-            onRetry={handleRefresh}
-            storageKey={def.storageKey}
-          />
-        ))}
-      </div>
 
       {/* Funnel & Conversion panels — 2 columns on large */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

@@ -41,7 +41,11 @@ const NAV: NavSection[] = [
   {
     section: "Principal",
     items: [
-      { label: "Dashboard", to: "/dashboard", icon: <LayoutDashboard size={16} /> },
+      {
+        label: "Dashboard",
+        to: "/dashboard",
+        icon: <LayoutDashboard size={16} />,
+      },
     ],
   },
   {
@@ -50,8 +54,16 @@ const NAV: NavSection[] = [
       { label: "Clientes", to: "/customers", icon: <Users size={16} /> },
       { label: "Leads", to: "/leads", icon: <MessageSquare size={16} /> },
       { label: "Pedidos", to: "/orders", icon: <ShoppingCart size={16} /> },
-      { label: "Agendamentos", to: "/appointments", icon: <CalendarCheck size={16} /> },
-      { label: "Schedules", to: "/schedules", icon: <CalendarDays size={16} /> },
+      {
+        label: "Agendamentos",
+        to: "/appointments",
+        icon: <CalendarCheck size={16} />,
+      },
+      {
+        label: "Schedules",
+        to: "/schedules",
+        icon: <CalendarDays size={16} />,
+      },
     ],
   },
   {
@@ -65,14 +77,26 @@ const NAV: NavSection[] = [
     section: "Catalogo",
     items: [
       { label: "Itens", to: "/catalog/items", icon: <Package size={16} /> },
-      { label: "Categorias", to: "/catalog/categories", icon: <Tag size={16} /> },
-      { label: "Unidades de Medida", to: "/catalog/units-of-measure", icon: <Ruler size={16} /> },
+      {
+        label: "Categorias",
+        to: "/catalog/categories",
+        icon: <Tag size={16} />,
+      },
+      {
+        label: "Unidades de Medida",
+        to: "/catalog/units-of-measure",
+        icon: <Ruler size={16} />,
+      },
     ],
   },
   {
     section: "Pipeline",
     items: [
-      { label: "Fluxos de Pipeline", to: "/pipeline-flows", icon: <GitBranch size={16} /> },
+      {
+        label: "Fluxos de Pipeline",
+        to: "/pipeline-flows",
+        icon: <GitBranch size={16} />,
+      },
     ],
   },
   {
@@ -82,7 +106,11 @@ const NAV: NavSection[] = [
       { label: "Usuarios", to: "/users", icon: <UserCog size={16} /> },
       { label: "Workers", to: "/workers", icon: <Wrench size={16} /> },
       { label: "Perfis", to: "/admin/roles", icon: <ShieldCheck size={16} /> },
-      { label: "Permissoes", to: "/admin/permissions", icon: <Lock size={16} /> },
+      {
+        label: "Permissoes",
+        to: "/admin/permissions",
+        icon: <Lock size={16} />,
+      },
     ],
   },
 ];
@@ -102,7 +130,7 @@ function SidebarLink({ item, onClick }: SidebarLinkProps) {
           "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
           isActive
             ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         )
       }
     >
@@ -140,11 +168,13 @@ function Sidebar({ open, onClose }: SidebarProps) {
           "fixed inset-y-0 left-0 z-30 flex w-64 flex-col bg-sidebar border-r border-sidebar-border",
           "transition-transform duration-200",
           open ? "translate-x-0" : "-translate-x-full",
-          "lg:static lg:translate-x-0 lg:z-auto"
+          "lg:static lg:translate-x-0 lg:z-auto",
         )}
       >
         <div className="flex h-14 items-center justify-between px-4 border-b border-sidebar-border shrink-0">
-          <span className="font-semibold text-sidebar-foreground tracking-tight">CRM</span>
+          <span className="font-semibold text-sidebar-foreground tracking-tight">
+            CRM
+          </span>
           <button
             className="lg:hidden text-sidebar-foreground"
             onClick={onClose}
@@ -154,7 +184,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <nav className="px-3 py-4 space-y-6 max-lg:overflow-y-auto max-lg:flex-1">
           {NAV.map((section) => (
             <div key={section.section}>
               <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
@@ -171,7 +201,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="border-t border-sidebar-border p-3 shrink-0">
+        <div className="border-t border-sidebar-border p-3">
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
@@ -193,10 +223,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
         <header className="flex h-14 items-center border-b border-border px-4 lg:hidden shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -208,9 +238,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <span className="ml-3 font-semibold">CRM</span>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );
