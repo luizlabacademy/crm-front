@@ -45,7 +45,9 @@ jobs:
 
       - name: Copiar build (dist -> /opt)
         run: |
-          sudo rsync -a --delete dist/ "${{ env.BUILD_DIR }}/"
+          sudo rm -rf "${{ env.BUILD_DIR }}"
+          sudo mkdir -p "${{ env.BUILD_DIR }}"
+          sudo cp -a dist/. "${{ env.BUILD_DIR }}/"
 
       - name: Instalar serve local no APP_DIR
         run: |
