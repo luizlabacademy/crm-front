@@ -59,7 +59,7 @@ export function RecentOrdersList({
   const navigate = useNavigate();
 
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border">
         <h2 className="text-sm font-semibold">Últimos pedidos</h2>
       </div>

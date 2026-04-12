@@ -124,7 +124,7 @@ export function FunnelPanel() {
   const maxValue = data ? Math.max(...data.steps.map((s) => s.value), 1) : 1;
 
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Funil de Conversão</h2>
         <select

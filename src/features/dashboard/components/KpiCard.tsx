@@ -66,7 +66,7 @@ export function KpiCard({
 
   if (variant === "compact") {
     return (
-      <div className="relative rounded-xl border border-border bg-card p-5 flex flex-col gap-3">
+      <div className="relative rounded-xl border border-border/80 bg-card p-5 shadow-sm flex flex-col gap-3">
         {!isError && !isLoading && (
           <button
             type="button"
@@ -120,7 +120,7 @@ export function KpiCard({
   }
 
   return (
-    <div className="relative rounded-xl border border-border bg-card p-5">
+    <div className="relative rounded-xl border border-border/80 bg-card p-5 shadow-sm">
       {!isError && !isLoading && (
         <button
           type="button"

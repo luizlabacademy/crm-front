@@ -139,7 +139,7 @@ export function DashboardPage() {
   const recentOrders = mockOrders;
 
   return (
-    <div className="space-y-6">
+    <div className="-m-6 min-h-full space-y-6 bg-muted/30 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -60,7 +60,7 @@ export function RecentMessagesList({
   );
 
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Últimas mensagens</h2>
         <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
