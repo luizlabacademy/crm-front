@@ -11,6 +11,8 @@ env:
   SERVICE_NAME: crm-front
   SERVICE_FILE: /etc/systemd/system/crm-front.service
   PORT: 3000
+  NODE_VERSION: 22
+  SERVE_VERSION: 14.2.4
 
 jobs:
   build-and-deploy:
@@ -20,31 +22,49 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node LTS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Mostrar versões (job)
+        run: |
+          node -v
+          npm -v
 
       - name: Build
-        run: npm run build
+        run: |
+          npm ci
+          npm run build
 
-      - name: Garantir diretório
-        run: sudo mkdir -p ${{ env.APP_DIR }}
+      - name: Garantir diretórios de deploy
+        run: |
+          sudo mkdir -p "${{ env.APP_DIR }}"
+          sudo mkdir -p "${{ env.BUILD_DIR }}"
+
+      - name: Copiar build (dist -> /opt)
+        run: |
+          sudo rsync -a --delete dist/ "${{ env.BUILD_DIR }}/"
+
+      - name: Instalar serve local no APP_DIR
+        run: |
+          sudo npm install --prefix "${{ env.APP_DIR }}" "serve@${{ env.SERVE_VERSION }}" --omit=dev --no-audit --no-fund
 
       - name: Criar ou atualizar service
         run: |
-          sudo bash -c "cat > ${{ env.SERVICE_FILE }}" <<EOF
+          sudo tee "${{ env.SERVICE_FILE }}" > /dev/null <<EOF
           [Unit]
           Description=CRM Front
           After=network.target
 
           [Service]
+          Type=simple
           User=root
           WorkingDirectory=${{ env.APP_DIR }}
-          ExecStart=/usr/bin/npx serve -s ${BUILD_DIR} -l ${PORT}
+          Environment=NODE_ENV=production
+          ExecStartPre=/usr/bin/test -d "${{ env.BUILD_DIR }}"
+          ExecStart=${{ env.APP_DIR }}/node_modules/.bin/serve -s "${{ env.BUILD_DIR }}" -l "${{ env.PORT }}"
           Restart=always
           RestartSec=5
 
@@ -56,24 +76,13 @@ jobs:
         run: sudo systemctl daemon-reload
 
       - name: Enable service
-        run: sudo systemctl enable ${{ env.SERVICE_NAME }}
+        run: sudo systemctl enable "${{ env.SERVICE_NAME }}"
 
-      - name: Parar serviço se existir
-        run: sudo systemctl stop ${{ env.SERVICE_NAME }} || true
-
-      - name: Copiar build
-        run: |
-          sudo rm -rf ${{ env.BUILD_DIR }}
-          sudo cp -r dist ${{ env.BUILD_DIR }}
-
-      - name: Instalar serve (se necessário)
-        run: sudo npm install -g serve
-
-      - name: Iniciar serviço
-        run: sudo systemctl start ${{ env.SERVICE_NAME }}
+      - name: Reiniciar serviço
+        run: sudo systemctl restart "${{ env.SERVICE_NAME }}"
 
       - name: Ver status do serviço
-        run: sudo systemctl status ${{ env.SERVICE_NAME }} --no-pager
+        run: sudo systemctl status "${{ env.SERVICE_NAME }}" --no-pager -l
 
       - name: Health check
-        run: curl -f http://localhost:${{ env.PORT }} || exit 1
+        run: curl -fsS "http://localhost:${{ env.PORT }}"
