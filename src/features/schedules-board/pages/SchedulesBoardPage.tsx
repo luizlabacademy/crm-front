@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
   format,
@@ -17,7 +17,14 @@ import {
   isValid,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Home, ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react";
+import {
+  Home,
+  ChevronLeft,
+  ChevronRight,
+  CalendarCheck,
+  Plus,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,6 +47,24 @@ interface MockAppointment {
   status: "scheduled" | "confirmed" | "done" | "cancelled";
 }
 
+interface MockCustomer {
+  id: number;
+  name: string;
+}
+
+interface NewAppointmentDraft {
+  title: string;
+  customerId: number | null;
+  customerName: string;
+  workerId: number | null;
+  workerName: string;
+  date: string;
+  time: string;
+  durationMinutes: number;
+  status: MockAppointment["status"];
+  notes: string;
+}
+
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const WORKERS: MockWorker[] = [
@@ -47,6 +72,28 @@ const WORKERS: MockWorker[] = [
   { id: 2, name: "Carlos Souza", color: "bg-sky-500" },
   { id: 3, name: "Beatriz Melo", color: "bg-emerald-500" },
   { id: 4, name: "Rafael Costa", color: "bg-amber-500" },
+  { id: 5, name: "Fernanda Rocha", color: "bg-rose-500" },
+  { id: 6, name: "Diego Martins", color: "bg-indigo-500" },
+  { id: 7, name: "Juliana Freitas", color: "bg-cyan-500" },
+  { id: 8, name: "Lucas Ribeiro", color: "bg-lime-500" },
+  { id: 9, name: "Renata Araujo", color: "bg-fuchsia-500" },
+  { id: 10, name: "Gustavo Pires", color: "bg-teal-500" },
+];
+
+const MOCK_CUSTOMERS: MockCustomer[] = [
+  { id: 1, name: "Joao Silva" },
+  { id: 2, name: "Maria Oliveira" },
+  { id: 3, name: "Pedro Alves" },
+  { id: 4, name: "Lucia Ferreira" },
+  { id: 5, name: "Marcos Dias" },
+  { id: 6, name: "Sandra Torres" },
+  { id: 7, name: "Bruno Nunes" },
+  { id: 8, name: "Patricia Gomes" },
+  { id: 9, name: "Thiago Prado" },
+  { id: 10, name: "Clara Mendes" },
+  { id: 11, name: "Victor Lima" },
+  { id: 12, name: "Daniela Costa" },
+  { id: 13, name: "Felipe Moreira" },
 ];
 
 function buildMockAppointments(base: Date): MockAppointment[] {
@@ -118,6 +165,60 @@ function buildMockAppointments(base: Date): MockAppointment[] {
       durationMinutes: 60,
       status: "scheduled",
     },
+    {
+      id: 8,
+      workerId: 5,
+      customerName: "Patricia Gomes",
+      title: "Progressiva",
+      startAt: d(0, 13, 0),
+      durationMinutes: 90,
+      status: "scheduled",
+    },
+    {
+      id: 9,
+      workerId: 6,
+      customerName: "Thiago Prado",
+      title: "Sobrancelha",
+      startAt: d(0, 16, 0),
+      durationMinutes: 30,
+      status: "confirmed",
+    },
+    {
+      id: 10,
+      workerId: 7,
+      customerName: "Clara Mendes",
+      title: "Hidratacao",
+      startAt: d(0, 8, 0),
+      durationMinutes: 45,
+      status: "scheduled",
+    },
+    {
+      id: 11,
+      workerId: 8,
+      customerName: "Victor Lima",
+      title: "Corte Masculino",
+      startAt: d(1, 11, 0),
+      durationMinutes: 30,
+      status: "confirmed",
+    },
+    {
+      id: 12,
+      workerId: 9,
+      customerName: "Daniela Costa",
+      title: "Tintura",
+      startAt: d(2, 14, 0),
+      durationMinutes: 90,
+      status: "scheduled",
+    },
+    {
+      id: 13,
+      workerId: 10,
+      customerName: "Felipe Moreira",
+      title: "Barba Premium",
+      startAt: d(3, 17, 0),
+      durationMinutes: 45,
+      status: "done",
+    },
   ];
 }
 
@@ -139,8 +240,38 @@ const STATUS_COLOR: Record<MockAppointment["status"], string> = {
 
 // ─── Hours grid ───────────────────────────────────────────────────────────────
 
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 07:00 – 20:00
-const DAY_WORKERS_VISIBLE = 3;
+const HOURS = Array.from({ length: 24 }, (_, i) => i); // 00:00 – 23:00
+const DAY_TIME_COL_WIDTH = 92;
+const DAY_WORKER_COL_MIN = 240;
+const DAY_WORKER_COL_MAX = 340;
+const DAY_HOUR_ROW_HEIGHT = 64;
+
+function toDateInputValue(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
+
+function toTimeInputValue(date: Date) {
+  return format(date, "HH:mm");
+}
+
+function buildDraftFromDate(
+  date: Date,
+  workerId?: number,
+): NewAppointmentDraft {
+  const worker = WORKERS.find((w) => w.id === workerId);
+  return {
+    title: "",
+    customerId: null,
+    customerName: "",
+    workerId: worker?.id ?? null,
+    workerName: worker?.name ?? "",
+    date: toDateInputValue(date),
+    time: toTimeInputValue(date),
+    durationMinutes: 60,
+    status: "scheduled",
+    notes: "",
+  };
+}
 
 // ─── Day View ─────────────────────────────────────────────────────────────────
 
@@ -148,85 +279,174 @@ function DayView({
   currentDate,
   appointments,
   workers,
+  columnWidth,
+  onHourCellClick,
+  canMoveWorkersLeft,
+  canMoveWorkersRight,
+  onMoveWorkersLeft,
+  onMoveWorkersRight,
+  scrollToNowSignal,
 }: {
   currentDate: Date;
   appointments: MockAppointment[];
   workers: MockWorker[];
+  columnWidth: number;
+  onHourCellClick: (hour: number, workerId: number) => void;
+  canMoveWorkersLeft: boolean;
+  canMoveWorkersRight: boolean;
+  onMoveWorkersLeft: () => void;
+  onMoveWorkersRight: () => void;
+  scrollToNowSignal: number;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   const dayAppts = appointments.filter((a) => {
     const d = parseISO(a.startAt);
     return isValid(d) && isSameDay(d, currentDate);
   });
 
+  const now = new Date();
+  const isCurrentDay = isSameDay(now, currentDate);
+  const nowLineTop =
+    (now.getHours() + now.getMinutes() / 60) * DAY_HOUR_ROW_HEIGHT +
+    DAY_HOUR_ROW_HEIGHT / 2;
+
+  useEffect(() => {
+    if (!isCurrentDay || !scrollRef.current) return;
+    const target = Math.max(0, nowLineTop - 220);
+    scrollRef.current.scrollTop = target;
+  }, [isCurrentDay, nowLineTop, scrollToNowSignal]);
+
+  const minWidth = `${DAY_TIME_COL_WIDTH + workers.length * columnWidth}px`;
+  const columnsTemplate = `${DAY_TIME_COL_WIDTH}px repeat(${workers.length}, ${columnWidth}px)`;
+
   return (
-    <div className="overflow-x-auto">
-      <div
-        className="grid min-w-[700px]"
-        style={{
-          gridTemplateColumns: `56px repeat(${workers.length}, minmax(220px, 1fr))`,
-        }}
-      >
-        {/* Header row */}
-        <div className="border-b border-r border-border h-10 bg-muted/40" />
-        {workers.map((w) => (
-          <div
-            key={w.id}
-            className="border-b border-r border-border h-10 flex items-center justify-center gap-2 px-2 bg-muted/40"
-          >
-            <span className="flex flex-col items-center leading-tight">
-              <span className="flex items-center gap-1.5">
-                <span
-                  className={cn("h-2 w-2 rounded-full shrink-0", w.color)}
-                />
-                <span className="text-xs font-semibold text-foreground truncate">
-                  {w.name}
+    <div className="h-full overflow-x-auto overflow-y-hidden">
+      <div className="h-full flex flex-col" style={{ minWidth }}>
+        <div
+          className="grid sticky top-0 z-30"
+          style={{ gridTemplateColumns: columnsTemplate }}
+        >
+          <div className="border-b border-r border-border h-10 bg-muted flex items-center justify-center px-2 sticky left-0 z-30">
+            <div className="flex items-center gap-2 rounded-md bg-background/70 px-1.5 py-0.5">
+              <button
+                type="button"
+                onClick={onMoveWorkersLeft}
+                disabled={!canMoveWorkersLeft}
+                className="rounded-md p-1.5 hover:bg-accent transition-colors text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Profissionais anteriores"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={onMoveWorkersRight}
+                disabled={!canMoveWorkersRight}
+                className="rounded-md p-1.5 hover:bg-accent transition-colors text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Próximos profissionais"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+          {workers.map((w) => (
+            <div
+              key={w.id}
+              className="border-b border-r border-border h-10 flex items-center justify-center gap-2 px-2 bg-muted"
+            >
+              <span className="flex flex-col items-center leading-tight">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={cn("h-2 w-2 rounded-full shrink-0", w.color)}
+                  />
+                  <span className="text-[13px] font-semibold text-foreground truncate">
+                    {w.name}
+                  </span>
+                </span>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  00:00 – 23:59
                 </span>
               </span>
-              <span className="text-[11px] text-muted-foreground">
-                07:00 – 20:00
-              </span>
-            </span>
-          </div>
-        ))}
-
-        {/* Hour rows */}
-        {HOURS.map((hour) => (
-          <div key={`row-${hour}`} className="contents">
-            <div className="border-b border-r border-border h-20 flex items-start justify-end pr-2 pt-1 sticky left-0 bg-background z-10">
-              <span className="text-xs text-muted-foreground">
-                {hour.toString().padStart(2, "0")}:00
-              </span>
             </div>
-            {workers.map((w) => {
-              const cellAppts = dayAppts.filter((a) => {
-                const d = parseISO(a.startAt);
-                return a.workerId === w.id && d.getHours() === hour;
-              });
-              return (
+          ))}
+        </div>
+
+        <div
+          ref={scrollRef}
+          className="relative flex-1 min-h-0 overflow-y-auto"
+        >
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: columnsTemplate }}
+          >
+            {HOURS.map((hour, rowIndex) => (
+              <div key={`row-${hour}`} className="contents">
                 <div
-                  key={`${hour}-${w.id}`}
-                  className="border-b border-r border-border h-20 px-1.5 py-1 space-y-1"
+                  className={cn(
+                    "border-b border-r border-border h-16 flex items-start justify-end pr-2 pt-1 sticky left-0 z-10",
+                    rowIndex % 2 === 0 ? "bg-background" : "bg-muted/20",
+                  )}
+                  style={{ height: `${DAY_HOUR_ROW_HEIGHT}px` }}
                 >
-                  {cellAppts.map((a) => (
-                    <div
-                      key={a.id}
-                      className={cn(
-                        "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer hover:opacity-85 transition-opacity",
-                        STATUS_COLOR[a.status],
-                      )}
-                      title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
-                    >
-                      <div className="font-medium truncate">{a.title}</div>
-                      <div className="text-muted-foreground truncate">
-                        {a.customerName}
-                      </div>
-                    </div>
-                  ))}
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    {hour.toString().padStart(2, "0")}:00
+                  </span>
                 </div>
-              );
-            })}
+                {workers.map((w) => {
+                  const cellAppts = dayAppts.filter((a) => {
+                    const d = parseISO(a.startAt);
+                    return a.workerId === w.id && d.getHours() === hour;
+                  });
+                  return (
+                    <div
+                      key={`${hour}-${w.id}`}
+                      className={cn(
+                        "border-b border-r border-border h-16 px-1.5 py-1 space-y-1 cursor-pointer hover:bg-primary/5",
+                        rowIndex % 2 === 0 ? "bg-background" : "bg-muted/10",
+                      )}
+                      style={{ height: `${DAY_HOUR_ROW_HEIGHT}px` }}
+                      onClick={() => onHourCellClick(hour, w.id)}
+                    >
+                      {cellAppts.map((a) => (
+                        <div
+                          key={a.id}
+                          className={cn(
+                            "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm hover:opacity-90 transition-opacity",
+                            STATUS_COLOR[a.status],
+                          )}
+                          title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="text-[12px] font-semibold truncate">
+                            {a.title}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate">
+                            {a.customerName}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-        ))}
+
+          {isCurrentDay && (
+            <div
+              className="pointer-events-none absolute left-0 right-0 z-20"
+              style={{ top: `${nowLineTop}px` }}
+            >
+              <div className="relative">
+                <span
+                  className="absolute top-[-5px] h-2.5 w-2.5 rounded-full bg-red-500"
+                  style={{ left: `${DAY_TIME_COL_WIDTH - 6}px` }}
+                />
+                <span className="block h-[2px] w-full bg-red-500" />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -275,10 +495,15 @@ function WeekView({
         ))}
 
         {/* Hour rows */}
-        {HOURS.map((hour) => (
+        {HOURS.map((hour, rowIndex) => (
           <div key={`row-${hour}`} className="contents">
-            <div className="border-b border-r border-border h-20 flex items-start justify-end pr-2 pt-1 sticky left-0 bg-background z-10">
-              <span className="text-xs text-muted-foreground">
+            <div
+              className={cn(
+                "border-b border-r border-border h-20 flex items-start justify-end pr-2 pt-1 sticky left-0 z-10",
+                rowIndex % 2 === 0 ? "bg-background" : "bg-muted/20",
+              )}
+            >
+              <span className="text-[11px] font-medium text-muted-foreground">
                 {hour.toString().padStart(2, "0")}:00
               </span>
             </div>
@@ -292,6 +517,7 @@ function WeekView({
                   key={`${hour}-${day.toISOString()}`}
                   className={cn(
                     "border-b border-r border-border h-20 px-1.5 py-1 space-y-1",
+                    rowIndex % 2 === 0 ? "bg-background" : "bg-muted/10",
                     isSameDay(day, new Date()) && "bg-primary/5",
                   )}
                 >
@@ -301,13 +527,15 @@ function WeekView({
                       <div
                         key={a.id}
                         className={cn(
-                          "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer hover:opacity-85 transition-opacity",
+                          "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm hover:opacity-90 transition-opacity",
                           STATUS_COLOR[a.status],
                         )}
                         title={`${a.customerName} — ${a.title} (${worker?.name ?? ""})`}
                       >
-                        <div className="font-medium truncate">{a.title}</div>
-                        <div className="text-muted-foreground truncate">
+                        <div className="text-[12px] font-semibold truncate">
+                          {a.title}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground truncate">
                           {worker?.name}
                         </div>
                       </div>
@@ -426,6 +654,219 @@ function MonthView({
   );
 }
 
+function AutocompleteField({
+  label,
+  value,
+  options,
+  placeholder,
+  onChange,
+  onSelect,
+}: {
+  label: string;
+  value: string;
+  options: { id: number; name: string }[];
+  placeholder: string;
+  onChange: (value: string) => void;
+  onSelect: (option: { id: number; name: string }) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filtered = options.filter((o) =>
+    o.name.toLowerCase().includes(value.toLowerCase()),
+  );
+
+  return (
+    <div className="space-y-1.5 relative">
+      <label className="text-xs font-medium text-foreground">{label}</label>
+      <input
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => setTimeout(() => setIsOpen(false), 120)}
+        placeholder={placeholder}
+        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+      />
+      {isOpen && filtered.length > 0 && (
+        <div className="absolute z-50 mt-1 max-h-44 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+          {filtered.slice(0, 8).map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onSelect(option);
+                setIsOpen(false);
+              }}
+              className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
+            >
+              {option.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NewAppointmentModal({
+  draft,
+  onClose,
+  onChange,
+  onSubmit,
+}: {
+  draft: NewAppointmentDraft;
+  onClose: () => void;
+  onChange: (patch: Partial<NewAppointmentDraft>) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center">
+      <div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-semibold">Novo Agendamento</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded p-1 text-muted-foreground hover:bg-accent"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
+          <div className="sm:col-span-2 space-y-1.5">
+            <label className="text-xs font-medium text-foreground">
+              Servico
+            </label>
+            <input
+              value={draft.title}
+              onChange={(e) => onChange({ title: e.target.value })}
+              placeholder="Ex: Corte + Barba"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <AutocompleteField
+            label="Cliente"
+            value={draft.customerName}
+            options={MOCK_CUSTOMERS}
+            placeholder="Buscar cliente..."
+            onChange={(value) =>
+              onChange({ customerName: value, customerId: null })
+            }
+            onSelect={(customer) =>
+              onChange({ customerId: customer.id, customerName: customer.name })
+            }
+          />
+
+          <AutocompleteField
+            label="Profissional"
+            value={draft.workerName}
+            options={WORKERS.map((w) => ({ id: w.id, name: w.name }))}
+            placeholder="Buscar profissional..."
+            onChange={(value) =>
+              onChange({ workerName: value, workerId: null })
+            }
+            onSelect={(worker) =>
+              onChange({ workerId: worker.id, workerName: worker.name })
+            }
+          />
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Data</label>
+            <input
+              type="date"
+              value={draft.date}
+              onChange={(e) => onChange({ date: e.target.value })}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">
+              Horario
+            </label>
+            <input
+              type="time"
+              value={draft.time}
+              onChange={(e) => onChange({ time: e.target.value })}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">
+              Duracao (min)
+            </label>
+            <input
+              type="number"
+              min={15}
+              step={15}
+              value={draft.durationMinutes}
+              onChange={(e) =>
+                onChange({ durationMinutes: Number(e.target.value) || 60 })
+              }
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">
+              Status
+            </label>
+            <select
+              value={draft.status}
+              onChange={(e) =>
+                onChange({
+                  status: e.target.value as MockAppointment["status"],
+                })
+              }
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="scheduled">Agendado</option>
+              <option value="confirmed">Confirmado</option>
+              <option value="done">Concluido</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
+          </div>
+
+          <div className="sm:col-span-2 space-y-1.5">
+            <label className="text-xs font-medium text-foreground">
+              Observacoes
+            </label>
+            <textarea
+              rows={3}
+              value={draft.notes}
+              onChange={(e) => onChange({ notes: e.target.value })}
+              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+          >
+            Salvar agendamento
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
 function Legend() {
@@ -455,8 +896,38 @@ export function SchedulesBoardPage() {
   const [view, setView] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [dayWorkerStart, setDayWorkerStart] = useState(0);
+  const [dayWorkersVisibleCount, setDayWorkersVisibleCount] = useState(3);
+  const [dayGridWidth, setDayGridWidth] = useState(0);
+  const [scrollToNowSignal, setScrollToNowSignal] = useState(0);
+  const [workerSearch, setWorkerSearch] = useState("");
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<number[]>(
+    WORKERS.map((w) => w.id),
+  );
+  const [appointments, setAppointments] = useState<MockAppointment[]>(() =>
+    buildMockAppointments(new Date()),
+  );
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  const [appointmentDraft, setAppointmentDraft] = useState<NewAppointmentDraft>(
+    () => buildDraftFromDate(new Date()),
+  );
+  const dayGridRef = useRef<HTMLDivElement>(null);
 
-  const appointments = useMemo(() => buildMockAppointments(new Date()), []);
+  const filteredWorkers = useMemo(
+    () => WORKERS.filter((w) => selectedWorkerIds.includes(w.id)),
+    [selectedWorkerIds],
+  );
+  const workersForFilterList = useMemo(
+    () =>
+      WORKERS.filter((w) =>
+        w.name.toLowerCase().includes(workerSearch.toLowerCase()),
+      ),
+    [workerSearch],
+  );
+  const allWorkersSelected = selectedWorkerIds.length === WORKERS.length;
+  const filteredAppointments = useMemo(
+    () => appointments.filter((a) => selectedWorkerIds.includes(a.workerId)),
+    [appointments, selectedWorkerIds],
+  );
 
   function prev() {
     if (view === "day") setCurrentDate((d) => addDays(d, -1));
@@ -472,15 +943,48 @@ export function SchedulesBoardPage() {
 
   function goToday() {
     setCurrentDate(new Date());
+    setScrollToNowSignal((v) => v + 1);
   }
 
-  const visibleDayWorkers = WORKERS.slice(
+  useEffect(() => {
+    function updateDayViewport() {
+      const width = dayGridRef.current?.clientWidth ?? window.innerWidth;
+      setDayGridWidth(width);
+      const available = Math.max(0, width - DAY_TIME_COL_WIDTH);
+      const fitCount = Math.max(1, Math.floor(available / DAY_WORKER_COL_MIN));
+      setDayWorkersVisibleCount(Math.min(filteredWorkers.length, fitCount));
+    }
+
+    updateDayViewport();
+    window.addEventListener("resize", updateDayViewport);
+    return () => window.removeEventListener("resize", updateDayViewport);
+  }, [filteredWorkers.length]);
+
+  useEffect(() => {
+    const maxStart = Math.max(
+      0,
+      filteredWorkers.length - dayWorkersVisibleCount,
+    );
+    if (dayWorkerStart > maxStart) {
+      setDayWorkerStart(maxStart);
+    }
+  }, [dayWorkerStart, dayWorkersVisibleCount, filteredWorkers.length]);
+
+  const visibleDayWorkers = filteredWorkers.slice(
     dayWorkerStart,
-    dayWorkerStart + DAY_WORKERS_VISIBLE,
+    dayWorkerStart + dayWorkersVisibleCount,
   );
+
+  const dayColumnWidth = useMemo(() => {
+    const available = Math.max(0, dayGridWidth - DAY_TIME_COL_WIDTH);
+    const count = Math.max(1, visibleDayWorkers.length);
+    const raw = Math.floor(available / count);
+    return Math.max(DAY_WORKER_COL_MIN, Math.min(DAY_WORKER_COL_MAX, raw));
+  }, [dayGridWidth, visibleDayWorkers.length]);
+
   const canMoveWorkersLeft = dayWorkerStart > 0;
   const canMoveWorkersRight =
-    dayWorkerStart + DAY_WORKERS_VISIBLE < WORKERS.length;
+    dayWorkerStart + dayWorkersVisibleCount < filteredWorkers.length;
 
   function moveWorkersLeft() {
     if (!canMoveWorkersLeft) return;
@@ -490,8 +994,83 @@ export function SchedulesBoardPage() {
   function moveWorkersRight() {
     if (!canMoveWorkersRight) return;
     setDayWorkerStart((v) =>
-      Math.min(WORKERS.length - DAY_WORKERS_VISIBLE, v + 1),
+      Math.min(filteredWorkers.length - dayWorkersVisibleCount, v + 1),
     );
+  }
+
+  function openNewAppointment(date: Date, workerId?: number) {
+    setAppointmentDraft(buildDraftFromDate(date, workerId));
+    setIsAppointmentModalOpen(true);
+  }
+
+  function handleDayCellClick(hour: number, workerId: number) {
+    const clicked = setMinutes(setHours(new Date(currentDate), hour), 0);
+    openNewAppointment(clicked, workerId);
+  }
+
+  function saveAppointment() {
+    const workerId =
+      appointmentDraft.workerId ??
+      WORKERS.find(
+        (w) =>
+          w.name.toLowerCase() === appointmentDraft.workerName.toLowerCase(),
+      )?.id ??
+      null;
+
+    if (
+      !workerId ||
+      !appointmentDraft.customerName ||
+      !appointmentDraft.title
+    ) {
+      return;
+    }
+
+    const startAt = new Date(
+      `${appointmentDraft.date}T${appointmentDraft.time}:00`,
+    ).toISOString();
+    const nextId =
+      appointments.length > 0
+        ? Math.max(...appointments.map((a) => a.id)) + 1
+        : 1;
+
+    setAppointments((prev) => [
+      ...prev,
+      {
+        id: nextId,
+        workerId,
+        customerName: appointmentDraft.customerName,
+        title: appointmentDraft.title,
+        startAt,
+        durationMinutes: appointmentDraft.durationMinutes,
+        status: appointmentDraft.status,
+      },
+    ]);
+    setIsAppointmentModalOpen(false);
+  }
+
+  function toggleWorker(workerId: number) {
+    setSelectedWorkerIds((prev) => {
+      if (prev.includes(workerId)) return prev.filter((id) => id !== workerId);
+      return [...prev, workerId];
+    });
+  }
+
+  function selectAllWorkers() {
+    setSelectedWorkerIds(WORKERS.map((w) => w.id));
+  }
+
+  function clearAllWorkers() {
+    setSelectedWorkerIds([]);
+  }
+
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const monthGridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  const monthDays = eachDayOfInterval({ start: monthGridStart, end: monthEnd });
+  const monthRemainder = monthDays.length % 7;
+  if (monthRemainder !== 0) {
+    const extra = 7 - monthRemainder;
+    for (let i = 1; i <= extra; i++) monthDays.push(addDays(monthEnd, i));
   }
 
   function headerLabel() {
@@ -517,7 +1096,7 @@ export function SchedulesBoardPage() {
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <Home size={14} />
-            Home CRM
+            Home
           </button>
           <CalendarCheck size={20} className="text-primary shrink-0" />
           <span className="font-semibold text-base">Board de Agendamentos</span>
@@ -560,37 +1139,11 @@ export function SchedulesBoardPage() {
         </button>
         <button
           onClick={goToday}
-          className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-accent transition-colors"
+          className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
         >
           Hoje
         </button>
         <span className="text-sm font-medium capitalize">{headerLabel()}</span>
-
-        {view === "day" && WORKERS.length > DAY_WORKERS_VISIBLE && (
-          <div className="ml-2 inline-flex items-center gap-1 rounded-md border border-border px-1 py-0.5">
-            <button
-              onClick={moveWorkersLeft}
-              disabled={!canMoveWorkersLeft}
-              className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Colunas anteriores"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span className="text-xs text-muted-foreground px-1">
-              {dayWorkerStart + 1}-
-              {Math.min(dayWorkerStart + DAY_WORKERS_VISIBLE, WORKERS.length)}{" "}
-              de {WORKERS.length}
-            </span>
-            <button
-              onClick={moveWorkersRight}
-              disabled={!canMoveWorkersRight}
-              className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Próximas colunas"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
 
         <div className="ml-auto">
           <Legend />
@@ -598,23 +1151,149 @@ export function SchedulesBoardPage() {
       </div>
 
       {/* Calendar body */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <div className="h-full rounded-xl border border-border bg-card overflow-hidden">
-          {view === "day" && (
-            <DayView
-              currentDate={currentDate}
-              appointments={appointments}
-              workers={visibleDayWorkers}
-            />
-          )}
-          {view === "week" && (
-            <WeekView currentDate={currentDate} appointments={appointments} />
-          )}
-          {view === "month" && (
-            <MonthView currentDate={currentDate} appointments={appointments} />
-          )}
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="h-full flex gap-4">
+          <aside
+            className="w-64 shrink-0 overflow-y-auto space-y-3 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
+            style={{ scrollbarWidth: "thin", scrollbarGutter: "stable" }}
+          >
+            <button
+              type="button"
+              onClick={() => openNewAppointment(new Date(currentDate))}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent"
+            >
+              <Plus size={16} />
+              Criar
+            </button>
+
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-semibold capitalize">
+                  {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+                </h3>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted-foreground mb-1">
+                {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
+                  <span key={`${d}-${i}`}>{d}</span>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {monthDays.map((day) => (
+                  <button
+                    key={day.toISOString()}
+                    type="button"
+                    onClick={() => setCurrentDate(day)}
+                    className={cn(
+                      "h-8 rounded-md text-xs",
+                      isSameDay(day, currentDate)
+                        ? "bg-primary text-primary-foreground"
+                        : isSameMonth(day, currentDate)
+                          ? "hover:bg-accent"
+                          : "text-muted-foreground hover:bg-accent/50",
+                    )}
+                  >
+                    {format(day, "d")}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-card p-3 space-y-2">
+              <h4 className="text-sm font-semibold">Profissionais</h4>
+              <input
+                value={workerSearch}
+                onChange={(e) => setWorkerSearch(e.target.value)}
+                placeholder="Buscar profissional..."
+                className="w-full rounded-md bg-muted/50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+              <div className="flex items-center justify-between text-xs">
+                <label className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allWorkersSelected}
+                    onChange={(e) => {
+                      if (e.target.checked) selectAllWorkers();
+                      else clearAllWorkers();
+                    }}
+                    className="h-5 w-5 rounded border-2 border-emerald-400/70 accent-emerald-600"
+                  />
+                  <span>Marcar todos</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={clearAllWorkers}
+                  className="rounded-md px-2 py-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  Limpar
+                </button>
+              </div>
+              {workersForFilterList.map((worker) => {
+                const checked = selectedWorkerIds.includes(worker.id);
+                return (
+                  <label
+                    key={worker.id}
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleWorker(worker.id)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span
+                      className={cn("h-2.5 w-2.5 rounded-full", worker.color)}
+                    />
+                    <span className="text-sm">{worker.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </aside>
+
+          <div
+            ref={dayGridRef}
+            className="min-w-0 flex-1 rounded-xl border border-border bg-card overflow-hidden"
+          >
+            {view === "day" && (
+              <DayView
+                currentDate={currentDate}
+                appointments={filteredAppointments}
+                workers={visibleDayWorkers}
+                columnWidth={dayColumnWidth}
+                onHourCellClick={handleDayCellClick}
+                canMoveWorkersLeft={canMoveWorkersLeft}
+                canMoveWorkersRight={canMoveWorkersRight}
+                onMoveWorkersLeft={moveWorkersLeft}
+                onMoveWorkersRight={moveWorkersRight}
+                scrollToNowSignal={scrollToNowSignal}
+              />
+            )}
+            {view === "week" && (
+              <WeekView
+                currentDate={currentDate}
+                appointments={filteredAppointments}
+              />
+            )}
+            {view === "month" && (
+              <MonthView
+                currentDate={currentDate}
+                appointments={filteredAppointments}
+              />
+            )}
+          </div>
         </div>
       </div>
+
+      {isAppointmentModalOpen && (
+        <NewAppointmentModal
+          draft={appointmentDraft}
+          onClose={() => setIsAppointmentModalOpen(false)}
+          onChange={(patch) =>
+            setAppointmentDraft((prev) => ({ ...prev, ...patch }))
+          }
+          onSubmit={saveAppointment}
+        />
+      )}
     </div>
   );
 }
