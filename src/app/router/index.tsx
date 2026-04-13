@@ -100,30 +100,6 @@ const OrderDetailsPage = lazy(() =>
   })),
 );
 
-// Appointments
-const AppointmentListPage = lazy(() =>
-  import("@/features/appointments/pages/AppointmentListPage").then((m) => ({
-    default: m.AppointmentListPage,
-  })),
-);
-const AppointmentFormPage = lazy(() =>
-  import("@/features/appointments/pages/AppointmentFormPage").then((m) => ({
-    default: m.AppointmentFormPage,
-  })),
-);
-
-// Schedules
-const ScheduleListPage = lazy(() =>
-  import("@/features/schedules/pages/ScheduleListPage").then((m) => ({
-    default: m.ScheduleListPage,
-  })),
-);
-const ScheduleFormPage = lazy(() =>
-  import("@/features/schedules/pages/ScheduleFormPage").then((m) => ({
-    default: m.ScheduleFormPage,
-  })),
-);
-
 // Persons
 const PersonListPage = lazy(() =>
   import("@/features/persons/pages/PersonListPage").then((m) => ({
@@ -331,17 +307,6 @@ export function AppRouter() {
             <Route path="/orders/new" element={<OrderFormPage />} />
             <Route path="/orders/:id" element={<OrderDetailsPage />} />
             <Route path="/orders/:id/edit" element={<OrderFormPage />} />
-
-            <Route path="/appointments" element={<AppointmentListPage />} />
-            <Route path="/appointments/new" element={<AppointmentFormPage />} />
-            <Route
-              path="/appointments/:id/edit"
-              element={<AppointmentFormPage />}
-            />
-
-            <Route path="/schedules" element={<ScheduleListPage />} />
-            <Route path="/schedules/new" element={<ScheduleFormPage />} />
-            <Route path="/schedules/:id/edit" element={<ScheduleFormPage />} />
 
             <Route path="/persons" element={<PersonListPage />} />
             <Route path="/persons/new" element={<PersonFormPage />} />

@@ -19,32 +19,63 @@ import { GripVertical, ShoppingBag, ArrowLeft, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { formatShortDate } from "@/lib/utils/formatDate";
-import {
-  ORDER_STATUS_COLOR,
-  ORDER_STATUS_LABEL,
-} from "@/features/dashboard/constants/orderStatus";
 import type { RecentOrder } from "@/features/dashboard/types/dashboardTypes";
 import ordersData from "@/features/dashboard/mocks/recent-orders.json";
 import type {
+  Over,
   DragStartEvent,
   DragEndEvent,
   DragOverEvent,
 } from "@dnd-kit/core";
 
-// ─── Sales Board Columns ──────────────────────────────────────────────────────
+// ─── Orders Board Columns ─────────────────────────────────────────────────────
 
-type SalesStatus = "NEW" | "AWAITING_PAYMENT" | "CONFIRMED";
+type SalesStatus =
+  | "NEW"
+  | "AWAITING_PAYMENT"
+  | "PAYMENT_CONFIRMED"
+  | "DELIVERY_BOARD";
 
 const SALES_COLUMNS: { key: SalesStatus; label: string }[] = [
-  { key: "NEW", label: "Novo Pedido" },
+  { key: "NEW", label: "Novo" },
   { key: "AWAITING_PAYMENT", label: "Aguardando Pagamento" },
-  { key: "CONFIRMED", label: "Confirmado" },
+  { key: "PAYMENT_CONFIRMED", label: "Pagamento Confirmado" },
+  { key: "DELIVERY_BOARD", label: "Board de Entregas" },
 ];
 
 const SALES_COLUMN_COLORS: Record<SalesStatus, string> = {
   NEW: "border-t-blue-500",
   AWAITING_PAYMENT: "border-t-yellow-500",
-  CONFIRMED: "border-t-emerald-500",
+  PAYMENT_CONFIRMED: "border-t-emerald-500",
+  DELIVERY_BOARD: "border-t-violet-500",
+};
+
+const SALES_COLUMN_BG: Record<SalesStatus, string> = {
+  NEW: "bg-blue-50/35",
+  AWAITING_PAYMENT: "bg-yellow-50/35",
+  PAYMENT_CONFIRMED: "bg-emerald-50/35",
+  DELIVERY_BOARD: "bg-violet-50/35",
+};
+
+const SALES_COLUMN_HEADER_BG: Record<SalesStatus, string> = {
+  NEW: "bg-blue-100/55",
+  AWAITING_PAYMENT: "bg-yellow-100/55",
+  PAYMENT_CONFIRMED: "bg-emerald-100/55",
+  DELIVERY_BOARD: "bg-violet-100/55",
+};
+
+const SALES_STATUS_BADGE_COLOR: Record<SalesStatus, string> = {
+  NEW: "bg-blue-100 text-blue-800",
+  AWAITING_PAYMENT: "bg-yellow-100 text-yellow-800",
+  PAYMENT_CONFIRMED: "bg-emerald-100 text-emerald-800",
+  DELIVERY_BOARD: "bg-violet-100 text-violet-800",
+};
+
+const SALES_STATUS_BADGE_LABEL: Record<SalesStatus, string> = {
+  NEW: "Novo",
+  AWAITING_PAYMENT: "Aguardando Pagamento",
+  PAYMENT_CONFIRMED: "Pagamento Confirmado",
+  DELIVERY_BOARD: "Board de Entregas",
 };
 
 // ─── Priority Meta ─────────────────────────────────────────────────────────────
@@ -74,12 +105,14 @@ type OrderPriority = keyof typeof PRIORITY_META;
 
 function toSalesStatus(status: string): SalesStatus {
   if (status === "AWAITING_PAYMENT") return "AWAITING_PAYMENT";
+  if (status === "CONFIRMED") return "PAYMENT_CONFIRMED";
   if (
     status === "PREPARING" ||
     status === "READY_FOR_DELIVERY" ||
+    status === "OUT_FOR_DELIVERY" ||
     status === "DELIVERED"
   )
-    return "CONFIRMED";
+    return "DELIVERY_BOARD";
   return "NEW";
 }
 
@@ -222,27 +255,29 @@ function BoardColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex min-w-[280px] flex-col overflow-hidden rounded-xl border border-border/80 bg-muted/30 border-t-4 transition-all",
+        "flex min-w-[260px] flex-1 flex-col overflow-hidden rounded-xl border border-border/80 border-t-4 transition-all",
         SALES_COLUMN_COLORS[status],
+        SALES_COLUMN_BG[status],
         (isOver || isDropTarget) &&
           "ring-2 ring-primary/35 border-primary/40 bg-primary/5",
       )}
     >
       <div
         className={cn(
-          "sticky top-0 z-10 flex items-center justify-between border-b border-border/50 bg-muted/80 px-4 py-3 backdrop-blur-sm",
+          "sticky top-0 z-10 flex items-center justify-between border-b border-border/50 px-4 py-3 backdrop-blur-sm",
+          SALES_COLUMN_HEADER_BG[status],
           (isOver || isDropTarget) && "bg-primary/10",
         )}
       >
         <span
           className={cn(
             "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-            ORDER_STATUS_COLOR[status] ?? "bg-gray-100 text-gray-700",
+            SALES_STATUS_BADGE_COLOR[status],
           )}
         >
-          {ORDER_STATUS_LABEL[status] ?? label}
+          {SALES_STATUS_BADGE_LABEL[status] ?? label}
         </span>
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-semibold text-muted-foreground">
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-1.5 text-[11px] font-semibold text-primary">
           {orders.length}
         </span>
       </div>
@@ -298,7 +333,8 @@ export function SalesBoardPage() {
     > = {
       NEW: [],
       AWAITING_PAYMENT: [],
-      CONFIRMED: [],
+      PAYMENT_CONFIRMED: [],
+      DELIVERY_BOARD: [],
     };
     for (const order of orders) {
       grouped[order.status].push(order);
@@ -316,23 +352,27 @@ export function SalesBoardPage() {
     return orders.find((o) => o.id === id)?.status;
   }
 
+  function resolveOverColumn(over: Over | null): SalesStatus | undefined {
+    if (!over) return undefined;
+    const fromId = findColumn(String(over.id));
+    if (fromId) return fromId;
+    const containerId = over.data.current?.sortable?.containerId;
+    if (!containerId) return undefined;
+    return findColumn(String(containerId));
+  }
+
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
   }
 
   function handleDragOver(event: DragOverEvent) {
-    const { active, over } = event;
+    const { over } = event;
     if (!over) {
       setOverColumnId(null);
       return;
     }
-    const activeCol = findColumn(active.id as string);
-    const overCol = findColumn(over.id as string);
+    const overCol = resolveOverColumn(over);
     setOverColumnId(overCol ?? null);
-    if (!activeCol || !overCol || activeCol === overCol) return;
-    setOrders((prev) =>
-      prev.map((o) => (o.id === active.id ? { ...o, status: overCol } : o)),
-    );
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -340,15 +380,20 @@ export function SalesBoardPage() {
     setActiveId(null);
     setOverColumnId(null);
     if (!over) return;
-    const activeCol = findColumn(active.id as string);
-    const overCol = findColumn(over.id as string);
+    const activeCol = findColumn(String(active.id));
+    const overCol = resolveOverColumn(over);
     if (!activeCol || !overCol) return;
+
+    const overIsColumn = SALES_COLUMNS.some((c) => c.key === String(over.id));
+
     if (activeCol !== overCol) {
       setOrders((prev) =>
         prev.map((o) => (o.id === active.id ? { ...o, status: overCol } : o)),
       );
+      return;
     }
-    if (activeCol === overCol && active.id !== over.id) {
+
+    if (activeCol === overCol && active.id !== over.id && !overIsColumn) {
       setOrders((prev) => {
         const colOrders = prev.filter((o) => o.status === activeCol);
         const others = prev.filter((o) => o.status !== activeCol);
@@ -382,9 +427,14 @@ export function SalesBoardPage() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-lg font-semibold">Board de Vendas</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold">Board de Pedidos</h1>
+              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                {orders.length} pedidos
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Gerencie novos pedidos, pagamentos e confirmações
+              Gerencie novos, pagamentos e transição para entregas
             </p>
           </div>
         </div>
@@ -397,9 +447,6 @@ export function SalesBoardPage() {
             <Truck size={14} />
             Ver Board de Entregas
           </button>
-          <span className="text-xs text-muted-foreground tabular-nums font-medium">
-            {orders.length} pedidos
-          </span>
         </div>
       </div>
 

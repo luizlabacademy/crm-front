@@ -6,8 +6,6 @@ import {
   MessageSquare,
   MessageCircle,
   ShoppingCart,
-  CalendarCheck,
-  CalendarDays,
   UserSquare,
   MapPin,
   Package,
@@ -69,7 +67,7 @@ const NAV: NavSection[] = [
         icon: <ShoppingCart size={16} />,
       },
       {
-        label: "Board de Vendas",
+        label: "Board de Pedidos",
         to: "/orders/sales-board",
         icon: <ShoppingBag size={16} />,
       },
@@ -80,18 +78,8 @@ const NAV: NavSection[] = [
       },
       {
         label: "Agendamentos",
-        to: "/appointments",
-        icon: <CalendarCheck size={16} />,
-      },
-      {
-        label: "Board de Agendamentos",
         to: "/schedules/board",
         icon: <CalendarRange size={16} />,
-      },
-      {
-        label: "Schedules",
-        to: "/schedules",
-        icon: <CalendarDays size={16} />,
       },
     ],
   },

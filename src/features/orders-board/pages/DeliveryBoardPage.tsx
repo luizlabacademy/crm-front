@@ -30,35 +30,56 @@ import type {
 // ─── Delivery Board Columns ───────────────────────────────────────────────────
 
 type DeliveryStatus =
+  | "WAITING_PREPARATION"
   | "PREPARING"
-  | "READY_FOR_DELIVERY"
+  | "WAITING_COURIER"
   | "OUT_FOR_DELIVERY"
   | "DELIVERED";
 
 const DELIVERY_COLUMNS: { key: DeliveryStatus; label: string }[] = [
-  { key: "PREPARING", label: "Em Preparo" },
-  { key: "READY_FOR_DELIVERY", label: "Pronto Para Entregar" },
-  { key: "OUT_FOR_DELIVERY", label: "Saiu Para Entrega" },
+  { key: "WAITING_PREPARATION", label: "Aguardando Preparo" },
+  { key: "PREPARING", label: "Preparando" },
+  { key: "WAITING_COURIER", label: "Aguardando Entregador" },
+  { key: "OUT_FOR_DELIVERY", label: "Saíu para Entrega" },
   { key: "DELIVERED", label: "Entregue" },
 ];
 
 const DELIVERY_COLUMN_COLORS: Record<DeliveryStatus, string> = {
+  WAITING_PREPARATION: "border-t-slate-500",
   PREPARING: "border-t-orange-500",
-  READY_FOR_DELIVERY: "border-t-emerald-500",
+  WAITING_COURIER: "border-t-sky-500",
   OUT_FOR_DELIVERY: "border-t-violet-500",
   DELIVERED: "border-t-green-600",
 };
 
+const DELIVERY_COLUMN_BG: Record<DeliveryStatus, string> = {
+  WAITING_PREPARATION: "bg-slate-50/35",
+  PREPARING: "bg-orange-50/35",
+  WAITING_COURIER: "bg-sky-50/35",
+  OUT_FOR_DELIVERY: "bg-violet-50/35",
+  DELIVERED: "bg-green-50/35",
+};
+
+const DELIVERY_COLUMN_HEADER_BG: Record<DeliveryStatus, string> = {
+  WAITING_PREPARATION: "bg-slate-100/55",
+  PREPARING: "bg-orange-100/55",
+  WAITING_COURIER: "bg-sky-100/55",
+  OUT_FOR_DELIVERY: "bg-violet-100/55",
+  DELIVERED: "bg-green-100/55",
+};
+
 const DELIVERY_STATUS_LABEL: Record<DeliveryStatus, string> = {
-  PREPARING: "Em Preparo",
-  READY_FOR_DELIVERY: "Pronto Para Entregar",
-  OUT_FOR_DELIVERY: "Saiu Para Entrega",
+  WAITING_PREPARATION: "Aguardando Preparo",
+  PREPARING: "Preparando",
+  WAITING_COURIER: "Aguardando Entregador",
+  OUT_FOR_DELIVERY: "Saíu para Entrega",
   DELIVERED: "Entregue",
 };
 
 const DELIVERY_STATUS_COLOR: Record<DeliveryStatus, string> = {
+  WAITING_PREPARATION: "bg-slate-100 text-slate-800",
   PREPARING: "bg-orange-100 text-orange-800",
-  READY_FOR_DELIVERY: "bg-emerald-100 text-emerald-800",
+  WAITING_COURIER: "bg-sky-100 text-sky-800",
   OUT_FOR_DELIVERY: "bg-violet-100 text-violet-800",
   DELIVERED: "bg-green-100 text-green-800",
 };
@@ -89,19 +110,17 @@ type OrderPriority = keyof typeof PRIORITY_META;
 // ─── Map incoming orders to delivery statuses ─────────────────────────────────
 
 function toDeliveryStatus(status: string): DeliveryStatus {
-  if (status === "READY_FOR_DELIVERY") return "READY_FOR_DELIVERY";
+  if (status === "PREPARING") return "PREPARING";
+  if (status === "READY_FOR_DELIVERY") return "WAITING_COURIER";
+  if (status === "OUT_FOR_DELIVERY") return "OUT_FOR_DELIVERY";
   if (status === "DELIVERED") return "DELIVERED";
-  return "PREPARING";
+  return "WAITING_PREPARATION";
 }
 
 function buildDeliveryOrders(
   base: RecentOrder[],
 ): (RecentOrder & { status: DeliveryStatus })[] {
-  // Only include orders that are in preparation or later stages
-  const relevant = base.filter((o) =>
-    ["PREPARING", "READY_FOR_DELIVERY", "DELIVERED"].includes(o.status),
-  );
-  return relevant.map((o) => ({
+  return base.map((o) => ({
     ...o,
     status: toDeliveryStatus(o.status),
   })) as (RecentOrder & { status: DeliveryStatus })[];
@@ -235,15 +254,17 @@ function BoardColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex min-w-[280px] flex-col overflow-hidden rounded-xl border border-border/80 bg-muted/30 border-t-4 transition-all",
+        "flex min-w-[260px] flex-1 flex-col overflow-hidden rounded-xl border border-border/80 border-t-4 transition-all",
         DELIVERY_COLUMN_COLORS[status],
+        DELIVERY_COLUMN_BG[status],
         (isOver || isDropTarget) &&
           "ring-2 ring-primary/35 border-primary/40 bg-primary/5",
       )}
     >
       <div
         className={cn(
-          "sticky top-0 z-10 flex items-center justify-between border-b border-border/50 bg-muted/80 px-4 py-3 backdrop-blur-sm",
+          "sticky top-0 z-10 flex items-center justify-between border-b border-border/50 px-4 py-3 backdrop-blur-sm",
+          DELIVERY_COLUMN_HEADER_BG[status],
           (isOver || isDropTarget) && "bg-primary/10",
         )}
       >
@@ -255,7 +276,7 @@ function BoardColumn({
         >
           {DELIVERY_STATUS_LABEL[status]}
         </span>
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-semibold text-muted-foreground">
+        <span className="flex h-5 min-w-5 items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-1.5 text-[11px] font-semibold text-primary">
           {orders.length}
         </span>
       </div>
@@ -306,8 +327,9 @@ export function DeliveryBoardPage() {
       DeliveryStatus,
       (RecentOrder & { status: DeliveryStatus })[]
     > = {
+      WAITING_PREPARATION: [],
       PREPARING: [],
-      READY_FOR_DELIVERY: [],
+      WAITING_COURIER: [],
       OUT_FOR_DELIVERY: [],
       DELIVERED: [],
     };
@@ -393,7 +415,12 @@ export function DeliveryBoardPage() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-lg font-semibold">Board de Entregas</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold">Board de Entregas</h1>
+              <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+                {orders.length} pedidos
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Gerencie o preparo, despacho e entrega dos pedidos
             </p>
@@ -406,11 +433,8 @@ export function DeliveryBoardPage() {
             className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <ShoppingBag size={14} />
-            Ver Board de Vendas
+            Ver Board de Pedidos
           </button>
-          <span className="text-xs text-muted-foreground tabular-nums font-medium">
-            {orders.length} pedidos
-          </span>
         </div>
       </div>
 

@@ -17,14 +17,7 @@ import {
   isValid,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import {
-  ChevronLeft,
-  ChevronRight,
-  CalendarCheck,
-  Clock,
-  User,
-  Plus,
-} from "lucide-react";
+import { Home, ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -147,15 +140,18 @@ const STATUS_COLOR: Record<MockAppointment["status"], string> = {
 // ─── Hours grid ───────────────────────────────────────────────────────────────
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 07:00 – 20:00
+const DAY_WORKERS_VISIBLE = 3;
 
 // ─── Day View ─────────────────────────────────────────────────────────────────
 
 function DayView({
   currentDate,
   appointments,
+  workers,
 }: {
   currentDate: Date;
   appointments: MockAppointment[];
+  workers: MockWorker[];
 }) {
   const dayAppts = appointments.filter((a) => {
     const d = parseISO(a.startAt);
@@ -165,37 +161,43 @@ function DayView({
   return (
     <div className="overflow-x-auto">
       <div
-        className="grid min-w-[640px]"
+        className="grid min-w-[700px]"
         style={{
-          gridTemplateColumns: `56px repeat(${WORKERS.length}, 1fr)`,
+          gridTemplateColumns: `56px repeat(${workers.length}, minmax(220px, 1fr))`,
         }}
       >
         {/* Header row */}
-        <div className="border-b border-r border-border h-10" />
-        {WORKERS.map((w) => (
+        <div className="border-b border-r border-border h-10 bg-muted/40" />
+        {workers.map((w) => (
           <div
             key={w.id}
-            className="border-b border-r border-border h-10 flex items-center justify-center gap-1.5 px-2"
+            className="border-b border-r border-border h-10 flex items-center justify-center gap-2 px-2 bg-muted/40"
           >
-            <span className={cn("h-2 w-2 rounded-full shrink-0", w.color)} />
-            <span className="text-xs font-medium text-foreground truncate">
-              {w.name}
+            <span className="flex flex-col items-center leading-tight">
+              <span className="flex items-center gap-1.5">
+                <span
+                  className={cn("h-2 w-2 rounded-full shrink-0", w.color)}
+                />
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {w.name}
+                </span>
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                07:00 – 20:00
+              </span>
             </span>
           </div>
         ))}
 
         {/* Hour rows */}
         {HOURS.map((hour) => (
-          <>
-            <div
-              key={`h-${hour}`}
-              className="border-b border-r border-border h-16 flex items-start justify-end pr-2 pt-1"
-            >
+          <div key={`row-${hour}`} className="contents">
+            <div className="border-b border-r border-border h-20 flex items-start justify-end pr-2 pt-1 sticky left-0 bg-background z-10">
               <span className="text-xs text-muted-foreground">
                 {hour.toString().padStart(2, "0")}:00
               </span>
             </div>
-            {WORKERS.map((w) => {
+            {workers.map((w) => {
               const cellAppts = dayAppts.filter((a) => {
                 const d = parseISO(a.startAt);
                 return a.workerId === w.id && d.getHours() === hour;
@@ -203,13 +205,13 @@ function DayView({
               return (
                 <div
                   key={`${hour}-${w.id}`}
-                  className="border-b border-r border-border h-16 px-1 py-0.5 space-y-0.5"
+                  className="border-b border-r border-border h-20 px-1.5 py-1 space-y-1"
                 >
                   {cellAppts.map((a) => (
                     <div
                       key={a.id}
                       className={cn(
-                        "rounded border-l-2 px-1.5 py-0.5 text-xs leading-tight cursor-pointer hover:opacity-80 transition-opacity",
+                        "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer hover:opacity-85 transition-opacity",
                         STATUS_COLOR[a.status],
                       )}
                       title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
@@ -223,7 +225,7 @@ function DayView({
                 </div>
               );
             })}
-          </>
+          </div>
         ))}
       </div>
     </div>
@@ -245,16 +247,16 @@ function WeekView({
   return (
     <div className="overflow-x-auto">
       <div
-        className="grid min-w-[700px]"
+        className="grid min-w-[760px]"
         style={{ gridTemplateColumns: `56px repeat(7, 1fr)` }}
       >
         {/* Header */}
-        <div className="border-b border-r border-border h-10" />
+        <div className="border-b border-r border-border h-10 bg-muted/40" />
         {days.map((day) => (
           <div
             key={day.toISOString()}
             className={cn(
-              "border-b border-r border-border h-10 flex flex-col items-center justify-center",
+              "border-b border-r border-border h-10 flex flex-col items-center justify-center bg-muted/40",
               isSameDay(day, new Date()) && "bg-primary/5",
             )}
           >
@@ -274,11 +276,8 @@ function WeekView({
 
         {/* Hour rows */}
         {HOURS.map((hour) => (
-          <>
-            <div
-              key={`h-${hour}`}
-              className="border-b border-r border-border h-16 flex items-start justify-end pr-2 pt-1"
-            >
+          <div key={`row-${hour}`} className="contents">
+            <div className="border-b border-r border-border h-20 flex items-start justify-end pr-2 pt-1 sticky left-0 bg-background z-10">
               <span className="text-xs text-muted-foreground">
                 {hour.toString().padStart(2, "0")}:00
               </span>
@@ -292,7 +291,7 @@ function WeekView({
                 <div
                   key={`${hour}-${day.toISOString()}`}
                   className={cn(
-                    "border-b border-r border-border h-16 px-1 py-0.5 space-y-0.5",
+                    "border-b border-r border-border h-20 px-1.5 py-1 space-y-1",
                     isSameDay(day, new Date()) && "bg-primary/5",
                   )}
                 >
@@ -302,7 +301,7 @@ function WeekView({
                       <div
                         key={a.id}
                         className={cn(
-                          "rounded border-l-2 px-1.5 py-0.5 text-xs leading-tight cursor-pointer hover:opacity-80 transition-opacity",
+                          "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer hover:opacity-85 transition-opacity",
                           STATUS_COLOR[a.status],
                         )}
                         title={`${a.customerName} — ${a.title} (${worker?.name ?? ""})`}
@@ -317,7 +316,7 @@ function WeekView({
                 </div>
               );
             })}
-          </>
+          </div>
         ))}
       </div>
     </div>
@@ -455,6 +454,7 @@ export function SchedulesBoardPage() {
   const navigate = useNavigate();
   const [view, setView] = useState<ViewMode>("day");
   const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [dayWorkerStart, setDayWorkerStart] = useState(0);
 
   const appointments = useMemo(() => buildMockAppointments(new Date()), []);
 
@@ -472,6 +472,26 @@ export function SchedulesBoardPage() {
 
   function goToday() {
     setCurrentDate(new Date());
+  }
+
+  const visibleDayWorkers = WORKERS.slice(
+    dayWorkerStart,
+    dayWorkerStart + DAY_WORKERS_VISIBLE,
+  );
+  const canMoveWorkersLeft = dayWorkerStart > 0;
+  const canMoveWorkersRight =
+    dayWorkerStart + DAY_WORKERS_VISIBLE < WORKERS.length;
+
+  function moveWorkersLeft() {
+    if (!canMoveWorkersLeft) return;
+    setDayWorkerStart((v) => Math.max(0, v - 1));
+  }
+
+  function moveWorkersRight() {
+    if (!canMoveWorkersRight) return;
+    setDayWorkerStart((v) =>
+      Math.min(WORKERS.length - DAY_WORKERS_VISIBLE, v + 1),
+    );
   }
 
   function headerLabel() {
@@ -492,6 +512,13 @@ export function SchedulesBoardPage() {
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between gap-4 border-b border-border px-4 shrink-0">
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => void navigate("/dashboard")}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <Home size={14} />
+            Home CRM
+          </button>
           <CalendarCheck size={20} className="text-primary shrink-0" />
           <span className="font-semibold text-base">Board de Agendamentos</span>
         </div>
@@ -514,14 +541,6 @@ export function SchedulesBoardPage() {
               </button>
             ))}
           </div>
-
-          <button
-            onClick={() => void navigate("/appointments/new")}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            <Plus size={14} />
-            Novo
-          </button>
         </div>
       </header>
 
@@ -547,39 +566,54 @@ export function SchedulesBoardPage() {
         </button>
         <span className="text-sm font-medium capitalize">{headerLabel()}</span>
 
+        {view === "day" && WORKERS.length > DAY_WORKERS_VISIBLE && (
+          <div className="ml-2 inline-flex items-center gap-1 rounded-md border border-border px-1 py-0.5">
+            <button
+              onClick={moveWorkersLeft}
+              disabled={!canMoveWorkersLeft}
+              className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Colunas anteriores"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-xs text-muted-foreground px-1">
+              {dayWorkerStart + 1}-
+              {Math.min(dayWorkerStart + DAY_WORKERS_VISIBLE, WORKERS.length)}{" "}
+              de {WORKERS.length}
+            </span>
+            <button
+              onClick={moveWorkersRight}
+              disabled={!canMoveWorkersRight}
+              className="rounded p-1 text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Próximas colunas"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+
         <div className="ml-auto">
           <Legend />
         </div>
       </div>
 
-      {/* Workers legend (day view) */}
-      {view === "day" && (
-        <div className="flex items-center gap-4 border-b border-border px-4 py-1.5 shrink-0 overflow-x-auto">
-          {WORKERS.map((w) => (
-            <div key={w.id} className="flex items-center gap-1.5 shrink-0">
-              <User size={12} className="text-muted-foreground" />
-              <span className={cn("h-2 w-2 rounded-full shrink-0", w.color)} />
-              <span className="text-xs text-foreground">{w.name}</span>
-            </div>
-          ))}
-          <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-            <Clock size={12} />
-            <span>07:00 – 20:00</span>
-          </div>
-        </div>
-      )}
-
       {/* Calendar body */}
-      <div className="flex-1 overflow-y-auto overflow-x-auto">
-        {view === "day" && (
-          <DayView currentDate={currentDate} appointments={appointments} />
-        )}
-        {view === "week" && (
-          <WeekView currentDate={currentDate} appointments={appointments} />
-        )}
-        {view === "month" && (
-          <MonthView currentDate={currentDate} appointments={appointments} />
-        )}
+      <div className="flex-1 p-4 overflow-y-auto">
+        <div className="h-full rounded-xl border border-border bg-card overflow-hidden">
+          {view === "day" && (
+            <DayView
+              currentDate={currentDate}
+              appointments={appointments}
+              workers={visibleDayWorkers}
+            />
+          )}
+          {view === "week" && (
+            <WeekView currentDate={currentDate} appointments={appointments} />
+          )}
+          {view === "month" && (
+            <MonthView currentDate={currentDate} appointments={appointments} />
+          )}
+        </div>
       </div>
     </div>
   );
