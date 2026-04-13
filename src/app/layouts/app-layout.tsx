@@ -71,7 +71,7 @@ const NAV: NavSection[] = [
         icon: <ShoppingBag size={16} />,
       },
       {
-        label: "Board de Entregas",
+        label: "Board de Expedição/Entrega",
         to: "/orders/delivery-board",
         icon: <Truck size={16} />,
       },

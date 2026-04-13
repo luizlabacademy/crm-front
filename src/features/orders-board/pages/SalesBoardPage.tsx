@@ -40,7 +40,7 @@ const SALES_COLUMNS: { key: SalesStatus; label: string }[] = [
   { key: "NEW", label: "Novo" },
   { key: "AWAITING_PAYMENT", label: "Aguardando Pagamento" },
   { key: "PAYMENT_CONFIRMED", label: "Pagamento Confirmado" },
-  { key: "DELIVERY_BOARD", label: "Board de Entregas" },
+  { key: "DELIVERY_BOARD", label: "Expedição/Entrega" },
 ];
 
 const SALES_COLUMN_COLORS: Record<SalesStatus, string> = {
@@ -75,7 +75,7 @@ const SALES_STATUS_BADGE_LABEL: Record<SalesStatus, string> = {
   NEW: "Novo",
   AWAITING_PAYMENT: "Aguardando Pagamento",
   PAYMENT_CONFIRMED: "Pagamento Confirmado",
-  DELIVERY_BOARD: "Board de Entregas",
+  DELIVERY_BOARD: "Board de Expedição/Entrega",
 };
 
 // ─── Priority Meta ─────────────────────────────────────────────────────────────
@@ -445,7 +445,7 @@ export function SalesBoardPage() {
             className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <Truck size={14} />
-            Ver Board de Entregas
+            Ver Board de Expedição/Entrega
           </button>
         </div>
       </div>

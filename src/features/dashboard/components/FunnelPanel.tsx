@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getFunnelData } from "@/features/dashboard/api/dashboardMockService";
 import { MetricSummaryCard } from "@/features/dashboard/components/MetricSummaryCard";
 import type {
@@ -17,6 +17,14 @@ const FUNNEL_PERIOD_OPTIONS: { value: FunnelPeriod; label: string }[] = [
   { value: "5y", label: "Ultimos 5 anos" },
   { value: "all", label: "Todos" },
 ];
+
+const CAMPAIGN_OPTIONS = [
+  { id: "whatsapp-vip", label: "WhatsApp VIP", weight: 0.25 },
+  { id: "email-news", label: "E-mail Newsletter", weight: 0.2 },
+  { id: "retarget-meta", label: "Retarget Meta", weight: 0.2 },
+  { id: "google-search", label: "Google Search", weight: 0.2 },
+  { id: "indicacoes", label: "Indicacoes", weight: 0.15 },
+] as const;
 
 // ─── Funnel step bar ─────────────────────────────────────────────────────────
 
@@ -105,6 +113,9 @@ export function FunnelPanel() {
   const [data, setData] = useState<FunnelData | null>(null);
   const [period, setPeriod] = useState<FunnelPeriod>("30d");
   const [loading, setLoading] = useState(true);
+  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>(
+    CAMPAIGN_OPTIONS.map((c) => c.id),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -121,46 +132,123 @@ export function FunnelPanel() {
     };
   }, [period]);
 
-  const maxValue = data ? Math.max(...data.steps.map((s) => s.value), 1) : 1;
+  const filteredData = useMemo(() => {
+    if (!data) return null;
+
+    const allWeight = CAMPAIGN_OPTIONS.reduce((sum, c) => sum + c.weight, 0);
+    const selectedWeight = CAMPAIGN_OPTIONS.filter((c) =>
+      selectedCampaigns.includes(c.id),
+    ).reduce((sum, c) => sum + c.weight, 0);
+
+    const ratio = Math.max(0.15, selectedWeight / allWeight);
+    const firstStepValue = Math.max(1, Math.round(data.steps[0].value * ratio));
+
+    const steps = data.steps.map((step) => {
+      const value = Math.max(1, Math.round(step.value * ratio));
+      return {
+        ...step,
+        value,
+        percentage: Math.round((value / firstStepValue) * 100),
+      };
+    });
+
+    return { ...data, steps };
+  }, [data, selectedCampaigns]);
+
+  const maxValue = filteredData
+    ? Math.max(...filteredData.steps.map((s) => s.value), 1)
+    : 1;
+
+  function toggleCampaign(campaignId: string) {
+    setSelectedCampaigns((prev) =>
+      prev.includes(campaignId)
+        ? prev.filter((id) => id !== campaignId)
+        : [...prev, campaignId],
+    );
+  }
 
   return (
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Funil de Conversão</h2>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value as FunnelPeriod)}
-          className="rounded-md border border-border bg-background px-2.5 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring transition-colors"
-        >
-          {FUNNEL_PERIOD_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <details className="relative">
+            <summary className="list-none cursor-pointer rounded-md border border-border bg-background px-2.5 py-1 text-sm text-foreground hover:bg-accent transition-colors">
+              Campanhas ({selectedCampaigns.length})
+            </summary>
+            <div className="absolute right-0 mt-1 w-56 rounded-md border border-border bg-popover p-2 shadow-lg z-20">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedCampaigns(CAMPAIGN_OPTIONS.map((c) => c.id))
+                  }
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Marcar todas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCampaigns([])}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Limpar
+                </button>
+              </div>
+              <div className="space-y-1">
+                {CAMPAIGN_OPTIONS.map((campaign) => (
+                  <label
+                    key={campaign.id}
+                    className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCampaigns.includes(campaign.id)}
+                      onChange={() => toggleCampaign(campaign.id)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span>{campaign.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </details>
+
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as FunnelPeriod)}
+            className="rounded-md border border-border bg-background px-2.5 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring transition-colors"
+          >
+            {FUNNEL_PERIOD_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="p-5">
         {loading ? (
           <FunnelSkeleton />
-        ) : data ? (
+        ) : filteredData ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_200px]">
             {/* Funnel visualization */}
             <div className="space-y-2">
-              {data.steps.map((step, i) => (
+              {filteredData.steps.map((step, i) => (
                 <FunnelStepBar
                   key={step.id}
                   step={step}
                   maxValue={maxValue}
                   index={i}
-                  total={data.steps.length}
+                  total={filteredData.steps.length}
                 />
               ))}
             </div>
 
             {/* Summary cards */}
             <div className="flex flex-col gap-3">
-              {data.summary.map((metric) => (
+              {filteredData.summary.map((metric) => (
                 <MetricSummaryCard key={metric.id} metric={metric} />
               ))}
             </div>
