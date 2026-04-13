@@ -19,7 +19,16 @@ import type {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isClosed(status: string): boolean {
-  return status === ORDER_STATUS.CLOSED;
+  return status === ORDER_STATUS.DELIVERED;
+}
+
+function isPending(status: string): boolean {
+  return (
+    status === ORDER_STATUS.NEW ||
+    status === ORDER_STATUS.AWAITING_PAYMENT ||
+    status === ORDER_STATUS.PREPARING ||
+    status === ORDER_STATUS.READY_FOR_DELIVERY
+  );
 }
 
 function truncate(text: string, max: number): string {
@@ -67,7 +76,7 @@ async function buildDashboardData(): Promise<DashboardData> {
     const date = parseISO(order.createdAt);
     const closed = isClosed(order.status);
 
-    if (order.status === ORDER_STATUS.PENDING) pendingOrders++;
+    if (isPending(order.status)) pendingOrders++;
 
     if (isToday(date) && closed) revenueToday += order.totalCents;
     if (isThisMonth(date)) {
