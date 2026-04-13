@@ -26,6 +26,11 @@ import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/utils/formatDate";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { usePersons } from "@/features/persons/api/usePersons";
+import {
+  getPersonDisplayName,
+  type PersonResponse,
+} from "@/features/persons/types/personTypes";
 import type {
   ConversationContact,
   ChatMessage,
@@ -243,15 +248,17 @@ function EmptyChatState() {
 
 export function ConversationsPage() {
   const navigate = useNavigate();
-  const [contacts] = useState<ConversationContact[]>(
+  const [contacts, setContacts] = useState<ConversationContact[]>(
     contactsData as ConversationContact[],
   );
-  const [allMessages] = useState<Record<string, ChatMessage[]>>(
+  const [allMessages, setAllMessages] = useState<Record<string, ChatMessage[]>>(
     messagesData as unknown as Record<string, ChatMessage[]>,
   );
   const [activeContactId, setActiveContactId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [chatTab, setChatTab] = useState<"all" | "open" | "closed">("open");
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [personSearch, setPersonSearch] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
@@ -265,6 +272,11 @@ export function ConversationsPage() {
     code: "ATD-0413",
     photoUrl: "https://i.pravatar.cc/240?img=12",
   };
+
+  const { data: personsData, isLoading: isLoadingPersons } = usePersons({
+    page: 0,
+    size: 100,
+  });
 
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? null;
   const activeMessages = activeContactId
@@ -282,6 +294,12 @@ export function ConversationsPage() {
     if (chatTab === "open") return (c.unreadCount ?? 0) > 0;
     if (chatTab === "closed") return (c.unreadCount ?? 0) === 0;
     return true;
+  });
+
+  const persons = personsData?.content ?? [];
+  const filteredPersons = persons.filter((p) => {
+    const name = getPersonDisplayName(p);
+    return name.toLowerCase().includes(personSearch.toLowerCase());
   });
 
   const openChatsCount = contacts.filter(
@@ -311,8 +329,52 @@ export function ConversationsPage() {
     setNewMessage("");
   }
 
+  function handleCreateChatFromPerson(person: PersonResponse) {
+    const personName = getPersonDisplayName(person);
+    const existing = contacts.find(
+      (c) => c.name.toLowerCase() === personName.toLowerCase(),
+    );
+
+    if (existing) {
+      setActiveContactId(existing.id);
+      setShowMobileChat(true);
+      setShowNewChatModal(false);
+      setPersonSearch("");
+      return;
+    }
+
+    const newId = `conv-person-${person.id}`;
+    const now = new Date().toISOString();
+
+    const newContact: ConversationContact = {
+      id: newId,
+      leadId: `person-${person.id}`,
+      name: personName,
+      channel: "WhatsApp",
+      lastMessage: "Conversa iniciada.",
+      lastMessageAt: now,
+      unreadCount: 0,
+      sentiment: "warm",
+      isOnline: false,
+    };
+
+    setContacts((prev) => [newContact, ...prev]);
+    setAllMessages((prev) => ({ ...prev, [newId]: [] }));
+    setActiveContactId(newId);
+    setShowMobileChat(true);
+    setShowNewChatModal(false);
+    setPersonSearch("");
+    setChatTab("open");
+  }
+
   function handleHome() {
     void navigate("/dashboard");
+  }
+
+  function handleSaveDisplayName() {
+    if (!displayName.trim()) return;
+    setDisplayName(displayName.trim());
+    setEditingDisplayName(false);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -354,7 +416,7 @@ export function ConversationsPage() {
   }
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-muted/30">
+    <div className="relative flex h-[100dvh] overflow-hidden bg-muted/30">
       <aside className="hidden w-24 shrink-0 border-r border-border bg-card md:flex md:flex-col">
         <nav className="flex-1 space-y-1 px-2 py-3">
           <button
@@ -394,13 +456,12 @@ export function ConversationsPage() {
           <button
             type="button"
             onClick={() => {
-              setChatTab("all");
-              setSearch("");
-              setActiveContactId(null);
+              setShowNewChatModal(true);
+              setPersonSearch("");
             }}
             className={cn(
               "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
-              chatTab === "all"
+              showNewChatModal
                 ? "border-primary/30 bg-primary/10 text-primary"
                 : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
@@ -464,14 +525,14 @@ export function ConversationsPage() {
           </div>
 
           {/* Channel filter chips */}
-          <div className="flex gap-1.5 px-3 py-2 border-b border-border overflow-x-auto [scrollbar-width:thin] [scrollbar-color:hsl(var(--border))_transparent] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 hover:[&::-webkit-scrollbar-thumb]:bg-border">
+          <div className="flex flex-wrap gap-1.5 px-3 py-2 border-b border-border">
             {["Todos", "WhatsApp", "Instagram", "Facebook", "Site"].map(
               (ch) => (
                 <button
                   key={ch}
                   type="button"
                   className={cn(
-                    "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                     ch === "Todos"
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background border-border text-muted-foreground hover:bg-accent",
@@ -669,6 +730,212 @@ export function ConversationsPage() {
           </div>
         </div>
       </div>
+
+      {showNewChatModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-border bg-card shadow-lg">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <div>
+                <h2 className="text-sm font-semibold">Novo chat</h2>
+                <p className="text-xs text-muted-foreground">
+                  Pesquise uma pessoa para iniciar a conversa
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewChatModal(false)}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                aria-label="Fechar modal"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="border-b border-border px-4 py-3">
+              <div className="relative">
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <input
+                  type="text"
+                  value={personSearch}
+                  onChange={(e) => setPersonSearch(e.target.value)}
+                  placeholder="Buscar pessoa por nome..."
+                  className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                />
+              </div>
+            </div>
+
+            <div className="max-h-[50vh] overflow-y-auto p-2">
+              {isLoadingPersons ? (
+                <p className="px-3 py-6 text-sm text-muted-foreground">
+                  Carregando pessoas...
+                </p>
+              ) : filteredPersons.length === 0 ? (
+                <p className="px-3 py-6 text-sm text-muted-foreground">
+                  Nenhuma pessoa encontrada.
+                </p>
+              ) : (
+                filteredPersons.map((person) => {
+                  const name = getPersonDisplayName(person);
+                  return (
+                    <button
+                      key={person.id}
+                      type="button"
+                      onClick={() => handleCreateChatFromPerson(person)}
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-accent transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          pessoa #{person.id}
+                        </p>
+                      </div>
+                      <span className="text-xs text-primary">Iniciar</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showProfilePanel && (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setShowProfilePanel(false);
+              setEditingDisplayName(false);
+            }}
+            className="fixed inset-0 z-40 bg-black/30"
+            aria-label="Fechar painel de perfil"
+          />
+          <aside className="absolute right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-border bg-card shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <h2 className="text-sm font-semibold">Perfil do atendente</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfilePanel(false);
+                  setEditingDisplayName(false);
+                }}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                aria-label="Fechar painel"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-6 overflow-y-auto p-5">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <img
+                    src={agentProfile.photoUrl}
+                    alt="Foto do atendente"
+                    className="h-24 w-24 rounded-full object-cover ring-2 ring-border"
+                  />
+                  <button
+                    type="button"
+                    className="absolute bottom-0 right-0 rounded-full border border-border bg-card p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    title="Editar foto"
+                  >
+                    <Camera size={14} />
+                  </button>
+                </div>
+                <p className="text-sm font-medium">{agentProfile.fullName}</p>
+              </div>
+
+              <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Nome completo
+                  </p>
+                  <p className="mt-1 text-sm font-medium">
+                    {agentProfile.fullName}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Nome para exibição
+                  </p>
+                  {editingDisplayName ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveDisplayName}
+                        className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
+                      >
+                        Salvar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{displayName}</p>
+                      <button
+                        type="button"
+                        onClick={() => setEditingDisplayName(true)}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+                      >
+                        <Pencil size={12} />
+                        Editar
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <Mail size={14} className="mt-0.5 text-muted-foreground" />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      E-mail
+                    </p>
+                    <p className="text-sm">{agentProfile.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <Hash size={14} className="mt-0.5 text-muted-foreground" />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Código
+                    </p>
+                    <p className="text-sm">{agentProfile.code}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border bg-card p-3 text-center">
+                  <p className="text-xl font-semibold tabular-nums">
+                    {openChatsCount}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Chats abertos
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3 text-center">
+                  <p className="text-xl font-semibold tabular-nums">
+                    {archivedChatsCount}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Chats arquivados
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 }
