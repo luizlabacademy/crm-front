@@ -6,6 +6,7 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -149,16 +150,16 @@ function SortableOrderCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group rounded-lg border border-border bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
+        "group cursor-grab active:cursor-grabbing rounded-lg border border-border bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
         isDragging && "opacity-50 shadow-lg ring-2 ring-primary/20",
       )}
       {...attributes}
+      {...listeners}
     >
       <div className="flex items-start gap-2">
         <button
           type="button"
-          className="mt-0.5 shrink-0 cursor-grab rounded p-0.5 text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
-          {...listeners}
+          className="mt-0.5 shrink-0 rounded p-0.5 text-foreground/80 hover:text-foreground"
         >
           <GripVertical size={14} />
         </button>
@@ -222,7 +223,7 @@ function OrderCardOverlay({ order }: { order: RecentOrder }) {
   return (
     <div className="rounded-lg border border-primary/30 bg-card p-3 shadow-xl ring-2 ring-primary/20 w-72">
       <div className="flex items-start gap-2">
-        <div className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground/40">
+        <div className="mt-0.5 shrink-0 rounded p-0.5 text-foreground/80">
           <GripVertical size={14} />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
@@ -261,23 +262,34 @@ function BoardColumn({
   label,
   orders,
   onPriorityChange,
+  isDropTarget,
 }: {
   status: string;
   label: string;
   orders: RecentOrder[];
   onPriorityChange: (orderId: string, priority: OrderPriority) => void;
+  isDropTarget: boolean;
 }) {
   const ids = orders.map((o) => o.id);
+  const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
     <div
+      ref={setNodeRef}
       className={cn(
-        "flex min-w-[280px] flex-col overflow-hidden rounded-xl border border-border/80 bg-muted/30 border-t-4",
+        "flex min-w-[280px] flex-col overflow-hidden rounded-xl border border-border/80 bg-muted/30 border-t-4 transition-all",
         COLUMN_HEADER_COLORS[status] ?? "border-t-gray-400",
+        (isOver || isDropTarget) &&
+          "ring-2 ring-primary/35 border-primary/40 bg-primary/5",
       )}
     >
       {/* Column header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/50 bg-muted/80 px-4 py-3 backdrop-blur-sm">
+      <div
+        className={cn(
+          "sticky top-0 z-10 flex items-center justify-between border-b border-border/50 bg-muted/80 px-4 py-3 backdrop-blur-sm transition-colors",
+          (isOver || isDropTarget) && "bg-primary/10",
+        )}
+      >
         <div className="flex items-center gap-2">
           <span
             className={cn(
@@ -295,7 +307,12 @@ function BoardColumn({
 
       {/* Cards */}
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 space-y-2 overflow-y-auto p-3 min-h-[120px]">
+        <div
+          className={cn(
+            "flex-1 space-y-2 overflow-y-auto p-3 min-h-[120px] transition-colors",
+            (isOver || isDropTarget) && "bg-primary/5",
+          )}
+        >
           {orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Package size={24} className="text-muted-foreground/30 mb-2" />
@@ -324,6 +341,7 @@ export function OrdersBoardPage() {
     buildBoardOrders(ordersData as RecentOrder[]),
   );
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [overColumnId, setOverColumnId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -362,10 +380,15 @@ export function OrdersBoardPage() {
 
   function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
-    if (!over) return;
+    if (!over) {
+      setOverColumnId(null);
+      return;
+    }
 
     const activeCol = findColumn(active.id as string);
     const overCol = findColumn(over.id as string);
+
+    setOverColumnId(overCol ?? null);
 
     if (!activeCol || !overCol || activeCol === overCol) return;
 
@@ -378,6 +401,7 @@ export function OrdersBoardPage() {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     setActiveId(null);
+    setOverColumnId(null);
 
     if (!over) return;
 
@@ -452,6 +476,7 @@ export function OrdersBoardPage() {
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
+          onDragCancel={() => setOverColumnId(null)}
         >
           <div className="flex h-full gap-4">
             {COLUMN_STATUSES.map((col) => (
@@ -461,6 +486,7 @@ export function OrdersBoardPage() {
                 label={col.label}
                 orders={columnData[col.key] ?? []}
                 onPriorityChange={handlePriorityChange}
+                isDropTarget={overColumnId === col.key}
               />
             ))}
           </div>
