@@ -267,7 +267,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i); // 00:00 – 23:00
 const DAY_TIME_COL_WIDTH = 92;
 const DAY_WORKER_COL_MIN = 240;
 const DAY_WORKER_COL_MAX = 340;
-const DAY_HOUR_ROW_HEIGHT = 64;
+const DAY_HOUR_ROW_HEIGHT = 72;
 
 function toDateInputValue(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -352,7 +352,7 @@ function DayView({
           className="grid sticky top-0 z-30"
           style={{ gridTemplateColumns: columnsTemplate }}
         >
-          <div className="border-b border-r border-border h-10 bg-muted flex items-center justify-center px-2 sticky left-0 z-30">
+          <div className="border-b border-r border-border h-11 bg-muted flex items-center justify-center px-2 sticky left-0 z-30">
             <div className="flex items-center gap-2 rounded-md bg-background/70 px-1.5 py-0.5">
               <button
                 type="button"
@@ -377,18 +377,18 @@ function DayView({
           {workers.map((w) => (
             <div
               key={w.id}
-              className="border-b border-r border-border h-10 flex items-center justify-center gap-2 px-2 bg-muted"
+              className="border-b border-r border-border h-11 flex items-center justify-center gap-2 px-2 bg-muted"
             >
               <span className="flex flex-col items-center leading-tight">
                 <span className="flex items-center gap-1.5">
                   <span
                     className={cn("h-2 w-2 rounded-full shrink-0", w.color)}
                   />
-                  <span className="text-[13px] font-semibold text-foreground truncate">
+                  <span className="text-sm font-semibold text-foreground truncate">
                     {w.name}
                   </span>
                 </span>
-                <span className="text-[11px] font-medium text-muted-foreground">
+                <span className="text-xs font-medium text-muted-foreground">
                   00:00 – 23:59
                 </span>
               </span>
@@ -408,12 +408,12 @@ function DayView({
               <div key={`row-${hour}`} className="contents">
                 <div
                   className={cn(
-                    "border-b border-r border-border h-16 flex items-start justify-end pr-2 pt-1 sticky left-0 z-10",
+                    "border-b border-r border-border h-16 flex items-center justify-end pr-2 sticky left-0 z-10",
                     rowIndex % 2 === 0 ? "bg-background" : "bg-muted/20",
                   )}
                   style={{ height: `${DAY_HOUR_ROW_HEIGHT}px` }}
                 >
-                  <span className="text-sm font-semibold text-muted-foreground">
+                  <span className="text-[13px] font-semibold text-muted-foreground">
                     {hour.toString().padStart(2, "0")}:00
                   </span>
                 </div>
@@ -438,14 +438,14 @@ function DayView({
                       style={{ height: `${DAY_HOUR_ROW_HEIGHT}px` }}
                     >
                       <div
-                        className="h-1/2 border-b border-dashed border-border/70 px-0.5 py-0.5"
+                        className="h-1/2 border-b border-dashed border-border/70 px-0.5 py-0.5 hover:bg-primary/5"
                         onClick={() => onTimeCellClick(hour, 0, w.id)}
                       >
                         {topHalfAppts.map((a) => (
                           <div
                             key={a.id}
                             className={cn(
-                              "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm hover:opacity-90 transition-opacity",
+                              "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm ring-1 ring-black/5 hover:opacity-90 transition-opacity",
                               STATUS_COLOR[a.status],
                             )}
                             title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
@@ -464,14 +464,14 @@ function DayView({
                         ))}
                       </div>
                       <div
-                        className="h-1/2 px-0.5 py-0.5"
+                        className="h-1/2 px-0.5 py-0.5 hover:bg-primary/5"
                         onClick={() => onTimeCellClick(hour, 30, w.id)}
                       >
                         {bottomHalfAppts.map((a) => (
                           <div
                             key={a.id}
                             className={cn(
-                              "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm hover:opacity-90 transition-opacity",
+                              "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm ring-1 ring-black/5 hover:opacity-90 transition-opacity",
                               STATUS_COLOR[a.status],
                             )}
                             title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
@@ -1017,6 +1017,7 @@ export function SchedulesBoardPage() {
   }
 
   function goToday() {
+    setView("day");
     setCurrentDate(new Date());
     setScrollToNowSignal((v) => v + 1);
   }
@@ -1234,7 +1235,7 @@ export function SchedulesBoardPage() {
       </header>
 
       {/* Calendar nav bar */}
-      <div className="flex items-center gap-3 border-b border-border px-4 py-2 shrink-0">
+      <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-2 shrink-0">
         <button
           onClick={prev}
           className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground"
@@ -1253,7 +1254,9 @@ export function SchedulesBoardPage() {
         >
           Hoje
         </button>
-        <span className="text-sm font-medium capitalize">{headerLabel()}</span>
+        <span className="rounded-md bg-muted px-2.5 py-1 text-sm font-medium capitalize">
+          {headerLabel()}
+        </span>
 
         <div className="ml-auto">
           <Legend />
