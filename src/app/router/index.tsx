@@ -35,6 +35,20 @@ const OrdersBoardPage = lazy(() =>
   })),
 );
 
+// Sales Board
+const SalesBoardPage = lazy(() =>
+  import("@/features/orders-board/pages/SalesBoardPage").then((m) => ({
+    default: m.SalesBoardPage,
+  })),
+);
+
+// Delivery Board
+const DeliveryBoardPage = lazy(() =>
+  import("@/features/orders-board/pages/DeliveryBoardPage").then((m) => ({
+    default: m.DeliveryBoardPage,
+  })),
+);
+
 // Customers
 const CustomerListPage = lazy(() =>
   import("@/features/customers/pages/CustomerListPage").then((m) => ({
@@ -213,6 +227,20 @@ const WorkerFormPage = lazy(() =>
   })),
 );
 
+// Schedules Board
+const SchedulesBoardPage = lazy(() =>
+  import("@/features/schedules-board/pages/SchedulesBoardPage").then((m) => ({
+    default: m.SchedulesBoardPage,
+  })),
+);
+
+// Campaigns
+const CampaignsPage = lazy(() =>
+  import("@/features/campaigns/pages/CampaignsPage").then((m) => ({
+    default: m.CampaignsPage,
+  })),
+);
+
 // Admin - Roles
 const RoleListPage = lazy(() =>
   import("@/features/admin/roles/pages/RoleListPage").then((m) => ({
@@ -372,11 +400,19 @@ export function AppRouter() {
             <Route path="/admin/roles/:id/edit" element={<RoleFormPage />} />
 
             <Route path="/admin/permissions" element={<PermissionListPage />} />
+
+            <Route path="/campaigns" element={<CampaignsPage />} />
           </Route>
 
           <Route element={<AuthenticatedFullscreenLayout />}>
             <Route path="/conversations" element={<ConversationsPage />} />
             <Route path="/orders/board" element={<OrdersBoardPage />} />
+            <Route path="/orders/sales-board" element={<SalesBoardPage />} />
+            <Route
+              path="/orders/delivery-board"
+              element={<DeliveryBoardPage />}
+            />
+            <Route path="/schedules/board" element={<SchedulesBoardPage />} />
           </Route>
 
           <Route path="*" element={<RootRedirect />} />

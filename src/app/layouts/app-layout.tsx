@@ -6,7 +6,6 @@ import {
   MessageSquare,
   MessageCircle,
   ShoppingCart,
-  Columns3,
   CalendarCheck,
   CalendarDays,
   UserSquare,
@@ -23,6 +22,10 @@ import {
   LogOut,
   Menu,
   X,
+  ShoppingBag,
+  Truck,
+  CalendarRange,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth/authStore";
@@ -66,14 +69,24 @@ const NAV: NavSection[] = [
         icon: <ShoppingCart size={16} />,
       },
       {
-        label: "Board de Pedidos",
-        to: "/orders/board",
-        icon: <Columns3 size={16} />,
+        label: "Board de Vendas",
+        to: "/orders/sales-board",
+        icon: <ShoppingBag size={16} />,
+      },
+      {
+        label: "Board de Entregas",
+        to: "/orders/delivery-board",
+        icon: <Truck size={16} />,
       },
       {
         label: "Agendamentos",
         to: "/appointments",
         icon: <CalendarCheck size={16} />,
+      },
+      {
+        label: "Board de Agendamentos",
+        to: "/schedules/board",
+        icon: <CalendarRange size={16} />,
       },
       {
         label: "Schedules",
@@ -112,6 +125,16 @@ const NAV: NavSection[] = [
         label: "Fluxos de Pipeline",
         to: "/pipeline-flows",
         icon: <GitBranch size={16} />,
+      },
+    ],
+  },
+  {
+    section: "Marketing",
+    items: [
+      {
+        label: "Campanhas",
+        to: "/campaigns",
+        icon: <Megaphone size={16} />,
       },
     ],
   },

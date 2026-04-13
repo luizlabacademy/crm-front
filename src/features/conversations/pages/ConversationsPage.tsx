@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Home,
   Search,
@@ -20,10 +20,20 @@ import {
   X,
   ArrowLeft,
   MessageSquarePlus,
+  ShoppingCart,
+  CalendarPlus,
+  FileText,
+  Package,
+  Minus,
+  Trash2,
+  User,
+  Users,
+  ClipboardList,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/utils/formatDate";
+import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { usePersons } from "@/features/persons/api/usePersons";
@@ -34,9 +44,18 @@ import {
 import type {
   ConversationContact,
   ChatMessage,
+  ConversationChannel,
+  ConversationContactType,
 } from "@/features/conversations/types/conversationTypes";
-import contactsData from "@/features/conversations/mocks/contacts.json";
-import messagesData from "@/features/conversations/mocks/messages.json";
+import {
+  useConversations,
+  useConversationMessages,
+  useSendMessage,
+  useCreateConversation,
+} from "@/features/conversations/api/useConversations";
+import { useCatalogItems } from "@/features/orders/api/useOrders";
+import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
+import { useOrders } from "@/features/orders/api/useOrders";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -70,8 +89,8 @@ function channelColor(channel: string): string {
       return "bg-pink-100 text-pink-700 border-pink-200";
     case "Facebook":
       return "bg-blue-100 text-blue-700 border-blue-200";
-    case "Site":
-      return "bg-gray-100 text-gray-700 border-gray-200";
+    case "Corporativo":
+      return "bg-violet-100 text-violet-700 border-violet-200";
     default:
       return "bg-gray-100 text-gray-700 border-gray-200";
   }
@@ -102,15 +121,12 @@ function formatContactTime(dateString: string): string {
 }
 
 function MessageStatus({ status }: { status?: string }) {
-  if (status === "read") {
+  if (status === "read")
     return <CheckCheck size={14} className="text-blue-500" />;
-  }
-  if (status === "delivered") {
+  if (status === "delivered")
     return <CheckCheck size={14} className="text-muted-foreground" />;
-  }
-  if (status === "sent") {
+  if (status === "sent")
     return <Check size={14} className="text-muted-foreground" />;
-  }
   return null;
 }
 
@@ -136,7 +152,6 @@ function ContactItem({
           : "hover:bg-accent/50",
       )}
     >
-      {/* Avatar */}
       <div className="relative shrink-0">
         <span
           className={cn(
@@ -146,12 +161,15 @@ function ContactItem({
         >
           {initial(contact.name)}
         </span>
-        {contact.isOnline && (
+        {contact.channel === "Corporativo" && (
+          <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-white ring-1 ring-card">
+            <Users size={9} />
+          </span>
+        )}
+        {contact.isOnline && contact.channel !== "Corporativo" && (
           <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-card bg-green-500" />
         )}
       </div>
-
-      {/* Content */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-sm font-medium">{contact.name}</p>
@@ -195,6 +213,11 @@ function ChatBubble({ message }: { message: ChatMessage }) {
             : "bg-card border border-border rounded-bl-md",
         )}
       >
+        {message.senderName && !isOutbound && (
+          <p className="text-[10px] font-semibold text-primary mb-1">
+            {message.senderName}
+          </p>
+        )}
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
         <div
           className={cn(
@@ -244,63 +267,723 @@ function EmptyChatState() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── PDV Modal (fullscreen) ───────────────────────────────────────────────────
 
-export function ConversationsPage() {
-  const navigate = useNavigate();
-  const [contacts, setContacts] = useState<ConversationContact[]>(
-    contactsData as ConversationContact[],
-  );
-  const [allMessages, setAllMessages] = useState<Record<string, ChatMessage[]>>(
-    messagesData as unknown as Record<string, ChatMessage[]>,
-  );
-  const [activeContactId, setActiveContactId] = useState<string | null>(null);
+interface CartItem {
+  item: CatalogItemResponse;
+  quantity: number;
+  unitPriceCents: number;
+}
+
+function PdvModal({
+  onClose,
+  onConfirm,
+  contactName,
+}: {
+  onClose: () => void;
+  onConfirm: (items: CartItem[], discount: number, notes: string) => void;
+  contactName: string;
+}) {
   const [search, setSearch] = useState("");
-  const [chatTab, setChatTab] = useState<"all" | "open" | "closed">("open");
-  const [showNewChatModal, setShowNewChatModal] = useState(false);
-  const [personSearch, setPersonSearch] = useState("");
-  const [newMessage, setNewMessage] = useState("");
-  const [showMobileChat, setShowMobileChat] = useState(false);
-  const [showProfilePanel, setShowProfilePanel] = useState(false);
-  const [displayName, setDisplayName] = useState("Fp 4:13 ARC");
-  const [editingDisplayName, setEditingDisplayName] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [discountInput, setDiscountInput] = useState("0");
+  const [notes, setNotes] = useState("");
 
-  const agentProfile = {
-    fullName: "Felipe Arcangelo Rodrigues Costa",
-    email: "felipe.arc@crm.local",
-    code: "ATD-0413",
-    photoUrl: "https://i.pravatar.cc/240?img=12",
-  };
+  const { data: catalogItems = [], isLoading } = useCatalogItems();
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return catalogItems;
+    return catalogItems.filter((i) =>
+      i.name.toLowerCase().includes(search.toLowerCase()),
+    );
+  }, [catalogItems, search]);
+
+  function addToCart(item: CatalogItemResponse) {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.item.id === item.id);
+      if (existing) {
+        return prev.map((c) =>
+          c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c,
+        );
+      }
+      return [...prev, { item, quantity: 1, unitPriceCents: item.priceCents }];
+    });
+  }
+
+  function updateQty(itemId: number, delta: number) {
+    setCart((prev) =>
+      prev
+        .map((c) =>
+          c.item.id === itemId ? { ...c, quantity: c.quantity + delta } : c,
+        )
+        .filter((c) => c.quantity > 0),
+    );
+  }
+
+  function removeFromCart(itemId: number) {
+    setCart((prev) => prev.filter((c) => c.item.id !== itemId));
+  }
+
+  const subtotal = cart.reduce(
+    (sum, c) => sum + c.unitPriceCents * c.quantity,
+    0,
+  );
+  const discountCents = Math.round(parseFloat(discountInput || "0") * 100);
+  const total = Math.max(0, subtotal - discountCents);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border bg-card px-6 py-3 shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h2 className="text-base font-semibold">Novo Orçamento</h2>
+            <p className="text-xs text-muted-foreground">
+              Cliente: {contactName}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-foreground">
+            {formatCurrency(total)}
+          </span>
+          <button
+            type="button"
+            onClick={() => onConfirm(cart, discountCents, notes)}
+            disabled={cart.length === 0}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            Confirmar Orçamento
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: Catalog */}
+        <div className="flex w-2/3 flex-col border-r border-border">
+          <div className="border-b border-border px-4 py-3">
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar produto pelo nome..."
+                className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Nenhum produto encontrado
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
+                {filtered.map((item) => {
+                  const inCart = cart.find((c) => c.item.id === item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => addToCart(item)}
+                      className="group relative flex flex-col gap-2 rounded-xl border border-border bg-card p-3 text-left hover:border-primary/50 hover:bg-primary/5 transition-all"
+                    >
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                        <Package size={24} className="text-muted-foreground" />
+                      </div>
+                      <p className="text-xs font-medium leading-tight line-clamp-2">
+                        {item.name}
+                      </p>
+                      <p className="text-sm font-semibold text-primary">
+                        {formatCurrency(item.priceCents)}
+                      </p>
+                      {inCart && (
+                        <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                          {inCart.quantity}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Cart + Totals */}
+        <div className="flex w-1/3 flex-col">
+          <div className="border-b border-border px-4 py-3">
+            <h3 className="text-sm font-semibold">
+              Carrinho ({cart.length} {cart.length === 1 ? "item" : "itens"})
+            </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {cart.length === 0 ? (
+              <p className="py-8 text-center text-xs text-muted-foreground">
+                Adicione produtos ao orçamento
+              </p>
+            ) : (
+              cart.map((c) => (
+                <div
+                  key={c.item.id}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium truncate">
+                      {c.item.name}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {formatCurrency(c.unitPriceCents)} cada
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => updateQty(c.item.id, -1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full border border-border hover:bg-accent transition-colors"
+                    >
+                      <Minus size={10} />
+                    </button>
+                    <span className="w-6 text-center text-xs font-medium tabular-nums">
+                      {c.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQty(c.item.id, 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full border border-border hover:bg-accent transition-colors"
+                    >
+                      <Plus size={10} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(c.item.id)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
+                  <span className="text-xs font-semibold tabular-nums">
+                    {formatCurrency(c.unitPriceCents * c.quantity)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Totals */}
+          <div className="border-t border-border p-4 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-medium tabular-nums">
+                {formatCurrency(subtotal)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">
+                Desconto (R$)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={discountInput}
+                onChange={(e) => setDiscountInput(e.target.value)}
+                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm text-right outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <span className="text-base font-semibold">Total</span>
+              <span className="text-base font-bold text-primary tabular-nums">
+                {formatCurrency(total)}
+              </span>
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Observações do orçamento..."
+              rows={2}
+              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Orders Panel (inside chat) ───────────────────────────────────────────────
+
+function OrdersPanel({ onClose }: { onClose: () => void }) {
+  const { data: ordersPage, isLoading } = useOrders({ page: 0, size: 20 });
+  const orders = ordersPage?.content ?? [];
+
+  return (
+    <div className="absolute bottom-20 right-4 z-30 w-80 rounded-xl border border-border bg-card shadow-xl">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold">Pedidos Recentes</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md p-1 text-muted-foreground hover:bg-accent transition-colors"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="max-h-72 overflow-y-auto p-2">
+        {isLoading ? (
+          <p className="py-4 text-center text-xs text-muted-foreground">
+            Carregando...
+          </p>
+        ) : orders.length === 0 ? (
+          <p className="py-4 text-center text-xs text-muted-foreground">
+            Nenhum pedido encontrado
+          </p>
+        ) : (
+          orders.map((order) => (
+            <div
+              key={order.id}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-accent transition-colors"
+            >
+              <ClipboardList
+                size={14}
+                className="text-muted-foreground shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium">
+                  {order.code ?? `Pedido #${order.id}`}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {formatCurrency(order.totalCents)} — {order.status}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Appointment Panel (inside chat) ─────────────────────────────────────────
+
+function AppointmentPanel({
+  onClose,
+  onSchedule,
+  contactName,
+}: {
+  onClose: () => void;
+  onSchedule: (date: string, time: string, notes: string) => void;
+  contactName: string;
+}) {
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [notes, setNotes] = useState("");
+
+  return (
+    <div className="absolute bottom-20 right-4 z-30 w-80 rounded-xl border border-border bg-card shadow-xl">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold">Novo Agendamento</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md p-1 text-muted-foreground hover:bg-accent transition-colors"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="p-4 space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Cliente:{" "}
+          <span className="font-medium text-foreground">{contactName}</span>
+        </p>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">Data</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">Horário</label>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">
+            Observações
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Serviço, observações..."
+            className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+          />
+        </div>
+        <button
+          type="button"
+          disabled={!date || !time}
+          onClick={() => {
+            onSchedule(date, time, notes);
+            onClose();
+          }}
+          className="w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+          Agendar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── New Chat Modal ───────────────────────────────────────────────────────────
+
+function NewChatModal({
+  onClose,
+  onCreateChat,
+}: {
+  onClose: () => void;
+  onCreateChat: (
+    person: PersonResponse,
+    channel: ConversationChannel,
+    contactType: ConversationContactType,
+  ) => void;
+}) {
+  const [personSearch, setPersonSearch] = useState("");
+  const [selectedChannel, setSelectedChannel] =
+    useState<ConversationChannel>("WhatsApp");
+  const [selectedType, setSelectedType] =
+    useState<ConversationContactType>("customer");
 
   const { data: personsData, isLoading: isLoadingPersons } = usePersons({
     page: 0,
     size: 100,
   });
-
-  const activeContact = contacts.find((c) => c.id === activeContactId) ?? null;
-  const activeMessages = activeContactId
-    ? (allMessages[activeContactId] ?? [])
-    : [];
-
-  const searchedContacts = contacts.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.channel.toLowerCase().includes(search.toLowerCase()) ||
-      c.lastMessage.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  const filteredContacts = searchedContacts.filter((c) => {
-    if (chatTab === "open") return (c.unreadCount ?? 0) > 0;
-    if (chatTab === "closed") return (c.unreadCount ?? 0) === 0;
-    return true;
-  });
-
   const persons = personsData?.content ?? [];
   const filteredPersons = persons.filter((p) => {
     const name = getPersonDisplayName(p);
     return name.toLowerCase().includes(personSearch.toLowerCase());
   });
+
+  const channels: {
+    value: ConversationChannel;
+    label: string;
+    color: string;
+  }[] = [
+    {
+      value: "WhatsApp",
+      label: "WhatsApp",
+      color: "bg-green-100 text-green-700 border-green-200",
+    },
+    {
+      value: "Instagram",
+      label: "Instagram",
+      color: "bg-pink-100 text-pink-700 border-pink-200",
+    },
+    {
+      value: "Facebook",
+      label: "Facebook",
+      color: "bg-blue-100 text-blue-700 border-blue-200",
+    },
+    {
+      value: "Site",
+      label: "Site",
+      color: "bg-gray-100 text-gray-700 border-gray-200",
+    },
+    {
+      value: "Corporativo",
+      label: "Chat Corporativo",
+      color: "bg-violet-100 text-violet-700 border-violet-200",
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-xl rounded-xl border border-border bg-card shadow-lg">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <h2 className="text-sm font-semibold">Novo Atendimento</h2>
+            <p className="text-xs text-muted-foreground">
+              Selecione a pessoa, o canal e o tipo de conversa
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Type selector */}
+        <div className="border-b border-border px-4 py-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Tipo de conversa
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedType("customer");
+                if (selectedChannel === "Corporativo")
+                  setSelectedChannel("WhatsApp");
+              }}
+              className={cn(
+                "flex flex-1 items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                selectedType === "customer"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-accent",
+              )}
+            >
+              <User size={14} />
+              Cliente
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedType("agent");
+                setSelectedChannel("Corporativo");
+              }}
+              className={cn(
+                "flex flex-1 items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                selectedType === "agent"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-accent",
+              )}
+            >
+              <Users size={14} />
+              Atendente (Interno)
+            </button>
+          </div>
+        </div>
+
+        {/* Channel selector */}
+        <div className="border-b border-border px-4 py-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            Canal
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {channels
+              .filter((c) =>
+                selectedType === "agent"
+                  ? c.value === "Corporativo"
+                  : c.value !== "Corporativo",
+              )
+              .map((ch) => (
+                <button
+                  key={ch.value}
+                  type="button"
+                  onClick={() => setSelectedChannel(ch.value)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    selectedChannel === ch.value
+                      ? ch.color + " ring-2 ring-offset-1 ring-primary/40"
+                      : "border-border text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {ch.label}
+                </button>
+              ))}
+          </div>
+        </div>
+
+        {/* Person search */}
+        <div className="border-b border-border px-4 py-3">
+          <div className="relative">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              type="text"
+              value={personSearch}
+              onChange={(e) => setPersonSearch(e.target.value)}
+              placeholder={
+                selectedType === "agent"
+                  ? "Buscar atendente por nome..."
+                  : "Buscar cliente por nome..."
+              }
+              className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-[40vh] overflow-y-auto p-2">
+          {isLoadingPersons ? (
+            <p className="px-3 py-6 text-sm text-muted-foreground">
+              Carregando pessoas...
+            </p>
+          ) : filteredPersons.length === 0 ? (
+            <p className="px-3 py-6 text-sm text-muted-foreground">
+              Nenhuma pessoa encontrada.
+            </p>
+          ) : (
+            filteredPersons.map((person) => {
+              const name = getPersonDisplayName(person);
+              return (
+                <button
+                  key={person.id}
+                  type="button"
+                  onClick={() =>
+                    onCreateChat(person, selectedChannel, selectedType)
+                  }
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-accent transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white shrink-0",
+                        avatarColor(name),
+                      )}
+                    >
+                      {initial(name)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        pessoa #{person.id}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-primary shrink-0 ml-2">
+                    Iniciar
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Channel Filters ──────────────────────────────────────────────────────────
+
+const ALL_CHANNELS: { value: string; label: string }[] = [
+  { value: "Todos", label: "Todos" },
+  { value: "WhatsApp", label: "WhatsApp" },
+  { value: "Instagram", label: "Instagram" },
+  { value: "Facebook", label: "Facebook" },
+  { value: "Site", label: "Site" },
+  { value: "Corporativo", label: "Corporativo" },
+];
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export function ConversationsPage() {
+  const navigate = useNavigate();
+  const [activeContactId, setActiveContactId] = useState<string | null>(null);
+  const [localContacts, setLocalContacts] = useState<ConversationContact[]>([]);
+  const [localMessages, setLocalMessages] = useState<
+    Record<string, ChatMessage[]>
+  >({});
+  const [search, setSearch] = useState("");
+  const [channelFilter, setChannelFilter] = useState("Todos");
+  const [chatTab, setChatTab] = useState<"all" | "open" | "closed">("open");
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [showMobileChat, setShowMobileChat] = useState(false);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [displayName, setDisplayName] = useState("Atendente CRM");
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [showPdv, setShowPdv] = useState(false);
+  const [showOrdersPanel, setShowOrdersPanel] = useState(false);
+  const [showAppointmentPanel, setShowAppointmentPanel] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const agentProfile = {
+    fullName: "Atendente CRM",
+    email: "atendente@crm.local",
+    code: "ATD-001",
+    photoUrl: "https://i.pravatar.cc/240?img=12",
+  };
+
+  // ─── API Data ────────────────────────────────────────────────────────────────
+  const { data: apiContacts = [], isLoading: isLoadingContacts } =
+    useConversations();
+  const { data: apiMessages = [] } = useConversationMessages(
+    activeContactId,
+    localContacts.find((c) => c.id === activeContactId)?.leadId,
+  );
+  const sendMessageMutation = useSendMessage();
+  const createConversationMutation = useCreateConversation();
+
+  // Merge API contacts with locally created ones
+  const contacts = useMemo(() => {
+    const apiIds = new Set(apiContacts.map((c) => c.id));
+    const onlyLocal = localContacts.filter((c) => !apiIds.has(c.id));
+    return [...apiContacts, ...onlyLocal];
+  }, [apiContacts, localContacts]);
+
+  // Merge API messages with locally sent ones
+  const activeMessages = useMemo(() => {
+    if (!activeContactId) return [];
+    const local = localMessages[activeContactId] ?? [];
+    const api = apiMessages;
+    // Deduplicate by id
+    const seen = new Set<string>();
+    const merged: ChatMessage[] = [];
+    for (const m of [...api, ...local]) {
+      if (!seen.has(m.id)) {
+        seen.add(m.id);
+        merged.push(m);
+      }
+    }
+    merged.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    return merged;
+  }, [activeContactId, apiMessages, localMessages]);
+
+  const activeContact = contacts.find((c) => c.id === activeContactId) ?? null;
+
+  // Filter contacts
+  const filteredContacts = useMemo(() => {
+    let result = contacts;
+    // search
+    if (search.trim()) {
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(search.toLowerCase()) ||
+          c.channel.toLowerCase().includes(search.toLowerCase()) ||
+          c.lastMessage.toLowerCase().includes(search.toLowerCase()),
+      );
+    }
+    // channel filter
+    if (channelFilter !== "Todos") {
+      result = result.filter((c) => c.channel === channelFilter);
+    }
+    // tab filter
+    if (chatTab === "open")
+      result = result.filter((c) => (c.unreadCount ?? 0) > 0);
+    if (chatTab === "closed")
+      result = result.filter((c) => (c.unreadCount ?? 0) === 0);
+    return result;
+  }, [contacts, search, channelFilter, chatTab]);
 
   const openChatsCount = contacts.filter(
     (c) => (c.unreadCount ?? 0) > 0,
@@ -309,7 +992,6 @@ export function ConversationsPage() {
     (c) => (c.unreadCount ?? 0) === 0,
   ).length;
 
-  // Scroll to bottom when conversation changes or messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeContactId, activeMessages.length]);
@@ -317,6 +999,8 @@ export function ConversationsPage() {
   function handleSelectContact(id: string) {
     setActiveContactId(id);
     setShowMobileChat(true);
+    setShowOrdersPanel(false);
+    setShowAppointmentPanel(false);
   }
 
   function handleBack() {
@@ -325,56 +1009,119 @@ export function ConversationsPage() {
 
   function handleSend() {
     if (!newMessage.trim() || !activeContactId) return;
-    // In a real app this would call an API
+    const contact = contacts.find((c) => c.id === activeContactId);
+    const msg: ChatMessage = {
+      id: `local-${Date.now()}`,
+      contactId: activeContactId,
+      content: newMessage.trim(),
+      createdAt: new Date().toISOString(),
+      direction: "outbound",
+      status: "sent",
+      channel: contact?.channel ?? "Site",
+    };
+    // Optimistic update
+    setLocalMessages((prev) => ({
+      ...prev,
+      [activeContactId]: [...(prev[activeContactId] ?? []), msg],
+    }));
     setNewMessage("");
+    // Fire-and-forget API call
+    void sendMessageMutation.mutateAsync({
+      conversationId: activeContactId,
+      leadId: contact?.leadId,
+      payload: { content: newMessage.trim(), direction: "outbound" },
+    });
   }
 
-  function handleCreateChatFromPerson(person: PersonResponse) {
+  function handleCreateChat(
+    person: PersonResponse,
+    channel: ConversationChannel,
+    contactType: ConversationContactType,
+  ) {
     const personName = getPersonDisplayName(person);
     const existing = contacts.find(
-      (c) => c.name.toLowerCase() === personName.toLowerCase(),
+      (c) =>
+        c.name.toLowerCase() === personName.toLowerCase() &&
+        c.channel === channel,
     );
-
     if (existing) {
       setActiveContactId(existing.id);
       setShowMobileChat(true);
       setShowNewChatModal(false);
-      setPersonSearch("");
       return;
     }
-
-    const newId = `conv-person-${person.id}`;
     const now = new Date().toISOString();
-
+    const newId = `local-conv-${person.id}-${Date.now()}`;
     const newContact: ConversationContact = {
       id: newId,
       leadId: `person-${person.id}`,
       name: personName,
-      channel: "WhatsApp",
+      channel,
+      contactType,
       lastMessage: "Conversa iniciada.",
       lastMessageAt: now,
-      unreadCount: 0,
+      unreadCount: 1,
       sentiment: "warm",
       isOnline: false,
     };
-
-    setContacts((prev) => [newContact, ...prev]);
-    setAllMessages((prev) => ({ ...prev, [newId]: [] }));
+    setLocalContacts((prev) => [newContact, ...prev]);
+    setLocalMessages((prev) => ({ ...prev, [newId]: [] }));
     setActiveContactId(newId);
     setShowMobileChat(true);
     setShowNewChatModal(false);
-    setPersonSearch("");
     setChatTab("open");
+    // Also fire create via API
+    void createConversationMutation.mutateAsync({
+      personId: person.id,
+      channel,
+      contactType,
+    });
   }
 
-  function handleHome() {
-    void navigate("/dashboard");
+  function handlePdvConfirm(
+    items: CartItem[],
+    discountCents: number,
+    _notes: string,
+  ) {
+    if (items.length === 0) return;
+    const subtotal = items.reduce(
+      (s, c) => s + c.unitPriceCents * c.quantity,
+      0,
+    );
+    const total = Math.max(0, subtotal - discountCents);
+    const summary = items
+      .map((c) => `${c.quantity}x ${c.item.name}`)
+      .join(", ");
+    const msg: ChatMessage = {
+      id: `local-${Date.now()}`,
+      contactId: activeContactId!,
+      content: `Orçamento enviado:\n${summary}\nTotal: ${formatCurrency(total)}`,
+      createdAt: new Date().toISOString(),
+      direction: "outbound",
+      status: "sent",
+      channel: activeContact?.channel ?? "Site",
+    };
+    setLocalMessages((prev) => ({
+      ...prev,
+      [activeContactId!]: [...(prev[activeContactId!] ?? []), msg],
+    }));
+    setShowPdv(false);
   }
 
-  function handleSaveDisplayName() {
-    if (!displayName.trim()) return;
-    setDisplayName(displayName.trim());
-    setEditingDisplayName(false);
+  function handleScheduleConfirm(date: string, time: string, notes: string) {
+    const msg: ChatMessage = {
+      id: `local-${Date.now()}`,
+      contactId: activeContactId!,
+      content: `Agendamento confirmado:\nData: ${date} às ${time}${notes ? `\nObs: ${notes}` : ""}`,
+      createdAt: new Date().toISOString(),
+      direction: "outbound",
+      status: "sent",
+      channel: activeContact?.channel ?? "Site",
+    };
+    setLocalMessages((prev) => ({
+      ...prev,
+      [activeContactId!]: [...(prev[activeContactId!] ?? []), msg],
+    }));
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -384,7 +1131,6 @@ export function ConversationsPage() {
     }
   }
 
-  // Group messages by date
   function groupedMessages(
     msgs: ChatMessage[],
   ): { date: string; messages: ChatMessage[] }[] {
@@ -416,342 +1162,105 @@ export function ConversationsPage() {
   }
 
   return (
-    <div className="relative flex h-[100dvh] overflow-hidden bg-muted/30">
-      <aside className="hidden w-24 shrink-0 border-r border-border bg-card md:flex md:flex-col">
-        <nav className="flex-1 space-y-1 px-2 py-3">
-          <button
-            type="button"
-            onClick={handleHome}
-            className="flex w-full flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-2 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <Home size={24} />
-            <span className="leading-none">Home</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setChatTab("open")}
-            className={cn(
-              "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
-              chatTab === "open"
-                ? "border-primary/30 bg-primary/10 text-primary"
-                : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <MessageCircle size={24} />
-            <span className="leading-none">Atendimentos</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setChatTab("closed")}
-            className={cn(
-              "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
-              chatTab === "closed"
-                ? "border-primary/30 bg-primary/10 text-primary"
-                : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <Archive size={24} />
-            <span className="leading-none">Arquivados</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setShowNewChatModal(true);
-              setPersonSearch("");
-            }}
-            className={cn(
-              "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
-              showNewChatModal
-                ? "border-primary/30 bg-primary/10 text-primary"
-                : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <Plus size={24} />
-            <span className="leading-none">Novo</span>
-          </button>
-        </nav>
+    <>
+      {showPdv && activeContact && (
+        <PdvModal
+          onClose={() => setShowPdv(false)}
+          onConfirm={handlePdvConfirm}
+          contactName={activeContact.name}
+        />
+      )}
 
-        <div className="border-t border-border mx-2" />
-
-        <div className="p-3">
-          <button
-            type="button"
-            onClick={() => setShowProfilePanel(true)}
-            className="flex w-full flex-col items-center gap-1 rounded-xl p-2 hover:bg-accent transition-colors"
-          >
-            <img
-              src={agentProfile.photoUrl}
-              alt="Foto do atendente"
-              className="h-11 w-11 rounded-full object-cover ring-2 ring-border"
-            />
-            <span className="text-[10px] text-muted-foreground leading-none">
-              Perfil
-            </span>
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* ─── Contact List (sidebar) ────────────────────────────────────── */}
-        <div
-          className={cn(
-            "flex w-full min-h-0 flex-col border-r border-border bg-card lg:w-96 lg:min-w-[24rem] shrink-0",
-            showMobileChat ? "hidden lg:flex" : "flex",
-          )}
-        >
-          {/* Header */}
-          <div className="flex h-16 items-center justify-between gap-3 border-b border-border px-4">
-            <h1 className="text-lg font-semibold">Conversas</h1>
-            <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-              {contacts.reduce((s, c) => s + c.unreadCount, 0)} não lidas
-            </span>
-          </div>
-
-          {/* Search */}
-          <div className="px-3 py-2 border-b border-border">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar conversa..."
-                className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Channel filter chips */}
-          <div className="flex flex-wrap gap-1.5 px-3 py-2 border-b border-border">
-            {["Todos", "WhatsApp", "Instagram", "Facebook", "Site"].map(
-              (ch) => (
-                <button
-                  key={ch}
-                  type="button"
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                    ch === "Todos"
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-border text-muted-foreground hover:bg-accent",
-                  )}
-                >
-                  {ch}
-                </button>
-              ),
-            )}
-          </div>
-
-          {/* Contact list */}
-          <div
-            className="flex-1 min-h-0 overflow-y-scroll [scrollbar-width:thin] [scrollbar-color:hsl(var(--border))_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 hover:[&::-webkit-scrollbar-thumb]:bg-border"
-            style={{ scrollbarGutter: "stable" }}
-          >
-            {filteredContacts.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Nenhuma conversa encontrada.
-              </p>
-            ) : (
-              filteredContacts.map((contact) => (
-                <ContactItem
-                  key={contact.id}
-                  contact={contact}
-                  isActive={contact.id === activeContactId}
-                  onClick={() => handleSelectContact(contact.id)}
-                />
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* ─── Chat Panel ────────────────────────────────────────────────── */}
-        <div
-          className={cn(
-            "flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden",
-            showMobileChat ? "flex" : "hidden lg:flex",
-          )}
-        >
-          {/* Chat header */}
-          <div className="flex h-16 items-center gap-3 border-b border-border bg-card px-4 shrink-0">
-            {/* Back button (mobile) */}
+      <div className="relative flex h-[100dvh] overflow-hidden bg-muted/30">
+        {/* ─── Left icon sidebar ─────────────────────────────────────────── */}
+        <aside className="hidden w-24 shrink-0 border-r border-border bg-card md:flex md:flex-col">
+          <nav className="flex-1 space-y-1 px-2 py-3">
             <button
               type="button"
-              onClick={handleBack}
-              className="lg:hidden rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              onClick={() => void navigate("/dashboard")}
+              className="flex w-full flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-2 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
-              <ArrowLeft size={18} />
+              <Home size={24} />
+              <span className="leading-none">Home</span>
             </button>
-
-            {/* Avatar */}
-            <div className="relative shrink-0">
-              <span
-                className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white",
-                  avatarColor(activeContact?.name ?? "Conversa"),
-                )}
-              >
-                {initial(activeContact?.name ?? "Conversa")}
-              </span>
-              {activeContact?.isOnline && (
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
+            <button
+              type="button"
+              onClick={() => setChatTab("open")}
+              className={cn(
+                "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
+                chatTab === "open"
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
-            </div>
+            >
+              <MessageCircle size={24} />
+              <span className="leading-none">Atendimentos</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChatTab("closed")}
+              className={cn(
+                "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
+                chatTab === "closed"
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <Archive size={24} />
+              <span className="leading-none">Arquivados</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowNewChatModal(true);
+              }}
+              className={cn(
+                "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
+                showNewChatModal
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <Plus size={24} />
+              <span className="leading-none">Novo</span>
+            </button>
+          </nav>
 
-            {/* Info */}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">
-                {activeContact?.name ?? "Selecione uma conversa"}
-              </p>
-              <div className="flex items-center gap-2">
-                {activeContact ? (
-                  <>
-                    <span
-                      className={cn(
-                        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
-                        channelColor(activeContact.channel),
-                      )}
-                    >
-                      {activeContact.channel}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {activeContact.isOnline
-                        ? "Online"
-                        : `visto por ultimo ${formatRelative(activeContact.lastMessageAt)}`}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    Escolha um contato para iniciar o atendimento
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title="Ligar"
-                disabled={!activeContact}
-              >
-                <Phone size={16} />
-              </button>
-              <button
-                type="button"
-                className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title="Video"
-                disabled={!activeContact}
-              >
-                <Video size={16} />
-              </button>
-              <button
-                type="button"
-                className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title="Mais opcoes"
-                disabled={!activeContact}
-              >
-                <MoreVertical size={16} />
-              </button>
-            </div>
+          <div className="border-t border-border mx-2" />
+          <div className="p-3">
+            <button
+              type="button"
+              onClick={() => setShowProfilePanel(true)}
+              className="flex w-full flex-col items-center gap-1 rounded-xl p-2 hover:bg-accent transition-colors"
+            >
+              <img
+                src={agentProfile.photoUrl}
+                alt="Foto do atendente"
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-border"
+              />
+              <span className="text-[10px] text-muted-foreground leading-none">
+                Perfil
+              </span>
+            </button>
           </div>
+        </aside>
 
-          {/* Messages area */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* ─── Contact List ─────────────────────────────────────────────── */}
           <div
-            className="flex-1 min-h-0 overflow-y-scroll px-4 py-4 space-y-2"
-            style={{
-              scrollbarGutter: "stable",
-              backgroundImage:
-                "radial-gradient(circle at 1px 1px, var(--color-border) 0.5px, transparent 0)",
-              backgroundSize: "24px 24px",
-            }}
-          >
-            {!activeContact ? (
-              <EmptyChatState />
-            ) : (
-              groupedMessages(activeMessages).map((group) => (
-                <div key={group.date} className="space-y-2">
-                  <DateSeparator date={group.date} />
-                  {group.messages.map((msg) => (
-                    <ChatBubble key={msg.id} message={msg} />
-                  ))}
-                </div>
-              ))
+            className={cn(
+              "flex w-full min-h-0 flex-col border-r border-border bg-card lg:w-96 lg:min-w-[24rem] shrink-0",
+              showMobileChat ? "hidden lg:flex" : "flex",
             )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input area */}
-          <div className="border-t border-border bg-card px-4 py-3 shrink-0">
-            <div className="flex items-end gap-2">
-              <button
-                type="button"
-                className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 mb-0.5"
-                title="Emoji"
-                disabled={!activeContact}
-              >
-                <Smile size={20} />
-              </button>
-              <button
-                type="button"
-                className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 mb-0.5"
-                title="Anexar arquivo"
-                disabled={!activeContact}
-              >
-                <Paperclip size={20} />
-              </button>
-              <div className="flex-1">
-                <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  placeholder={
-                    activeContact
-                      ? "Digite uma mensagem..."
-                      : "Selecione uma conversa para enviar mensagens"
-                  }
-                  disabled={!activeContact}
-                  className="h-10 w-full resize-none overflow-y-auto rounded-2xl border border-input bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground disabled:opacity-60"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={!activeContact || !newMessage.trim()}
-                className="flex items-center justify-center rounded-full bg-primary p-2.5 text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 mb-0.5"
-                title="Enviar"
-              >
-                <Send size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {showNewChatModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-xl rounded-xl border border-border bg-card shadow-lg">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <div>
-                <h2 className="text-sm font-semibold">Novo Atendimento</h2>
-                <p className="text-xs text-muted-foreground">
-                  Pesquise uma pessoa para iniciar a conversa
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowNewChatModal(false)}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                aria-label="Fechar modal"
-              >
-                <X size={16} />
-              </button>
+          >
+            <div className="flex h-16 items-center justify-between gap-3 border-b border-border px-4">
+              <h1 className="text-lg font-semibold">Conversas</h1>
+              <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                {contacts.reduce((s, c) => s + c.unreadCount, 0)} nao lidas
+              </span>
             </div>
 
-            <div className="border-b border-border px-4 py-3">
+            <div className="px-3 py-2 border-b border-border">
               <div className="relative">
                 <Search
                   size={14}
@@ -759,183 +1268,419 @@ export function ConversationsPage() {
                 />
                 <input
                   type="text"
-                  value={personSearch}
-                  onChange={(e) => setPersonSearch(e.target.value)}
-                  placeholder="Buscar pessoa por nome..."
-                  className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar conversa..."
+                  className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
                 />
               </div>
             </div>
 
-            <div className="max-h-[50vh] overflow-y-auto p-2">
-              {isLoadingPersons ? (
-                <p className="px-3 py-6 text-sm text-muted-foreground">
-                  Carregando pessoas...
+            {/* Channel filter chips */}
+            <div className="flex flex-wrap gap-1.5 px-3 py-2 border-b border-border">
+              {ALL_CHANNELS.map((ch) => (
+                <button
+                  key={ch.value}
+                  type="button"
+                  onClick={() => setChannelFilter(ch.value)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                    channelFilter === ch.value
+                      ? ch.value === "Corporativo"
+                        ? "bg-violet-600 text-white border-violet-600"
+                        : "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-border text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {ch.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Contact list */}
+            <div
+              className="flex-1 min-h-0 overflow-y-scroll [scrollbar-width:thin] [scrollbar-color:hsl(var(--border))_transparent]"
+              style={{ scrollbarGutter: "stable" }}
+            >
+              {isLoadingContacts ? (
+                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Carregando conversas...
                 </p>
-              ) : filteredPersons.length === 0 ? (
-                <p className="px-3 py-6 text-sm text-muted-foreground">
-                  Nenhuma pessoa encontrada.
+              ) : filteredContacts.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma conversa encontrada.
                 </p>
               ) : (
-                filteredPersons.map((person) => {
-                  const name = getPersonDisplayName(person);
-                  return (
-                    <button
-                      key={person.id}
-                      type="button"
-                      onClick={() => handleCreateChatFromPerson(person)}
-                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-accent transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          pessoa #{person.id}
-                        </p>
-                      </div>
-                      <span className="text-xs text-primary">Iniciar</span>
-                    </button>
-                  );
-                })
+                filteredContacts.map((contact) => (
+                  <ContactItem
+                    key={contact.id}
+                    contact={contact}
+                    isActive={contact.id === activeContactId}
+                    onClick={() => handleSelectContact(contact.id)}
+                  />
+                ))
               )}
             </div>
           </div>
-        </div>
-      )}
 
-      {showProfilePanel && (
-        <>
-          <button
-            type="button"
-            onClick={() => {
-              setShowProfilePanel(false);
-              setEditingDisplayName(false);
-            }}
-            className="fixed inset-0 z-40 bg-black/30"
-            aria-label="Fechar painel de perfil"
-          />
-          <aside className="absolute right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-border bg-card shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="text-sm font-semibold">Perfil do atendente</h2>
+          {/* ─── Chat Panel ──────────────────────────────────────────────── */}
+          <div
+            className={cn(
+              "flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden",
+              showMobileChat ? "flex" : "hidden lg:flex",
+            )}
+          >
+            {/* Chat header */}
+            <div className="flex h-16 items-center gap-3 border-b border-border bg-card px-4 shrink-0">
               <button
                 type="button"
-                onClick={() => {
-                  setShowProfilePanel(false);
-                  setEditingDisplayName(false);
-                }}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                aria-label="Fechar painel"
+                onClick={handleBack}
+                className="lg:hidden rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
-                <X size={16} />
+                <ArrowLeft size={18} />
               </button>
-            </div>
-
-            <div className="flex-1 space-y-6 overflow-y-auto p-5">
-              <div className="flex flex-col items-center gap-3">
-                <div className="relative">
-                  <img
-                    src={agentProfile.photoUrl}
-                    alt="Foto do atendente"
-                    className="h-24 w-24 rounded-full object-cover ring-2 ring-border"
-                  />
-                  <button
-                    type="button"
-                    className="absolute bottom-0 right-0 rounded-full border border-border bg-card p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                    title="Editar foto"
-                  >
-                    <Camera size={14} />
-                  </button>
-                </div>
-                <p className="text-sm font-medium">{agentProfile.fullName}</p>
+              <div className="relative shrink-0">
+                <span
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white",
+                    avatarColor(activeContact?.name ?? "Conversa"),
+                  )}
+                >
+                  {initial(activeContact?.name ?? "Conversa")}
+                </span>
+                {activeContact?.isOnline && (
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-green-500" />
+                )}
               </div>
-
-              <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Nome completo
-                  </p>
-                  <p className="mt-1 text-sm font-medium">
-                    {agentProfile.fullName}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Nome para exibição
-                  </p>
-                  {editingDisplayName ? (
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleSaveDisplayName}
-                        className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">
+                  {activeContact?.name ?? "Selecione uma conversa"}
+                </p>
+                <div className="flex items-center gap-2">
+                  {activeContact ? (
+                    <>
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                          channelColor(activeContact.channel),
+                        )}
                       >
-                        Salvar
-                      </button>
-                    </div>
+                        {activeContact.channel}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {activeContact.isOnline
+                          ? "Online"
+                          : `visto por ultimo ${formatRelative(activeContact.lastMessageAt)}`}
+                      </span>
+                    </>
                   ) : (
-                    <div className="mt-1 flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">{displayName}</p>
-                      <button
-                        type="button"
-                        onClick={() => setEditingDisplayName(true)}
-                        className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
-                      >
-                        <Pencil size={12} />
-                        Editar
-                      </button>
-                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Escolha um contato para iniciar o atendimento
+                    </span>
                   )}
                 </div>
-
-                <div className="flex items-start gap-2">
-                  <Mail size={14} className="mt-0.5 text-muted-foreground" />
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      E-mail
-                    </p>
-                    <p className="text-sm">{agentProfile.email}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <Hash size={14} className="mt-0.5 text-muted-foreground" />
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Código
-                    </p>
-                    <p className="text-sm">{agentProfile.code}</p>
-                  </div>
-                </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-border bg-card p-3 text-center">
-                  <p className="text-xl font-semibold tabular-nums">
-                    {openChatsCount}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Chats abertos
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border bg-card p-3 text-center">
-                  <p className="text-xl font-semibold tabular-nums">
-                    {archivedChatsCount}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Chats arquivados
-                  </p>
-                </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  disabled={!activeContact}
+                >
+                  <Phone size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  disabled={!activeContact}
+                >
+                  <Video size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  disabled={!activeContact}
+                >
+                  <MoreVertical size={16} />
+                </button>
               </div>
             </div>
-          </aside>
-        </>
-      )}
-    </div>
+
+            {/* Messages area */}
+            <div
+              className="flex-1 min-h-0 overflow-y-scroll px-4 py-4 space-y-2"
+              style={{
+                scrollbarGutter: "stable",
+                backgroundImage:
+                  "radial-gradient(circle at 1px 1px, var(--color-border) 0.5px, transparent 0)",
+                backgroundSize: "24px 24px",
+              }}
+            >
+              {!activeContact ? (
+                <EmptyChatState />
+              ) : (
+                groupedMessages(activeMessages).map((group) => (
+                  <div key={group.date} className="space-y-2">
+                    <DateSeparator date={group.date} />
+                    {group.messages.map((msg) => (
+                      <ChatBubble key={msg.id} message={msg} />
+                    ))}
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Floating panels */}
+            {showOrdersPanel && activeContact && (
+              <OrdersPanel onClose={() => setShowOrdersPanel(false)} />
+            )}
+            {showAppointmentPanel && activeContact && (
+              <AppointmentPanel
+                onClose={() => setShowAppointmentPanel(false)}
+                onSchedule={handleScheduleConfirm}
+                contactName={activeContact.name}
+              />
+            )}
+
+            {/* Input area */}
+            <div className="border-t border-border bg-card px-4 py-3 shrink-0">
+              {/* Action toolbar (above input) */}
+              {activeContact && (
+                <div className="mb-2 flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPdv(true);
+                      setShowOrdersPanel(false);
+                      setShowAppointmentPanel(false);
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    title="Criar orçamento"
+                  >
+                    <FileText size={12} />
+                    Orçamento
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOrdersPanel((v) => !v);
+                      setShowAppointmentPanel(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                      showOrdersPanel
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent",
+                    )}
+                    title="Ver pedidos"
+                  >
+                    <ShoppingCart size={12} />
+                    Pedidos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAppointmentPanel((v) => !v);
+                      setShowOrdersPanel(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                      showAppointmentPanel
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent",
+                    )}
+                    title="Agendar"
+                  >
+                    <CalendarPlus size={12} />
+                    Agendar
+                  </button>
+                </div>
+              )}
+              <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 mb-0.5"
+                  disabled={!activeContact}
+                >
+                  <Smile size={20} />
+                </button>
+                <button
+                  type="button"
+                  className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0 mb-0.5"
+                  disabled={!activeContact}
+                >
+                  <Paperclip size={20} />
+                </button>
+                <div className="flex-1">
+                  <textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    placeholder={
+                      activeContact
+                        ? "Digite uma mensagem..."
+                        : "Selecione uma conversa para enviar mensagens"
+                    }
+                    disabled={!activeContact}
+                    className="h-10 w-full resize-none overflow-y-auto rounded-2xl border border-input bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground disabled:opacity-60"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={!activeContact || !newMessage.trim()}
+                  className="flex items-center justify-center rounded-full bg-primary p-2.5 text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0 mb-0.5"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── New Chat Modal ──────────────────────────────────────────────── */}
+        {showNewChatModal && (
+          <NewChatModal
+            onClose={() => setShowNewChatModal(false)}
+            onCreateChat={(person, channel, type) =>
+              handleCreateChat(person, channel, type)
+            }
+          />
+        )}
+
+        {/* ─── Agent Profile Panel ─────────────────────────────────────────── */}
+        {showProfilePanel && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setShowProfilePanel(false);
+                setEditingDisplayName(false);
+              }}
+              className="fixed inset-0 z-40 bg-black/30"
+              aria-label="Fechar painel de perfil"
+            />
+            <aside className="absolute right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-border bg-card shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <h2 className="text-sm font-semibold">Perfil do atendente</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfilePanel(false);
+                    setEditingDisplayName(false);
+                  }}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="flex-1 space-y-6 overflow-y-auto p-5">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="relative">
+                    <img
+                      src={agentProfile.photoUrl}
+                      alt="Foto do atendente"
+                      className="h-24 w-24 rounded-full object-cover ring-2 ring-border"
+                    />
+                    <button
+                      type="button"
+                      className="absolute bottom-0 right-0 rounded-full border border-border bg-card p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      title="Editar foto"
+                    >
+                      <Camera size={14} />
+                    </button>
+                  </div>
+                  <p className="text-sm font-medium">{agentProfile.fullName}</p>
+                </div>
+                <div className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Nome completo
+                    </p>
+                    <p className="mt-1 text-sm font-medium">
+                      {agentProfile.fullName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Nome para exibicao
+                    </p>
+                    {editingDisplayName ? (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (displayName.trim())
+                              setEditingDisplayName(false);
+                          }}
+                          className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium">{displayName}</p>
+                        <button
+                          type="button"
+                          onClick={() => setEditingDisplayName(true)}
+                          className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+                        >
+                          <Pencil size={12} />
+                          Editar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Mail size={14} className="mt-0.5 text-muted-foreground" />
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        E-mail
+                      </p>
+                      <p className="text-sm">{agentProfile.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Hash size={14} className="mt-0.5 text-muted-foreground" />
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        Codigo
+                      </p>
+                      <p className="text-sm">{agentProfile.code}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-border bg-card p-3 text-center">
+                    <p className="text-xl font-semibold tabular-nums">
+                      {openChatsCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Chats abertos
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-3 text-center">
+                    <p className="text-xl font-semibold tabular-nums">
+                      {archivedChatsCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Chats arquivados
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </>
+        )}
+      </div>
+    </>
   );
 }
