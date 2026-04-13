@@ -142,6 +142,8 @@ function SortableOrderCard({
     transition,
   };
 
+  const currentPriority = (order.priority ?? "normal") as OrderPriority;
+
   return (
     <div
       ref={setNodeRef}
@@ -471,4 +473,3 @@ export function OrdersBoardPage() {
     </div>
   );
 }
-const currentPriority = (order.priority ?? "normal") as OrderPriority;
