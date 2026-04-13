@@ -28,6 +28,13 @@ const ConversationsPage = lazy(() =>
   })),
 );
 
+// Orders Board
+const OrdersBoardPage = lazy(() =>
+  import("@/features/orders-board/pages/OrdersBoardPage").then((m) => ({
+    default: m.OrdersBoardPage,
+  })),
+);
+
 // Customers
 const CustomerListPage = lazy(() =>
   import("@/features/customers/pages/CustomerListPage").then((m) => ({
@@ -288,6 +295,7 @@ export function AppRouter() {
             <Route path="/orders/new" element={<OrderFormPage />} />
             <Route path="/orders/:id" element={<OrderDetailsPage />} />
             <Route path="/orders/:id/edit" element={<OrderFormPage />} />
+            <Route path="/orders/board" element={<OrdersBoardPage />} />
 
             <Route path="/appointments" element={<AppointmentListPage />} />
             <Route path="/appointments/new" element={<AppointmentFormPage />} />

@@ -6,6 +6,7 @@ import {
   MessageSquare,
   MessageCircle,
   ShoppingCart,
+  Columns3,
   CalendarCheck,
   CalendarDays,
   UserSquare,
@@ -60,6 +61,11 @@ const NAV: NavSection[] = [
       { label: "Clientes", to: "/customers", icon: <Users size={16} /> },
       { label: "Leads", to: "/leads", icon: <MessageSquare size={16} /> },
       { label: "Pedidos", to: "/orders", icon: <ShoppingCart size={16} /> },
+      {
+        label: "Quadro de Pedidos",
+        to: "/orders/board",
+        icon: <Columns3 size={16} />,
+      },
       {
         label: "Agendamentos",
         to: "/appointments",

@@ -1,7 +1,11 @@
-import { useNavigate } from "react-router";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router";
+import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { formatShortDate } from "@/lib/utils/formatDate";
 import {
+  BOARD_COLUMNS,
   ORDER_STATUS_LABEL,
   ORDER_STATUS_COLOR,
 } from "@/features/dashboard/constants/orderStatus";
@@ -57,13 +61,47 @@ export function RecentOrdersList({
   isLoading = false,
 }: RecentOrdersListProps) {
   const navigate = useNavigate();
+  const [activeFilter, setActiveFilter] = useState<string>("ALL");
+
+  const filtered =
+    activeFilter === "ALL"
+      ? orders
+      : orders.filter((o) => o.status === activeFilter);
 
   return (
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
-      <div className="px-5 pt-4 pb-3 border-b border-border">
-        <h2 className="text-sm font-semibold">Últimos pedidos</h2>
+      {/* Header */}
+      <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold">Pedidos</h2>
+        <Link
+          to="/orders/board"
+          className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          Ver mais
+          <ArrowRight size={12} />
+        </Link>
       </div>
 
+      {/* Filter chips */}
+      <div className="flex gap-1.5 px-5 py-2.5 border-b border-border overflow-x-auto">
+        {BOARD_COLUMNS.map((col) => (
+          <button
+            key={col.key}
+            type="button"
+            onClick={() => setActiveFilter(col.key)}
+            className={cn(
+              "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              activeFilter === col.key
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background border-border text-muted-foreground hover:bg-accent",
+            )}
+          >
+            {col.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -81,7 +119,7 @@ export function RecentOrdersList({
           <tbody className="divide-y divide-border">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-            ) : orders.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <tr>
                 <td
                   colSpan={8}
@@ -91,7 +129,7 @@ export function RecentOrdersList({
                 </td>
               </tr>
             ) : (
-              orders.map((order) => (
+              filtered.map((order) => (
                 <tr
                   key={order.id}
                   onClick={() => void navigate(`/orders/${order.id}`)}
