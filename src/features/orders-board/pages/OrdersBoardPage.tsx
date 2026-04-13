@@ -47,9 +47,87 @@ const COLUMN_HEADER_COLORS: Record<string, string> = {
   DELIVERED: "border-t-green-500",
 };
 
+const TARGET_COLUMN_COUNTS: Partial<Record<OrderStatus, number>> = {
+  PREPARING: 8,
+  DELIVERED: 15,
+};
+
+function buildBoardOrders(baseOrders: RecentOrder[]): RecentOrder[] {
+  const result = [...baseOrders];
+  const baseCodeNumber = baseOrders.reduce((max, order) => {
+    const parsed = Number(order.code.replace("PED-", ""));
+    return Number.isFinite(parsed) ? Math.max(max, parsed) : max;
+  }, 3000);
+
+  let nextCode = baseCodeNumber + 1;
+  const statuses = Object.entries(TARGET_COLUMN_COUNTS) as [
+    OrderStatus,
+    number,
+  ][];
+
+  for (const [status, targetCount] of statuses) {
+    const currentCount = result.filter(
+      (order) => order.status === status,
+    ).length;
+    const missing = Math.max(0, targetCount - currentCount);
+
+    for (let i = 0; i < missing; i++) {
+      const code = `PED-${nextCode}`;
+      result.push({
+        id: `ord-board-${nextCode}`,
+        code,
+        customerName: `Cliente ${nextCode}`,
+        totalCents: 45000 + i * 3500,
+        status,
+        createdAt: new Date(Date.now() - i * 3600000).toISOString(),
+        itemsCount: (i % 5) + 1,
+        paymentMethod: i % 2 === 0 ? "Pix" : "Cartao",
+        priority:
+          i % 4 === 0
+            ? "very_high"
+            : i % 4 === 1
+              ? "high"
+              : i % 4 === 2
+                ? "medium"
+                : "normal",
+      });
+      nextCode += 1;
+    }
+  }
+
+  return result;
+}
+
+const PRIORITY_META = {
+  normal: {
+    label: "Normal",
+    selectCls: "border-emerald-200 bg-emerald-100 text-emerald-700",
+  },
+  medium: {
+    label: "Media",
+    selectCls: "border-blue-200 bg-blue-100 text-blue-700",
+  },
+  high: {
+    label: "Alta",
+    selectCls: "border-orange-200 bg-orange-100 text-orange-700",
+  },
+  very_high: {
+    label: "Muito alta",
+    selectCls: "border-red-200 bg-red-100 text-red-700",
+  },
+} as const;
+
+type OrderPriority = keyof typeof PRIORITY_META;
+
 // ─── Sortable Card ────────────────────────────────────────────────────────────
 
-function SortableOrderCard({ order }: { order: RecentOrder }) {
+function SortableOrderCard({
+  order,
+  onPriorityChange,
+}: {
+  order: RecentOrder;
+  onPriorityChange: (orderId: string, priority: OrderPriority) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -88,11 +166,22 @@ function SortableOrderCard({ order }: { order: RecentOrder }) {
             <span className="font-mono text-[11px] text-muted-foreground">
               {order.code}
             </span>
-            {order.priority === "high" && (
-              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
-                Alta
-              </span>
-            )}
+            <select
+              value={currentPriority}
+              onChange={(e) =>
+                onPriorityChange(order.id, e.target.value as OrderPriority)
+              }
+              onPointerDown={(e) => e.stopPropagation()}
+              className={cn(
+                "rounded-md border px-2 py-0.5 text-[10px] font-medium outline-none",
+                PRIORITY_META[currentPriority].selectCls,
+              )}
+            >
+              <option value="normal">Normal</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+              <option value="very_high">Muito alta</option>
+            </select>
           </div>
 
           {/* Customer */}
@@ -139,9 +228,9 @@ function OrderCardOverlay({ order }: { order: RecentOrder }) {
             <span className="font-mono text-[11px] text-muted-foreground">
               {order.code}
             </span>
-            {order.priority === "high" && (
+            {(order.priority === "high" || order.priority === "very_high") && (
               <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
-                Alta
+                {order.priority === "very_high" ? "Muito alta" : "Alta"}
               </span>
             )}
           </div>
@@ -169,22 +258,24 @@ function BoardColumn({
   status,
   label,
   orders,
+  onPriorityChange,
 }: {
   status: string;
   label: string;
   orders: RecentOrder[];
+  onPriorityChange: (orderId: string, priority: OrderPriority) => void;
 }) {
   const ids = orders.map((o) => o.id);
 
   return (
     <div
       className={cn(
-        "flex min-w-[280px] flex-col rounded-xl border border-border/80 bg-muted/30 border-t-4",
+        "flex min-w-[280px] flex-col overflow-hidden rounded-xl border border-border/80 bg-muted/30 border-t-4",
         COLUMN_HEADER_COLORS[status] ?? "border-t-gray-400",
       )}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/50 bg-muted/80 px-4 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <span
             className={cn(
@@ -210,7 +301,11 @@ function BoardColumn({
             </div>
           ) : (
             orders.map((order) => (
-              <SortableOrderCard key={order.id} order={order} />
+              <SortableOrderCard
+                key={order.id}
+                order={order}
+                onPriorityChange={onPriorityChange}
+              />
             ))
           )}
         </div>
@@ -224,7 +319,7 @@ function BoardColumn({
 export function OrdersBoardPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<RecentOrder[]>(
-    ordersData as RecentOrder[],
+    buildBoardOrders(ordersData as RecentOrder[]),
   );
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -313,10 +408,18 @@ export function OrdersBoardPage() {
     }
   }
 
+  function handlePriorityChange(orderId: string, priority: OrderPriority) {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, priority } : order,
+      ),
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col overflow-hidden bg-muted/30">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-card shrink-0">
+      <div className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-2 shrink-0">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -326,7 +429,7 @@ export function OrdersBoardPage() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-lg font-semibold">Quadro de Pedidos</h1>
+            <h1 className="text-lg font-semibold">Board de Pedidos</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               Arraste os pedidos entre colunas para atualizar o status
             </p>
@@ -355,6 +458,7 @@ export function OrdersBoardPage() {
                 status={col.key}
                 label={col.label}
                 orders={columnData[col.key] ?? []}
+                onPriorityChange={handlePriorityChange}
               />
             ))}
           </div>
@@ -367,3 +471,4 @@ export function OrdersBoardPage() {
     </div>
   );
 }
+const currentPriority = (order.priority ?? "normal") as OrderPriority;

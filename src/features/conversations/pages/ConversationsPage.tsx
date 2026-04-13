@@ -438,7 +438,7 @@ export function ConversationsPage() {
             )}
           >
             <MessageCircle size={24} />
-            <span className="leading-none">Conversas</span>
+            <span className="leading-none">Atendimentos</span>
           </button>
           <button
             type="button"
@@ -451,7 +451,7 @@ export function ConversationsPage() {
             )}
           >
             <Archive size={24} />
-            <span className="leading-none">Arquivadas</span>
+            <span className="leading-none">Arquivados</span>
           </button>
           <button
             type="button"
@@ -467,7 +467,7 @@ export function ConversationsPage() {
             )}
           >
             <Plus size={24} />
-            <span className="leading-none">Novo Chat</span>
+            <span className="leading-none">Novo</span>
           </button>
         </nav>
 
@@ -736,7 +736,7 @@ export function ConversationsPage() {
           <div className="w-full max-w-xl rounded-xl border border-border bg-card shadow-lg">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
-                <h2 className="text-sm font-semibold">Novo chat</h2>
+                <h2 className="text-sm font-semibold">Novo Atendimento</h2>
                 <p className="text-xs text-muted-foreground">
                   Pesquise uma pessoa para iniciar a conversa
                 </p>

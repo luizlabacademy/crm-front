@@ -60,12 +60,6 @@ const NAV: NavSection[] = [
     items: [
       { label: "Clientes", to: "/customers", icon: <Users size={16} /> },
       { label: "Leads", to: "/leads", icon: <MessageSquare size={16} /> },
-      { label: "Pedidos", to: "/orders", icon: <ShoppingCart size={16} /> },
-      {
-        label: "Quadro de Pedidos",
-        to: "/orders/board",
-        icon: <Columns3 size={16} />,
-      },
       {
         label: "Agendamentos",
         to: "/appointments",
@@ -75,6 +69,21 @@ const NAV: NavSection[] = [
         label: "Schedules",
         to: "/schedules",
         icon: <CalendarDays size={16} />,
+      },
+    ],
+  },
+  {
+    section: "Pedidos",
+    items: [
+      {
+        label: "Buscar Pedidos",
+        to: "/orders",
+        icon: <ShoppingCart size={16} />,
+      },
+      {
+        label: "Board de Pedidos",
+        to: "/orders/board",
+        icon: <Columns3 size={16} />,
       },
     ],
   },

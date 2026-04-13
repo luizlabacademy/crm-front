@@ -74,7 +74,7 @@ export interface RecentOrder {
   createdAt: string;
   itemsCount?: number;
   paymentMethod?: string;
-  priority?: "high" | "normal";
+  priority?: "normal" | "medium" | "high" | "very_high";
 }
 
 export interface DashboardData {
