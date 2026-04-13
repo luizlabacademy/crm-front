@@ -59,7 +59,6 @@ const NAV: NavSection[] = [
   {
     section: "Operacoes",
     items: [
-      { label: "Clientes", to: "/customers", icon: <Users size={16} /> },
       { label: "Leads", to: "/leads", icon: <MessageSquare size={16} /> },
       {
         label: "Buscar Pedidos",
@@ -81,6 +80,7 @@ const NAV: NavSection[] = [
         to: "/schedules/board",
         icon: <CalendarRange size={16} />,
       },
+      { label: "Clientes", to: "/customers", icon: <Users size={16} /> },
     ],
   },
   {

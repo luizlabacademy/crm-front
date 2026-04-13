@@ -65,6 +65,29 @@ interface NewAppointmentDraft {
   notes: string;
 }
 
+function buildDraftFromAppointment(
+  appointment: MockAppointment,
+): NewAppointmentDraft {
+  const start = parseISO(appointment.startAt);
+  const worker = WORKERS.find((w) => w.id === appointment.workerId);
+  const customer = MOCK_CUSTOMERS.find(
+    (c) => c.name === appointment.customerName,
+  );
+
+  return {
+    title: appointment.title,
+    customerId: customer?.id ?? null,
+    customerName: appointment.customerName,
+    workerId: appointment.workerId,
+    workerName: worker?.name ?? "",
+    date: toDateInputValue(start),
+    time: toTimeInputValue(start),
+    durationMinutes: appointment.durationMinutes,
+    status: appointment.status,
+    notes: "",
+  };
+}
+
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const WORKERS: MockWorker[] = [
@@ -280,23 +303,25 @@ function DayView({
   appointments,
   workers,
   columnWidth,
-  onHourCellClick,
+  onTimeCellClick,
   canMoveWorkersLeft,
   canMoveWorkersRight,
   onMoveWorkersLeft,
   onMoveWorkersRight,
   scrollToNowSignal,
+  onAppointmentClick,
 }: {
   currentDate: Date;
   appointments: MockAppointment[];
   workers: MockWorker[];
   columnWidth: number;
-  onHourCellClick: (hour: number, workerId: number) => void;
+  onTimeCellClick: (hour: number, minute: 0 | 30, workerId: number) => void;
   canMoveWorkersLeft: boolean;
   canMoveWorkersRight: boolean;
   onMoveWorkersLeft: () => void;
   onMoveWorkersRight: () => void;
   scrollToNowSignal: number;
+  onAppointmentClick: (appointment: MockAppointment) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -397,6 +422,12 @@ function DayView({
                     const d = parseISO(a.startAt);
                     return a.workerId === w.id && d.getHours() === hour;
                   });
+                  const topHalfAppts = cellAppts.filter(
+                    (a) => parseISO(a.startAt).getMinutes() < 30,
+                  );
+                  const bottomHalfAppts = cellAppts.filter(
+                    (a) => parseISO(a.startAt).getMinutes() >= 30,
+                  );
                   return (
                     <div
                       key={`${hour}-${w.id}`}
@@ -405,26 +436,59 @@ function DayView({
                         rowIndex % 2 === 0 ? "bg-background" : "bg-muted/10",
                       )}
                       style={{ height: `${DAY_HOUR_ROW_HEIGHT}px` }}
-                      onClick={() => onHourCellClick(hour, w.id)}
                     >
-                      {cellAppts.map((a) => (
-                        <div
-                          key={a.id}
-                          className={cn(
-                            "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm hover:opacity-90 transition-opacity",
-                            STATUS_COLOR[a.status],
-                          )}
-                          title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="text-[12px] font-semibold truncate">
-                            {a.title}
+                      <div
+                        className="h-1/2 border-b border-dashed border-border/70 px-0.5 py-0.5"
+                        onClick={() => onTimeCellClick(hour, 0, w.id)}
+                      >
+                        {topHalfAppts.map((a) => (
+                          <div
+                            key={a.id}
+                            className={cn(
+                              "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm hover:opacity-90 transition-opacity",
+                              STATUS_COLOR[a.status],
+                            )}
+                            title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAppointmentClick(a);
+                            }}
+                          >
+                            <div className="text-[12px] font-semibold truncate">
+                              {a.title}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate">
+                              {a.customerName}
+                            </div>
                           </div>
-                          <div className="text-[11px] text-muted-foreground truncate">
-                            {a.customerName}
+                        ))}
+                      </div>
+                      <div
+                        className="h-1/2 px-0.5 py-0.5"
+                        onClick={() => onTimeCellClick(hour, 30, w.id)}
+                      >
+                        {bottomHalfAppts.map((a) => (
+                          <div
+                            key={a.id}
+                            className={cn(
+                              "rounded-md border-l-2 px-2 py-1 text-xs leading-tight cursor-pointer shadow-sm hover:opacity-90 transition-opacity",
+                              STATUS_COLOR[a.status],
+                            )}
+                            title={`${a.customerName} — ${a.title} (${a.durationMinutes}min)`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onAppointmentClick(a);
+                            }}
+                          >
+                            <div className="text-[12px] font-semibold truncate">
+                              {a.title}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground truncate">
+                              {a.customerName}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   );
                 })}
@@ -457,9 +521,11 @@ function DayView({
 function WeekView({
   currentDate,
   appointments,
+  onAppointmentClick,
 }: {
   currentDate: Date;
   appointments: MockAppointment[];
+  onAppointmentClick: (appointment: MockAppointment) => void;
 }) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -531,6 +597,7 @@ function WeekView({
                           STATUS_COLOR[a.status],
                         )}
                         title={`${a.customerName} — ${a.title} (${worker?.name ?? ""})`}
+                        onClick={() => onAppointmentClick(a)}
                       >
                         <div className="text-[12px] font-semibold truncate">
                           {a.title}
@@ -556,9 +623,11 @@ function WeekView({
 function MonthView({
   currentDate,
   appointments,
+  onAppointmentClick,
 }: {
   currentDate: Date;
   appointments: MockAppointment[];
+  onAppointmentClick: (appointment: MockAppointment) => void;
 }) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -634,6 +703,7 @@ function MonthView({
                           STATUS_COLOR[a.status],
                         )}
                         title={`${a.customerName} — ${a.title} (${worker?.name ?? ""})`}
+                        onClick={() => onAppointmentClick(a)}
                       >
                         {format(parseISO(a.startAt), "HH:mm")} {a.title}
                       </div>
@@ -712,11 +782,13 @@ function AutocompleteField({
 }
 
 function NewAppointmentModal({
+  title,
   draft,
   onClose,
   onChange,
   onSubmit,
 }: {
+  title: string;
   draft: NewAppointmentDraft;
   onClose: () => void;
   onChange: (patch: Partial<NewAppointmentDraft>) => void;
@@ -726,7 +798,7 @@ function NewAppointmentModal({
     <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center">
       <div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h2 className="text-sm font-semibold">Novo Agendamento</h2>
+          <h2 className="text-sm font-semibold">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -906,6 +978,9 @@ export function SchedulesBoardPage() {
   const [appointments, setAppointments] = useState<MockAppointment[]>(() =>
     buildMockAppointments(new Date()),
   );
+  const [editingAppointmentId, setEditingAppointmentId] = useState<
+    number | null
+  >(null);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [appointmentDraft, setAppointmentDraft] = useState<NewAppointmentDraft>(
     () => buildDraftFromDate(new Date()),
@@ -1000,12 +1075,27 @@ export function SchedulesBoardPage() {
 
   function openNewAppointment(date: Date, workerId?: number) {
     setAppointmentDraft(buildDraftFromDate(date, workerId));
+    setEditingAppointmentId(null);
     setIsAppointmentModalOpen(true);
   }
 
-  function handleDayCellClick(hour: number, workerId: number) {
-    const clicked = setMinutes(setHours(new Date(currentDate), hour), 0);
+  function openExistingAppointment(appointment: MockAppointment) {
+    setAppointmentDraft(buildDraftFromAppointment(appointment));
+    setEditingAppointmentId(appointment.id);
+    setIsAppointmentModalOpen(true);
+  }
+
+  function handleDayCellClick(hour: number, minute: 0 | 30, workerId: number) {
+    const clicked = setMinutes(setHours(new Date(currentDate), hour), minute);
     openNewAppointment(clicked, workerId);
+  }
+
+  function prevMiniMonth() {
+    setCurrentDate((d) => addMonths(d, -1));
+  }
+
+  function nextMiniMonth() {
+    setCurrentDate((d) => addMonths(d, 1));
   }
 
   function saveAppointment() {
@@ -1028,23 +1118,43 @@ export function SchedulesBoardPage() {
     const startAt = new Date(
       `${appointmentDraft.date}T${appointmentDraft.time}:00`,
     ).toISOString();
-    const nextId =
-      appointments.length > 0
-        ? Math.max(...appointments.map((a) => a.id)) + 1
-        : 1;
+    if (editingAppointmentId !== null) {
+      setAppointments((prev) =>
+        prev.map((a) =>
+          a.id === editingAppointmentId
+            ? {
+                ...a,
+                workerId,
+                customerName: appointmentDraft.customerName,
+                title: appointmentDraft.title,
+                startAt,
+                durationMinutes: appointmentDraft.durationMinutes,
+                status: appointmentDraft.status,
+              }
+            : a,
+        ),
+      );
+    } else {
+      const nextId =
+        appointments.length > 0
+          ? Math.max(...appointments.map((a) => a.id)) + 1
+          : 1;
 
-    setAppointments((prev) => [
-      ...prev,
-      {
-        id: nextId,
-        workerId,
-        customerName: appointmentDraft.customerName,
-        title: appointmentDraft.title,
-        startAt,
-        durationMinutes: appointmentDraft.durationMinutes,
-        status: appointmentDraft.status,
-      },
-    ]);
+      setAppointments((prev) => [
+        ...prev,
+        {
+          id: nextId,
+          workerId,
+          customerName: appointmentDraft.customerName,
+          title: appointmentDraft.title,
+          startAt,
+          durationMinutes: appointmentDraft.durationMinutes,
+          status: appointmentDraft.status,
+        },
+      ]);
+    }
+
+    setEditingAppointmentId(null);
     setIsAppointmentModalOpen(false);
   }
 
@@ -1167,10 +1277,26 @@ export function SchedulesBoardPage() {
             </button>
 
             <div className="rounded-xl border border-border bg-card p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold capitalize">
+              <div className="mb-2 relative flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={prevMiniMonth}
+                  className="absolute left-0 rounded p-1 text-muted-foreground hover:bg-accent"
+                  title="Mes anterior"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <h3 className="text-sm font-semibold capitalize text-center">
                   {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
                 </h3>
+                <button
+                  type="button"
+                  onClick={nextMiniMonth}
+                  className="absolute right-0 rounded p-1 text-muted-foreground hover:bg-accent"
+                  title="Proximo mes"
+                >
+                  <ChevronRight size={14} />
+                </button>
               </div>
               <div className="grid grid-cols-7 gap-1 text-center text-[11px] text-muted-foreground mb-1">
                 {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
@@ -1260,24 +1386,27 @@ export function SchedulesBoardPage() {
                 appointments={filteredAppointments}
                 workers={visibleDayWorkers}
                 columnWidth={dayColumnWidth}
-                onHourCellClick={handleDayCellClick}
+                onTimeCellClick={handleDayCellClick}
                 canMoveWorkersLeft={canMoveWorkersLeft}
                 canMoveWorkersRight={canMoveWorkersRight}
                 onMoveWorkersLeft={moveWorkersLeft}
                 onMoveWorkersRight={moveWorkersRight}
                 scrollToNowSignal={scrollToNowSignal}
+                onAppointmentClick={openExistingAppointment}
               />
             )}
             {view === "week" && (
               <WeekView
                 currentDate={currentDate}
                 appointments={filteredAppointments}
+                onAppointmentClick={openExistingAppointment}
               />
             )}
             {view === "month" && (
               <MonthView
                 currentDate={currentDate}
                 appointments={filteredAppointments}
+                onAppointmentClick={openExistingAppointment}
               />
             )}
           </div>
@@ -1286,8 +1415,16 @@ export function SchedulesBoardPage() {
 
       {isAppointmentModalOpen && (
         <NewAppointmentModal
+          title={
+            editingAppointmentId !== null
+              ? `Agendamento #${editingAppointmentId}`
+              : "Novo Agendamento"
+          }
           draft={appointmentDraft}
-          onClose={() => setIsAppointmentModalOpen(false)}
+          onClose={() => {
+            setIsAppointmentModalOpen(false);
+            setEditingAppointmentId(null);
+          }}
           onChange={(patch) =>
             setAppointmentDraft((prev) => ({ ...prev, ...patch }))
           }
