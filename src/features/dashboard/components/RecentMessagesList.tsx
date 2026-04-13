@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
+import { ArrowRight } from "lucide-react";
 import { formatRelative } from "@/lib/utils/formatDate";
 import type { RecentMessage } from "@/features/dashboard/types/dashboardTypes";
 
@@ -62,10 +63,19 @@ export function RecentMessagesList({
   return (
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">Últimas mensagens</h2>
-        <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-          {unreadTotal} não lidas
-        </span>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold">Conversas</h2>
+          <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            {unreadTotal} não lidas
+          </span>
+        </div>
+        <Link
+          to="/conversations"
+          className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          Ver mais
+          <ArrowRight size={12} />
+        </Link>
       </div>
 
       <div className="divide-y divide-border">

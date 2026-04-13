@@ -9,143 +9,220 @@ import { useAuthStore } from "@/lib/auth/authStore";
 
 // Auth
 const LoginPage = lazy(() =>
-  import("@/features/auth/pages/LoginPage").then((m) => ({ default: m.LoginPage }))
+  import("@/features/auth/pages/LoginPage").then((m) => ({
+    default: m.LoginPage,
+  })),
 );
 
 // Dashboard
 const DashboardPage = lazy(() =>
-  import("@/features/dashboard/pages/DashboardPage").then((m) => ({ default: m.DashboardPage }))
+  import("@/features/dashboard/pages/DashboardPage").then((m) => ({
+    default: m.DashboardPage,
+  })),
+);
+
+// Conversations
+const ConversationsPage = lazy(() =>
+  import("@/features/conversations/pages/ConversationsPage").then((m) => ({
+    default: m.ConversationsPage,
+  })),
 );
 
 // Customers
 const CustomerListPage = lazy(() =>
-  import("@/features/customers/pages/CustomerListPage").then((m) => ({ default: m.CustomerListPage }))
+  import("@/features/customers/pages/CustomerListPage").then((m) => ({
+    default: m.CustomerListPage,
+  })),
 );
 const CustomerFormPage = lazy(() =>
-  import("@/features/customers/pages/CustomerFormPage").then((m) => ({ default: m.CustomerFormPage }))
+  import("@/features/customers/pages/CustomerFormPage").then((m) => ({
+    default: m.CustomerFormPage,
+  })),
 );
 const CustomerDetailsPage = lazy(() =>
-  import("@/features/customers/pages/CustomerDetailsPage").then((m) => ({ default: m.CustomerDetailsPage }))
+  import("@/features/customers/pages/CustomerDetailsPage").then((m) => ({
+    default: m.CustomerDetailsPage,
+  })),
 );
 
 // Leads
 const LeadListPage = lazy(() =>
-  import("@/features/leads/pages/LeadListPage").then((m) => ({ default: m.LeadListPage }))
+  import("@/features/leads/pages/LeadListPage").then((m) => ({
+    default: m.LeadListPage,
+  })),
 );
 const LeadFormPage = lazy(() =>
-  import("@/features/leads/pages/LeadFormPage").then((m) => ({ default: m.LeadFormPage }))
+  import("@/features/leads/pages/LeadFormPage").then((m) => ({
+    default: m.LeadFormPage,
+  })),
 );
 const LeadDetailsPage = lazy(() =>
-  import("@/features/leads/pages/LeadDetailsPage").then((m) => ({ default: m.LeadDetailsPage }))
+  import("@/features/leads/pages/LeadDetailsPage").then((m) => ({
+    default: m.LeadDetailsPage,
+  })),
 );
 
 // Orders
 const OrderListPage = lazy(() =>
-  import("@/features/orders/pages/OrderListPage").then((m) => ({ default: m.OrderListPage }))
+  import("@/features/orders/pages/OrderListPage").then((m) => ({
+    default: m.OrderListPage,
+  })),
 );
 const OrderFormPage = lazy(() =>
-  import("@/features/orders/pages/OrderFormPage").then((m) => ({ default: m.OrderFormPage }))
+  import("@/features/orders/pages/OrderFormPage").then((m) => ({
+    default: m.OrderFormPage,
+  })),
 );
 const OrderDetailsPage = lazy(() =>
-  import("@/features/orders/pages/OrderDetailsPage").then((m) => ({ default: m.OrderDetailsPage }))
+  import("@/features/orders/pages/OrderDetailsPage").then((m) => ({
+    default: m.OrderDetailsPage,
+  })),
 );
 
 // Appointments
 const AppointmentListPage = lazy(() =>
-  import("@/features/appointments/pages/AppointmentListPage").then((m) => ({ default: m.AppointmentListPage }))
+  import("@/features/appointments/pages/AppointmentListPage").then((m) => ({
+    default: m.AppointmentListPage,
+  })),
 );
 const AppointmentFormPage = lazy(() =>
-  import("@/features/appointments/pages/AppointmentFormPage").then((m) => ({ default: m.AppointmentFormPage }))
+  import("@/features/appointments/pages/AppointmentFormPage").then((m) => ({
+    default: m.AppointmentFormPage,
+  })),
 );
 
 // Schedules
 const ScheduleListPage = lazy(() =>
-  import("@/features/schedules/pages/ScheduleListPage").then((m) => ({ default: m.ScheduleListPage }))
+  import("@/features/schedules/pages/ScheduleListPage").then((m) => ({
+    default: m.ScheduleListPage,
+  })),
 );
 const ScheduleFormPage = lazy(() =>
-  import("@/features/schedules/pages/ScheduleFormPage").then((m) => ({ default: m.ScheduleFormPage }))
+  import("@/features/schedules/pages/ScheduleFormPage").then((m) => ({
+    default: m.ScheduleFormPage,
+  })),
 );
 
 // Persons
 const PersonListPage = lazy(() =>
-  import("@/features/persons/pages/PersonListPage").then((m) => ({ default: m.PersonListPage }))
+  import("@/features/persons/pages/PersonListPage").then((m) => ({
+    default: m.PersonListPage,
+  })),
 );
 const PersonFormPage = lazy(() =>
-  import("@/features/persons/pages/PersonFormPage").then((m) => ({ default: m.PersonFormPage }))
+  import("@/features/persons/pages/PersonFormPage").then((m) => ({
+    default: m.PersonFormPage,
+  })),
 );
 
 // Addresses
 const AddressListPage = lazy(() =>
-  import("@/features/addresses/pages/AddressListPage").then((m) => ({ default: m.AddressListPage }))
+  import("@/features/addresses/pages/AddressListPage").then((m) => ({
+    default: m.AddressListPage,
+  })),
 );
 const AddressFormPage = lazy(() =>
-  import("@/features/addresses/pages/AddressFormPage").then((m) => ({ default: m.AddressFormPage }))
+  import("@/features/addresses/pages/AddressFormPage").then((m) => ({
+    default: m.AddressFormPage,
+  })),
 );
 
 // Catalog - Items
 const ItemListPage = lazy(() =>
-  import("@/features/catalog/items/pages/ItemListPage").then((m) => ({ default: m.ItemListPage }))
+  import("@/features/catalog/items/pages/ItemListPage").then((m) => ({
+    default: m.ItemListPage,
+  })),
 );
 const ItemFormPage = lazy(() =>
-  import("@/features/catalog/items/pages/ItemFormPage").then((m) => ({ default: m.ItemFormPage }))
+  import("@/features/catalog/items/pages/ItemFormPage").then((m) => ({
+    default: m.ItemFormPage,
+  })),
 );
 
 // Catalog - Categories
 const ItemCategoryListPage = lazy(() =>
-  import("@/features/catalog/categories/pages/ItemCategoryListPage").then((m) => ({ default: m.ItemCategoryListPage }))
+  import("@/features/catalog/categories/pages/ItemCategoryListPage").then(
+    (m) => ({ default: m.ItemCategoryListPage }),
+  ),
 );
 const ItemCategoryFormPage = lazy(() =>
-  import("@/features/catalog/categories/pages/ItemCategoryFormPage").then((m) => ({ default: m.ItemCategoryFormPage }))
+  import("@/features/catalog/categories/pages/ItemCategoryFormPage").then(
+    (m) => ({ default: m.ItemCategoryFormPage }),
+  ),
 );
 
 // Catalog - Units of measure
 const UnitOfMeasureListPage = lazy(() =>
-  import("@/features/catalog/units-of-measure/pages/UnitOfMeasureListPage").then((m) => ({ default: m.UnitOfMeasureListPage }))
+  import("@/features/catalog/units-of-measure/pages/UnitOfMeasureListPage").then(
+    (m) => ({ default: m.UnitOfMeasureListPage }),
+  ),
 );
 
 // Pipeline
 const PipelineFlowListPage = lazy(() =>
-  import("@/features/pipeline/pages/PipelineFlowListPage").then((m) => ({ default: m.PipelineFlowListPage }))
+  import("@/features/pipeline/pages/PipelineFlowListPage").then((m) => ({
+    default: m.PipelineFlowListPage,
+  })),
 );
 const PipelineFlowFormPage = lazy(() =>
-  import("@/features/pipeline/pages/PipelineFlowFormPage").then((m) => ({ default: m.PipelineFlowFormPage }))
+  import("@/features/pipeline/pages/PipelineFlowFormPage").then((m) => ({
+    default: m.PipelineFlowFormPage,
+  })),
 );
 
 // Admin - Tenants
 const TenantListPage = lazy(() =>
-  import("@/features/admin/tenants/pages/TenantListPage").then((m) => ({ default: m.TenantListPage }))
+  import("@/features/admin/tenants/pages/TenantListPage").then((m) => ({
+    default: m.TenantListPage,
+  })),
 );
 const TenantFormPage = lazy(() =>
-  import("@/features/admin/tenants/pages/TenantFormPage").then((m) => ({ default: m.TenantFormPage }))
+  import("@/features/admin/tenants/pages/TenantFormPage").then((m) => ({
+    default: m.TenantFormPage,
+  })),
 );
 
 // Admin - Users
 const UserListPage = lazy(() =>
-  import("@/features/admin/users/pages/UserListPage").then((m) => ({ default: m.UserListPage }))
+  import("@/features/admin/users/pages/UserListPage").then((m) => ({
+    default: m.UserListPage,
+  })),
 );
 const UserFormPage = lazy(() =>
-  import("@/features/admin/users/pages/UserFormPage").then((m) => ({ default: m.UserFormPage }))
+  import("@/features/admin/users/pages/UserFormPage").then((m) => ({
+    default: m.UserFormPage,
+  })),
 );
 
 // Admin - Workers
 const WorkerListPage = lazy(() =>
-  import("@/features/admin/workers/pages/WorkerListPage").then((m) => ({ default: m.WorkerListPage }))
+  import("@/features/admin/workers/pages/WorkerListPage").then((m) => ({
+    default: m.WorkerListPage,
+  })),
 );
 const WorkerFormPage = lazy(() =>
-  import("@/features/admin/workers/pages/WorkerFormPage").then((m) => ({ default: m.WorkerFormPage }))
+  import("@/features/admin/workers/pages/WorkerFormPage").then((m) => ({
+    default: m.WorkerFormPage,
+  })),
 );
 
 // Admin - Roles
 const RoleListPage = lazy(() =>
-  import("@/features/admin/roles/pages/RoleListPage").then((m) => ({ default: m.RoleListPage }))
+  import("@/features/admin/roles/pages/RoleListPage").then((m) => ({
+    default: m.RoleListPage,
+  })),
 );
 const RoleFormPage = lazy(() =>
-  import("@/features/admin/roles/pages/RoleFormPage").then((m) => ({ default: m.RoleFormPage }))
+  import("@/features/admin/roles/pages/RoleFormPage").then((m) => ({
+    default: m.RoleFormPage,
+  })),
 );
 
 // Admin - Permissions
 const PermissionListPage = lazy(() =>
-  import("@/features/admin/permissions/pages/PermissionListPage").then((m) => ({ default: m.PermissionListPage }))
+  import("@/features/admin/permissions/pages/PermissionListPage").then((m) => ({
+    default: m.PermissionListPage,
+  })),
 );
 
 // Redirects / to /dashboard or /login based on auth state
@@ -195,6 +272,7 @@ export function AppRouter() {
 
           <Route element={<AuthenticatedLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/conversations" element={<ConversationsPage />} />
 
             <Route path="/customers" element={<CustomerListPage />} />
             <Route path="/customers/new" element={<CustomerFormPage />} />
@@ -213,7 +291,10 @@ export function AppRouter() {
 
             <Route path="/appointments" element={<AppointmentListPage />} />
             <Route path="/appointments/new" element={<AppointmentFormPage />} />
-            <Route path="/appointments/:id/edit" element={<AppointmentFormPage />} />
+            <Route
+              path="/appointments/:id/edit"
+              element={<AppointmentFormPage />}
+            />
 
             <Route path="/schedules" element={<ScheduleListPage />} />
             <Route path="/schedules/new" element={<ScheduleFormPage />} />
@@ -231,15 +312,33 @@ export function AppRouter() {
             <Route path="/catalog/items/new" element={<ItemFormPage />} />
             <Route path="/catalog/items/:id/edit" element={<ItemFormPage />} />
 
-            <Route path="/catalog/categories" element={<ItemCategoryListPage />} />
-            <Route path="/catalog/categories/new" element={<ItemCategoryFormPage />} />
-            <Route path="/catalog/categories/:id/edit" element={<ItemCategoryFormPage />} />
+            <Route
+              path="/catalog/categories"
+              element={<ItemCategoryListPage />}
+            />
+            <Route
+              path="/catalog/categories/new"
+              element={<ItemCategoryFormPage />}
+            />
+            <Route
+              path="/catalog/categories/:id/edit"
+              element={<ItemCategoryFormPage />}
+            />
 
-            <Route path="/catalog/units-of-measure" element={<UnitOfMeasureListPage />} />
+            <Route
+              path="/catalog/units-of-measure"
+              element={<UnitOfMeasureListPage />}
+            />
 
             <Route path="/pipeline-flows" element={<PipelineFlowListPage />} />
-            <Route path="/pipeline-flows/new" element={<PipelineFlowFormPage />} />
-            <Route path="/pipeline-flows/:id/edit" element={<PipelineFlowFormPage />} />
+            <Route
+              path="/pipeline-flows/new"
+              element={<PipelineFlowFormPage />}
+            />
+            <Route
+              path="/pipeline-flows/:id/edit"
+              element={<PipelineFlowFormPage />}
+            />
 
             <Route path="/tenants" element={<TenantListPage />} />
             <Route path="/tenants/new" element={<TenantFormPage />} />

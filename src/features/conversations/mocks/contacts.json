@@ -1,0 +1,90 @@
+[
+  {
+    "id": "conv-1",
+    "leadId": "lead-101",
+    "name": "Ana Beatriz",
+    "channel": "WhatsApp",
+    "lastMessage": "Oi, quero fechar o pacote premium ainda hoje. Pode me mandar as formas de pagamento?",
+    "lastMessageAt": "2026-04-12T09:22:00.000Z",
+    "unreadCount": 3,
+    "sentiment": "hot",
+    "isOnline": true
+  },
+  {
+    "id": "conv-2",
+    "leadId": "lead-102",
+    "name": "Carlos Henrique",
+    "channel": "Instagram",
+    "lastMessage": "Consegue me enviar o catalogo atualizado com os itens de pronta entrega?",
+    "lastMessageAt": "2026-04-12T08:48:00.000Z",
+    "unreadCount": 1,
+    "sentiment": "warm",
+    "isOnline": false
+  },
+  {
+    "id": "conv-3",
+    "leadId": "lead-103",
+    "name": "Juliana Ribeiro",
+    "channel": "WhatsApp",
+    "lastMessage": "Perfeito, pode gerar o pedido com frete para Sao Paulo.",
+    "lastMessageAt": "2026-04-12T08:11:00.000Z",
+    "unreadCount": 0,
+    "sentiment": "hot",
+    "isOnline": true
+  },
+  {
+    "id": "conv-4",
+    "leadId": "lead-104",
+    "name": "Marcos Vinicius",
+    "channel": "Facebook",
+    "lastMessage": "Ainda estou avaliando. Voces conseguem manter esse desconto ate sexta?",
+    "lastMessageAt": "2026-04-11T18:34:00.000Z",
+    "unreadCount": 0,
+    "sentiment": "cold",
+    "isOnline": false
+  },
+  {
+    "id": "conv-5",
+    "leadId": "lead-105",
+    "name": "Renata Costa",
+    "channel": "WhatsApp",
+    "lastMessage": "Recebi aqui, obrigada. Vou alinhar com o financeiro e te retorno.",
+    "lastMessageAt": "2026-04-11T16:26:00.000Z",
+    "unreadCount": 2,
+    "sentiment": "warm",
+    "isOnline": false
+  },
+  {
+    "id": "conv-6",
+    "leadId": "lead-106",
+    "name": "Lucas Ferreira",
+    "channel": "Site",
+    "lastMessage": "Pode me explicar a diferenca entre o plano trimestral e anual?",
+    "lastMessageAt": "2026-04-11T14:52:00.000Z",
+    "unreadCount": 0,
+    "sentiment": "warm",
+    "isOnline": false
+  },
+  {
+    "id": "conv-7",
+    "leadId": "lead-107",
+    "name": "Fernanda Lima",
+    "channel": "WhatsApp",
+    "lastMessage": "Bom dia! Vi o anuncio no Instagram e gostei muito. Tem disponibilidade?",
+    "lastMessageAt": "2026-04-11T11:05:00.000Z",
+    "unreadCount": 1,
+    "sentiment": "warm",
+    "isOnline": true
+  },
+  {
+    "id": "conv-8",
+    "leadId": "lead-108",
+    "name": "Roberto Almeida",
+    "channel": "WhatsApp",
+    "lastMessage": "Vou confirmar o pedido hoje a tarde. Obrigado pela paciencia!",
+    "lastMessageAt": "2026-04-10T17:15:00.000Z",
+    "unreadCount": 0,
+    "sentiment": "hot",
+    "isOnline": false
+  }
+]
