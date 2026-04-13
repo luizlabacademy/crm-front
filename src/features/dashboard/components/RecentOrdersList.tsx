@@ -75,7 +75,7 @@ export function RecentOrdersList({
         <h2 className="text-sm font-semibold">Pedidos</h2>
         <Link
           to="/orders/board"
-          className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+          className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15 transition-colors"
         >
           Ver mais
           <ArrowRight size={12} />
@@ -83,14 +83,14 @@ export function RecentOrdersList({
       </div>
 
       {/* Filter chips */}
-      <div className="flex gap-1.5 px-5 py-2.5 border-b border-border overflow-x-auto">
+      <div className="flex flex-wrap gap-1.5 px-5 py-2.5 border-b border-border">
         {BOARD_COLUMNS.map((col) => (
           <button
             key={col.key}
             type="button"
             onClick={() => setActiveFilter(col.key)}
             className={cn(
-              "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
               activeFilter === col.key
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-background border-border text-muted-foreground hover:bg-accent",

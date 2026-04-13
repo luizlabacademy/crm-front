@@ -314,7 +314,7 @@ export function OrdersBoardPage() {
   }
 
   return (
-    <div className="-m-6 flex h-[calc(100vh-3.5rem)] lg:h-[calc(100vh)] flex-col overflow-hidden bg-muted/30">
+    <div className="flex min-h-screen flex-col overflow-hidden bg-muted/30">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-3">

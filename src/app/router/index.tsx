@@ -258,6 +258,15 @@ function AuthenticatedLayout() {
   );
 }
 
+// Authenticated routes without left nav shell
+function AuthenticatedFullscreenLayout() {
+  return (
+    <AuthGuard>
+      <Outlet />
+    </AuthGuard>
+  );
+}
+
 // /login: redirect to /dashboard if already authenticated
 function LoginRoute() {
   const token = useAuthStore((s) => s.token);
@@ -279,7 +288,6 @@ export function AppRouter() {
 
           <Route element={<AuthenticatedLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/conversations" element={<ConversationsPage />} />
 
             <Route path="/customers" element={<CustomerListPage />} />
             <Route path="/customers/new" element={<CustomerFormPage />} />
@@ -295,7 +303,6 @@ export function AppRouter() {
             <Route path="/orders/new" element={<OrderFormPage />} />
             <Route path="/orders/:id" element={<OrderDetailsPage />} />
             <Route path="/orders/:id/edit" element={<OrderFormPage />} />
-            <Route path="/orders/board" element={<OrdersBoardPage />} />
 
             <Route path="/appointments" element={<AppointmentListPage />} />
             <Route path="/appointments/new" element={<AppointmentFormPage />} />
@@ -365,6 +372,11 @@ export function AppRouter() {
             <Route path="/admin/roles/:id/edit" element={<RoleFormPage />} />
 
             <Route path="/admin/permissions" element={<PermissionListPage />} />
+          </Route>
+
+          <Route element={<AuthenticatedFullscreenLayout />}>
+            <Route path="/conversations" element={<ConversationsPage />} />
+            <Route path="/orders/board" element={<OrdersBoardPage />} />
           </Route>
 
           <Route path="*" element={<RootRedirect />} />
