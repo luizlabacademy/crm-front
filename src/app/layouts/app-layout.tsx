@@ -294,6 +294,21 @@ function FeatureSearchModal({
   onClose,
   onSelect,
 }: FeatureSearchModalProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveIndex(-1);
+    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(id);
+  }, [open]);
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [query, sectionFilter]);
+
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -302,6 +317,52 @@ function FeatureSearchModal({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
+
+  function moveActive(direction: 1 | -1) {
+    if (items.length === 0) return;
+
+    const nextIndex =
+      activeIndex < 0
+        ? direction > 0
+          ? 0
+          : items.length - 1
+        : (activeIndex + direction + items.length) % items.length;
+
+    setActiveIndex(nextIndex);
+
+    const element = resultsRef.current?.querySelector<HTMLElement>(
+      `[data-result-index="${nextIndex}"]`,
+    );
+    element?.scrollIntoView({ block: "nearest" });
+  }
+
+  function triggerActive() {
+    if (items.length === 0) return;
+    const target = items[activeIndex >= 0 ? activeIndex : 0];
+    if (target) onSelect(target);
+  }
+
+  function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveActive(1);
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveActive(-1);
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      triggerActive();
+    }
+  }
 
   if (!open) return null;
 
@@ -315,15 +376,25 @@ function FeatureSearchModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="border-b border-border px-5 py-4">
+          <div className="mb-2 flex items-center justify-end md:hidden">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              Fechar
+            </button>
+          </div>
           <div className="relative">
             <Search
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
             <input
-              autoFocus
+              ref={inputRef}
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
+              onKeyDown={handleInputKeyDown}
               placeholder="Buscar funcionalidades, paginas e modulos..."
               className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-24 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
@@ -351,7 +422,7 @@ function FeatureSearchModal({
           </div>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto p-2">
+        <div ref={resultsRef} className="max-h-[60vh] overflow-y-auto p-2">
           {items.length === 0 ? (
             <div className="px-4 py-14 text-center">
               <p className="text-sm font-medium">
@@ -362,12 +433,16 @@ function FeatureSearchModal({
               </p>
             </div>
           ) : (
-            items.map((item) => (
+            items.map((item, index) => (
               <button
                 key={`${item.section}-${item.to}`}
+                data-result-index={index}
                 type="button"
                 onClick={() => onSelect(item)}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-accent",
+                  activeIndex === index && "bg-accent ring-1 ring-ring/40",
+                )}
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                   {item.icon}
@@ -386,14 +461,29 @@ function FeatureSearchModal({
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border px-5 py-3">
-          <p className="text-xs text-muted-foreground">
-            Enter ou clique para abrir a funcionalidade.
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[11px]">
+                ↑
+              </kbd>
+              <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[11px]">
+                ↓
+              </kbd>
+              <span>Selecionar</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[11px]">
+                Enter
+              </kbd>
+              <span>Abrir</span>
+            </span>
+          </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="hidden rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground md:inline-flex"
           >
             Fechar
           </button>
@@ -461,7 +551,6 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
-      if (!notificationsOpen) return;
       if (
         notificationsRef.current &&
         !notificationsRef.current.contains(event.target as Node)
@@ -489,7 +578,7 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
       window.removeEventListener("mousedown", handleOutsideClick);
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [notificationsOpen]);
+  }, []);
 
   async function toggleFullscreen() {
     try {
