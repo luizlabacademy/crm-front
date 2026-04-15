@@ -36,8 +36,10 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+import navigationConfig from "@/app/config/navigation.json";
 import { useAuthStore } from "@/lib/auth/authStore";
 import { applyTheme, getStoredTheme } from "@/lib/theme/theme";
 import { cn } from "@/lib/utils";
@@ -46,6 +48,7 @@ interface NavItem {
   label: string;
   to: string;
   icon: ReactNode;
+  children?: NavItem[];
 }
 
 interface NavSection {
@@ -53,126 +56,71 @@ interface NavSection {
   items: NavItem[];
 }
 
+interface NavItemConfig {
+  label: string;
+  to: string;
+  icon: string;
+  children?: NavItemConfig[];
+}
+
+interface NavSectionConfig {
+  section: string;
+  items: NavItemConfig[];
+}
+
 interface FeatureIndexItem {
   section: string;
   label: string;
   to: string;
   icon: ReactNode;
+  breadcrumb?: string;
 }
 
-const NAV: NavSection[] = [
-  {
-    section: "Principal",
-    items: [
-      {
-        label: "Dashboard",
-        to: "/dashboard",
-        icon: <LayoutDashboard size={16} />,
-      },
-      {
-        label: "Conversas",
-        to: "/conversations",
-        icon: <MessageCircle size={16} />,
-      },
-    ],
-  },
-  {
-    section: "Operacoes",
-    items: [
-      {
-        label: "Leads",
-        to: "/marketing/leads",
-        icon: <ClipboardList size={16} />,
-      },
-      {
-        label: "Buscar Pedidos",
-        to: "/orders",
-        icon: <ShoppingCart size={16} />,
-      },
-      {
-        label: "Agendamentos",
-        to: "/schedules/board",
-        icon: <CalendarRange size={16} />,
-      },
-      { label: "Clientes", to: "/customers", icon: <Users size={16} /> },
-    ],
-  },
-  {
-    section: "Marketing",
-    items: [
-      {
-        label: "Campanhas de Marketing",
-        to: "/marketing/campaigns",
-        icon: <Megaphone size={16} />,
-      },
-      {
-        label: "Marketing Automatizado",
-        to: "/marketing/automation",
-        icon: <Zap size={16} />,
-      },
-      {
-        label: "Lista de Contatos",
-        to: "/marketing/contacts",
-        icon: <BookUser size={16} />,
-      },
-      {
-        label: "Landing Page",
-        to: "/marketing/landing-page",
-        icon: <Globe size={16} />,
-      },
-      {
-        label: "Cupons",
-        to: "/marketing/coupons",
-        icon: <Ticket size={16} />,
-      },
-      {
-        label: "Cashback",
-        to: "/marketing/cashback",
-        icon: <Wallet size={16} />,
-      },
-      {
-        label: "Afiliados",
-        to: "/marketing/affiliates",
-        icon: <UserPlus size={16} />,
-      },
-    ],
-  },
-  {
-    section: "Cadastros",
-    items: [
-      { label: "Itens", to: "/catalog/items", icon: <Package size={16} /> },
-      {
-        label: "Categorias",
-        to: "/catalog/categories",
-        icon: <Tag size={16} />,
-      },
-      {
-        label: "Unidades de Medida",
-        to: "/catalog/units-of-measure",
-        icon: <Ruler size={16} />,
-      },
-      { label: "Tenants", to: "/tenants", icon: <Building2 size={16} /> },
-      { label: "Usuarios", to: "/users", icon: <UserCog size={16} /> },
-      { label: "Workers", to: "/workers", icon: <Wrench size={16} /> },
-    ],
-  },
-  {
-    section: "Configuracoes",
-    items: [
-      {
-        label: "Fluxos de Pipeline",
-        to: "/pipeline-flows",
-        icon: <GitBranch size={16} />,
-      },
-      { label: "Perfis", to: "/admin/roles", icon: <ShieldCheck size={16} /> },
-      {
-        label: "Permissoes",
-        to: "/admin/permissions",
-        icon: <Lock size={16} />,
-      },
-    ],
-  },
-];
+const ICON_MAP: Record<string, LucideIcon> = {
+  "layout-dashboard": LayoutDashboard,
+  "message-circle": MessageCircle,
+  "clipboard-list": ClipboardList,
+  "shopping-cart": ShoppingCart,
+  "calendar-range": CalendarRange,
+  users: Users,
+  megaphone: Megaphone,
+  zap: Zap,
+  "book-user": BookUser,
+  globe: Globe,
+  ticket: Ticket,
+  wallet: Wallet,
+  "user-plus": UserPlus,
+  package: Package,
+  tag: Tag,
+  ruler: Ruler,
+  "building-2": Building2,
+  "user-cog": UserCog,
+  wrench: Wrench,
+  "git-branch": GitBranch,
+  "shield-check": ShieldCheck,
+  lock: Lock,
+};
+
+function iconNode(iconName: string, size = 16) {
+  const Icon = ICON_MAP[iconName] ?? LayoutDashboard;
+  return <Icon size={size} />;
+}
+
+function mapNavItems(items: NavItemConfig[]): NavItem[] {
+  return items.map((item) => ({
+    label: item.label,
+    to: item.to,
+    icon: iconNode(item.icon),
+    children: item.children ? mapNavItems(item.children) : undefined,
+  }));
+}
+
+const NAV: NavSection[] = (navigationConfig as NavSectionConfig[]).map(
+  (section) => ({
+    section: section.section,
+    items: mapNavItems(section.items),
+  }),
+);
 
 interface SidebarLinkProps {
   item: NavItem;
@@ -196,6 +144,33 @@ function SidebarLink({ item, onClick }: SidebarLinkProps) {
       {item.icon}
       <span>{item.label}</span>
     </NavLink>
+  );
+}
+
+function SidebarItems({
+  items,
+  onClose,
+  depth = 0,
+}: {
+  items: NavItem[];
+  onClose: () => void;
+  depth?: number;
+}) {
+  return (
+    <ul className={cn("space-y-0.5", depth > 0 && "mt-1 pl-4")}>
+      {items.map((item) => (
+        <li key={`${item.to}-${item.label}`}>
+          <SidebarLink item={item} onClick={onClose} />
+          {item.children && item.children.length > 0 ? (
+            <SidebarItems
+              items={item.children}
+              onClose={onClose}
+              depth={depth + 1}
+            />
+          ) : null}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -246,13 +221,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
               <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
                 {section.section}
               </p>
-              <ul className="space-y-0.5">
-                {section.items.map((item) => (
-                  <li key={item.to}>
-                    <SidebarLink item={item} onClick={onClose} />
-                  </li>
-                ))}
-              </ul>
+              <SidebarItems items={section.items} onClose={onClose} />
             </div>
           ))}
         </nav>
@@ -453,6 +422,7 @@ function FeatureSearchModal({
                   </span>
                   <span className="block text-xs text-muted-foreground">
                     {item.section}
+                    {item.breadcrumb ? ` - ${item.breadcrumb}` : ""}
                   </span>
                 </span>
                 <span className="text-xs text-muted-foreground">Abrir</span>
@@ -811,14 +781,31 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const featureIndex = useMemo<FeatureIndexItem[]>(
     () =>
-      NAV.flatMap((section) =>
-        section.items.map((item) => ({
-          section: section.section,
-          label: item.label,
-          to: item.to,
-          icon: item.icon,
-        })),
-      ),
+      NAV.flatMap((section) => {
+        function flattenItems(
+          items: NavItem[],
+          parents: string[] = [],
+        ): FeatureIndexItem[] {
+          return items.flatMap((item) => {
+            const breadcrumb = [...parents, item.label];
+            const current: FeatureIndexItem = {
+              section: section.section,
+              label: item.label,
+              to: item.to,
+              icon: item.icon,
+              breadcrumb: breadcrumb.join(" / "),
+            };
+
+            const nested = item.children
+              ? flattenItems(item.children, breadcrumb)
+              : [];
+
+            return [current, ...nested];
+          });
+        }
+
+        return flattenItems(section.items);
+      }),
     [],
   );
 
@@ -831,7 +818,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         normalizedQuery === "" ||
         item.label.toLowerCase().includes(normalizedQuery) ||
         item.section.toLowerCase().includes(normalizedQuery) ||
-        item.to.toLowerCase().includes(normalizedQuery);
+        item.to.toLowerCase().includes(normalizedQuery) ||
+        (item.breadcrumb ?? "").toLowerCase().includes(normalizedQuery);
       return matchesSection && matchesQuery;
     });
   }, [featureIndex, featureQuery, sectionFilter]);

@@ -1,0 +1,137 @@
+[
+  {
+    "section": "Principal",
+    "items": [
+      {
+        "label": "Dashboard",
+        "to": "/dashboard",
+        "icon": "layout-dashboard"
+      },
+      {
+        "label": "Conversas",
+        "to": "/conversations",
+        "icon": "message-circle"
+      }
+    ]
+  },
+  {
+    "section": "Operacoes",
+    "items": [
+      {
+        "label": "Leads",
+        "to": "/marketing/leads",
+        "icon": "clipboard-list"
+      },
+      {
+        "label": "Buscar Pedidos",
+        "to": "/orders",
+        "icon": "shopping-cart"
+      },
+      {
+        "label": "Agendamentos",
+        "to": "/schedules/board",
+        "icon": "calendar-range"
+      },
+      {
+        "label": "Clientes",
+        "to": "/customers",
+        "icon": "users"
+      }
+    ]
+  },
+  {
+    "section": "Marketing",
+    "items": [
+      {
+        "label": "Campanhas de Marketing",
+        "to": "/marketing/campaigns",
+        "icon": "megaphone"
+      },
+      {
+        "label": "Marketing Automatizado",
+        "to": "/marketing/automation",
+        "icon": "zap"
+      },
+      {
+        "label": "Lista de Contatos",
+        "to": "/marketing/contacts",
+        "icon": "book-user"
+      },
+      {
+        "label": "Landing Page",
+        "to": "/marketing/landing-page",
+        "icon": "globe"
+      },
+      {
+        "label": "Cupons",
+        "to": "/marketing/coupons",
+        "icon": "ticket"
+      },
+      {
+        "label": "Cashback",
+        "to": "/marketing/cashback",
+        "icon": "wallet"
+      },
+      {
+        "label": "Afiliados",
+        "to": "/marketing/affiliates",
+        "icon": "user-plus"
+      }
+    ]
+  },
+  {
+    "section": "Cadastros",
+    "items": [
+      {
+        "label": "Itens",
+        "to": "/catalog/items",
+        "icon": "package"
+      },
+      {
+        "label": "Categorias",
+        "to": "/catalog/categories",
+        "icon": "tag"
+      },
+      {
+        "label": "Unidades de Medida",
+        "to": "/catalog/units-of-measure",
+        "icon": "ruler"
+      },
+      {
+        "label": "Tenants",
+        "to": "/tenants",
+        "icon": "building-2"
+      },
+      {
+        "label": "Usuarios",
+        "to": "/users",
+        "icon": "user-cog"
+      },
+      {
+        "label": "Workers",
+        "to": "/workers",
+        "icon": "wrench"
+      }
+    ]
+  },
+  {
+    "section": "Configuracoes",
+    "items": [
+      {
+        "label": "Fluxos de Pipeline",
+        "to": "/pipeline-flows",
+        "icon": "git-branch"
+      },
+      {
+        "label": "Perfis",
+        "to": "/admin/roles",
+        "icon": "shield-check"
+      },
+      {
+        "label": "Permissoes",
+        "to": "/admin/permissions",
+        "icon": "lock"
+      }
+    ]
+  }
+]
