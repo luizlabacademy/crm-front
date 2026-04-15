@@ -179,3 +179,105 @@ export interface LandingPageConfig {
   slides: LandingPageSlide[];
   services: LandingPageService[];
 }
+
+// ─── Coupon Types ─────────────────────────────────────────────────────────────
+
+export type CouponType = "percentage" | "fixed";
+export type CouponStatus = "Ativo" | "Expirado" | "Inativo";
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description: string;
+  type: CouponType;
+  /** Discount value: percentage (0-100) or fixed amount in cents */
+  value: number;
+  /** Minimum order value in cents to apply the coupon (0 = no minimum) */
+  minOrderCents: number;
+  /** Maximum number of total uses (null = unlimited) */
+  maxUses: number | null;
+  usedCount: number;
+  /** Maximum uses per customer (null = unlimited) */
+  maxUsesPerCustomer: number | null;
+  status: CouponStatus;
+  startsAt: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface CreateCouponPayload {
+  code: string;
+  description: string;
+  type: CouponType;
+  value: number;
+  minOrderCents: number;
+  maxUses: number | null;
+  maxUsesPerCustomer: number | null;
+  startsAt: string;
+  expiresAt: string;
+}
+
+// ─── Cashback Types ───────────────────────────────────────────────────────────
+
+export type CashbackRuleStatus = "Ativa" | "Inativa";
+
+export interface CashbackRule {
+  id: string;
+  name: string;
+  /** Percentage of order value returned as cashback (0-100) */
+  percentage: number;
+  /** Maximum cashback amount in cents per transaction (null = unlimited) */
+  maxAmountCents: number | null;
+  /** Minimum order value in cents to earn cashback (0 = no minimum) */
+  minOrderCents: number;
+  /** Days until cashback expires after being earned (null = never) */
+  expirationDays: number | null;
+  status: CashbackRuleStatus;
+  /** Total cashback distributed in cents */
+  totalDistributedCents: number;
+  /** Total cashback redeemed in cents */
+  totalRedeemedCents: number;
+  /** Number of customers who have earned cashback from this rule */
+  totalCustomers: number;
+  createdAt: string;
+}
+
+export interface CreateCashbackRulePayload {
+  name: string;
+  percentage: number;
+  maxAmountCents: number | null;
+  minOrderCents: number;
+  expirationDays: number | null;
+}
+
+// ─── Affiliate Types ──────────────────────────────────────────────────────────
+
+export type AffiliateStatus = "Ativo" | "Inativo" | "Pendente";
+
+export interface Affiliate {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  /** Unique referral code */
+  referralCode: string;
+  /** Commission percentage on referred sales (0-100) */
+  commissionPercent: number;
+  status: AffiliateStatus;
+  /** Total referred sales in cents */
+  totalSalesCents: number;
+  /** Total commission earned in cents */
+  totalCommissionCents: number;
+  /** Total commission already paid out in cents */
+  totalPaidCents: number;
+  /** Number of customers referred */
+  referralCount: number;
+  createdAt: string;
+}
+
+export interface CreateAffiliatePayload {
+  name: string;
+  email: string;
+  phone: string;
+  commissionPercent: number;
+}

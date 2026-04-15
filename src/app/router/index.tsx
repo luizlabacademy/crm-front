@@ -209,6 +209,24 @@ const LandingPage = lazy(() =>
   })),
 );
 
+const CouponsPage = lazy(() =>
+  import("@/features/marketing/pages/CouponsPage").then((m) => ({
+    default: m.CouponsPage,
+  })),
+);
+
+const CashbackPage = lazy(() =>
+  import("@/features/marketing/pages/CashbackPage").then((m) => ({
+    default: m.CashbackPage,
+  })),
+);
+
+const AffiliatesPage = lazy(() =>
+  import("@/features/marketing/pages/AffiliatesPage").then((m) => ({
+    default: m.AffiliatesPage,
+  })),
+);
+
 // Admin - Roles
 const RoleListPage = lazy(() =>
   import("@/features/admin/roles/pages/RoleListPage").then((m) => ({
@@ -367,6 +385,9 @@ export function AppRouter() {
               path="/marketing/landing-page"
               element={<LandingPageConfigPage />}
             />
+            <Route path="/marketing/coupons" element={<CouponsPage />} />
+            <Route path="/marketing/cashback" element={<CashbackPage />} />
+            <Route path="/marketing/affiliates" element={<AffiliatesPage />} />
           </Route>
 
           <Route element={<AuthenticatedFullscreenLayout />}>

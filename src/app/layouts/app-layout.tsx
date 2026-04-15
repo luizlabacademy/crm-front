@@ -23,6 +23,9 @@ import {
   Zap,
   BookUser,
   Globe,
+  Ticket,
+  Wallet,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth/authStore";
@@ -98,6 +101,21 @@ const NAV: NavSection[] = [
         label: "Landing Page",
         to: "/marketing/landing-page",
         icon: <Globe size={16} />,
+      },
+      {
+        label: "Cupons",
+        to: "/marketing/coupons",
+        icon: <Ticket size={16} />,
+      },
+      {
+        label: "Cashback",
+        to: "/marketing/cashback",
+        icon: <Wallet size={16} />,
+      },
+      {
+        label: "Afiliados",
+        to: "/marketing/affiliates",
+        icon: <UserPlus size={16} />,
       },
     ],
   },
