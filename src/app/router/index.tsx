@@ -227,6 +227,26 @@ const AffiliatesPage = lazy(() =>
   })),
 );
 
+// Notifications
+const NotificationsPage = lazy(() =>
+  import("@/features/notifications/pages/NotificationsPage").then((m) => ({
+    default: m.NotificationsPage,
+  })),
+);
+
+// Account
+const MyProfilePage = lazy(() =>
+  import("@/features/account/pages/MyProfilePage").then((m) => ({
+    default: m.MyProfilePage,
+  })),
+);
+
+const SettingsPage = lazy(() =>
+  import("@/features/account/pages/SettingsPage").then((m) => ({
+    default: m.SettingsPage,
+  })),
+);
+
 // Admin - Roles
 const RoleListPage = lazy(() =>
   import("@/features/admin/roles/pages/RoleListPage").then((m) => ({
@@ -388,6 +408,10 @@ export function AppRouter() {
             <Route path="/marketing/coupons" element={<CouponsPage />} />
             <Route path="/marketing/cashback" element={<CashbackPage />} />
             <Route path="/marketing/affiliates" element={<AffiliatesPage />} />
+
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/me/profile" element={<MyProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
 
           <Route element={<AuthenticatedFullscreenLayout />}>
