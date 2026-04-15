@@ -36,6 +36,7 @@ import { formatRelative } from "@/lib/utils/formatDate";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SearchModal } from "@/components/shared/SearchModal";
 import type {
   ConversationContact,
   ChatMessage,
@@ -785,164 +786,132 @@ function NewChatModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-xl border border-border bg-card shadow-lg">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div>
-            <h2 className="text-sm font-semibold">Novo Atendimento</h2>
-            <p className="text-xs text-muted-foreground">
-              Selecione a pessoa, o canal e o tipo de conversa
-            </p>
-          </div>
+    <SearchModal
+      open
+      title="Novo Atendimento"
+      description="Selecione a pessoa, o canal e o tipo de conversa"
+      query={personSearch}
+      onQueryChange={setPersonSearch}
+      onClose={onClose}
+      placeholder={
+        selectedType === "agent"
+          ? "Buscar atendente por nome..."
+          : "Buscar cliente por nome..."
+      }
+      className="max-w-xl"
+    >
+      <div className="border-b border-border px-4 py-3">
+        <p className="mb-2 text-xs font-medium text-muted-foreground">
+          Tipo de conversa
+        </p>
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            onClick={() => {
+              setSelectedType("customer");
+              if (selectedChannel === "Corporativo")
+                setSelectedChannel("WhatsApp");
+            }}
+            className={cn(
+              "flex flex-1 items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+              selectedType === "customer"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-accent",
+            )}
           >
-            <X size={16} />
+            <User size={14} />
+            Cliente
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedType("agent");
+              setSelectedChannel("Corporativo");
+            }}
+            className={cn(
+              "flex flex-1 items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+              selectedType === "agent"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-accent",
+            )}
+          >
+            <Users size={14} />
+            Atendente (Interno)
           </button>
         </div>
+      </div>
 
-        {/* Type selector */}
-        <div className="border-b border-border px-4 py-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Tipo de conversa
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedType("customer");
-                if (selectedChannel === "Corporativo")
-                  setSelectedChannel("WhatsApp");
-              }}
-              className={cn(
-                "flex flex-1 items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-                selectedType === "customer"
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:bg-accent",
-              )}
-            >
-              <User size={14} />
-              Cliente
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedType("agent");
-                setSelectedChannel("Corporativo");
-              }}
-              className={cn(
-                "flex flex-1 items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-                selectedType === "agent"
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:bg-accent",
-              )}
-            >
-              <Users size={14} />
-              Atendente (Interno)
-            </button>
-          </div>
-        </div>
-
-        {/* Channel selector */}
-        <div className="border-b border-border px-4 py-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Canal
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {channels
-              .filter((c) =>
-                selectedType === "agent"
-                  ? c.value === "Corporativo"
-                  : c.value !== "Corporativo",
-              )
-              .map((ch) => (
-                <button
-                  key={ch.value}
-                  type="button"
-                  onClick={() => setSelectedChannel(ch.value)}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                    selectedChannel === ch.value
-                      ? ch.color + " ring-2 ring-offset-1 ring-primary/40"
-                      : "border-border text-muted-foreground hover:bg-accent",
-                  )}
-                >
-                  {ch.label}
-                </button>
-              ))}
-          </div>
-        </div>
-
-        {/* Person search */}
-        <div className="border-b border-border px-4 py-3">
-          <div className="relative">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              type="text"
-              value={personSearch}
-              onChange={(e) => setPersonSearch(e.target.value)}
-              placeholder={
-                selectedType === "agent"
-                  ? "Buscar atendente por nome..."
-                  : "Buscar cliente por nome..."
-              }
-              className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-            />
-          </div>
-        </div>
-
-        <div className="max-h-[40vh] overflow-y-auto p-2">
-          {isLoadingPersons ? (
-            <p className="px-3 py-6 text-sm text-muted-foreground">
-              Carregando pessoas...
-            </p>
-          ) : filteredPersons.length === 0 ? (
-            <p className="px-3 py-6 text-sm text-muted-foreground">
-              Nenhuma pessoa encontrada.
-            </p>
-          ) : (
-            filteredPersons.map((person) => {
-              const name = getPersonDisplayName(person);
-              return (
-                <button
-                  key={person.id}
-                  type="button"
-                  onClick={() =>
-                    onCreateChat(person, selectedChannel, selectedType)
-                  }
-                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-accent transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white shrink-0",
-                        avatarColor(name),
-                      )}
-                    >
-                      {initial(name)}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        pessoa #{person.id}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs text-primary shrink-0 ml-2">
-                    Iniciar
-                  </span>
-                </button>
-              );
-            })
-          )}
+      <div className="border-b border-border px-4 py-3">
+        <p className="mb-2 text-xs font-medium text-muted-foreground">Canal</p>
+        <div className="flex flex-wrap gap-2">
+          {channels
+            .filter((c) =>
+              selectedType === "agent"
+                ? c.value === "Corporativo"
+                : c.value !== "Corporativo",
+            )
+            .map((ch) => (
+              <button
+                key={ch.value}
+                type="button"
+                onClick={() => setSelectedChannel(ch.value)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  selectedChannel === ch.value
+                    ? ch.color + " ring-2 ring-offset-1 ring-primary/40"
+                    : "border-border text-muted-foreground hover:bg-accent",
+                )}
+              >
+                {ch.label}
+              </button>
+            ))}
         </div>
       </div>
-    </div>
+
+      {isLoadingPersons ? (
+        <p className="px-3 py-6 text-sm text-muted-foreground">
+          Carregando pessoas...
+        </p>
+      ) : filteredPersons.length === 0 ? (
+        <p className="px-3 py-6 text-sm text-muted-foreground">
+          Nenhuma pessoa encontrada.
+        </p>
+      ) : (
+        filteredPersons.map((person) => {
+          const name = getPersonDisplayName(person);
+          return (
+            <button
+              key={person.id}
+              type="button"
+              onClick={() =>
+                onCreateChat(person, selectedChannel, selectedType)
+              }
+              className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-accent transition-colors"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white shrink-0",
+                    avatarColor(name),
+                  )}
+                >
+                  {initial(name)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    pessoa #{person.id}
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs text-primary shrink-0 ml-2">
+                Iniciar
+              </span>
+            </button>
+          );
+        })
+      )}
+    </SearchModal>
   );
 }
 

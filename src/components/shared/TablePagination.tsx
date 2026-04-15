@@ -1,3 +1,5 @@
+import { Button } from "@/components/shared/Button";
+
 interface TablePaginationProps {
   /** Índice da página atual (base zero). */
   page: number;
@@ -24,24 +26,26 @@ export function TablePagination({
         {totalElements !== undefined && ` · ${totalElements} registros`}
       </span>
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
+          size="xs"
+          variant="outline"
           onClick={onPrev}
           disabled={page === 0}
           aria-label="Página anterior"
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
         >
           Anterior
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          size="xs"
+          variant="outline"
           onClick={onNext}
           disabled={page >= totalPages - 1}
           aria-label="Próxima página"
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
         >
           Próxima
-        </button>
+        </Button>
       </div>
     </div>
   );

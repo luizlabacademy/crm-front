@@ -2,9 +2,13 @@
  * PersonFields – seção reutilizável para dados de pessoa física/jurídica,
  * contatos e endereços. Integra com react-hook-form via register/watch/setValue.
  */
-import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Accordion,
+  type AccordionItemData,
+} from "@/components/shared/Accordion";
+import { FieldError, Label, inputCls } from "@/components/shared/FormField";
 import type {
   UseFormRegister,
   UseFormWatch,
@@ -15,37 +19,6 @@ import type {
 } from "react-hook-form";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-destructive mt-1">{message}</p>;
-}
-
-export function Label({
-  htmlFor,
-  children,
-  required,
-}: {
-  htmlFor: string;
-  children: React.ReactNode;
-  required?: boolean;
-}) {
-  return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium">
-      {children}
-      {required && <span className="text-destructive ml-0.5">*</span>}
-    </label>
-  );
-}
-
-export function inputCls(hasError?: boolean) {
-  return cn(
-    "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-ring focus:ring-offset-1",
-    "disabled:opacity-50",
-    hasError ? "border-destructive" : "border-input",
-  );
-}
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -363,17 +336,13 @@ export function AddressesField({
   onChange,
   disabled,
 }: AddressesFieldProps) {
-  const [expanded, setExpanded] = useState<number | null>(null);
-
   function add() {
     const next = [...addresses, emptyAddress()];
     onChange(next);
-    setExpanded(next.length - 1);
   }
 
   function remove(index: number) {
     onChange(addresses.filter((_, i) => i !== index));
-    setExpanded(null);
   }
 
   function update(
@@ -386,148 +355,132 @@ export function AddressesField({
     );
   }
 
+  const items: AccordionItemData[] = addresses.map((addr, index) => ({
+    id: `address-${index}`,
+    title: `${addr.type === "RESIDENTIAL" ? "Residencial" : "Comercial"} — ${addr.street || "novo endereço"}`,
+    subtitle: addr.primary ? "Endereço principal" : undefined,
+    disabled,
+    content: (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label className="text-xs font-medium">Tipo</label>
+          <select
+            value={addr.type}
+            onChange={(e) =>
+              update(
+                index,
+                "type",
+                e.target.value as "RESIDENTIAL" | "COMMERCIAL",
+              )
+            }
+            disabled={disabled}
+            className={inputCls()}
+          >
+            <option value="RESIDENTIAL">Residencial</option>
+            <option value="COMMERCIAL">Comercial</option>
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium">CEP</label>
+          <input
+            type="text"
+            value={addr.postalCode}
+            onChange={(e) => update(index, "postalCode", e.target.value)}
+            placeholder="00000-000"
+            maxLength={9}
+            disabled={disabled}
+            className={inputCls()}
+          />
+        </div>
+
+        <div className="space-y-1 sm:col-span-2">
+          <label className="text-xs font-medium">Logradouro</label>
+          <input
+            type="text"
+            value={addr.street}
+            onChange={(e) => update(index, "street", e.target.value)}
+            placeholder="Rua, Avenida..."
+            disabled={disabled}
+            className={inputCls()}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium">Número</label>
+          <input
+            type="text"
+            value={addr.number}
+            onChange={(e) => update(index, "number", e.target.value)}
+            placeholder="123"
+            disabled={disabled}
+            className={inputCls()}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-medium">Complemento</label>
+          <input
+            type="text"
+            value={addr.complement}
+            onChange={(e) => update(index, "complement", e.target.value)}
+            placeholder="Apto, Bloco..."
+            disabled={disabled}
+            className={inputCls()}
+          />
+        </div>
+
+        <div className="space-y-1 sm:col-span-2">
+          <label className="text-xs font-medium">Bairro</label>
+          <input
+            type="text"
+            value={addr.neighborhood}
+            onChange={(e) => update(index, "neighborhood", e.target.value)}
+            disabled={disabled}
+            className={inputCls()}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4 sm:col-span-2">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-1.5 text-xs">
+              <input
+                type="checkbox"
+                checked={addr.primary}
+                onChange={(e) => update(index, "primary", e.target.checked)}
+                disabled={disabled}
+                className="accent-primary h-3.5 w-3.5"
+              />
+              Principal
+            </label>
+            <label className="flex items-center gap-1.5 text-xs">
+              <input
+                type="checkbox"
+                checked={addr.active}
+                onChange={(e) => update(index, "active", e.target.checked)}
+                disabled={disabled}
+                className="accent-primary h-3.5 w-3.5"
+              />
+              Ativo
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={() => remove(index)}
+            disabled={disabled}
+            className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            aria-label="Remover endereço"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+    ),
+  }));
+
   return (
     <div className="space-y-3">
-      {addresses.map((addr, index) => (
-        <div
-          key={index}
-          className="rounded-md border border-border bg-muted/20 overflow-hidden"
-        >
-          <div
-            className="flex items-center justify-between px-3 py-2.5 cursor-pointer hover:bg-accent/30 transition-colors"
-            onClick={() => setExpanded(expanded === index ? null : index)}
-          >
-            <span className="text-sm font-medium">
-              {addr.type === "RESIDENTIAL" ? "Residencial" : "Comercial"} —{" "}
-              {addr.street || "novo endereço"}
-              {addr.primary && (
-                <span className="ml-2 text-xs text-primary">(principal)</span>
-              )}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  remove(index);
-                }}
-                disabled={disabled}
-                className="rounded p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          </div>
-
-          {expanded === index && (
-            <div className="border-t border-border p-3 grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Tipo</label>
-                <select
-                  value={addr.type}
-                  onChange={(e) =>
-                    update(
-                      index,
-                      "type",
-                      e.target.value as "RESIDENTIAL" | "COMMERCIAL",
-                    )
-                  }
-                  disabled={disabled}
-                  className={inputCls()}
-                >
-                  <option value="RESIDENTIAL">Residencial</option>
-                  <option value="COMMERCIAL">Comercial</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">CEP</label>
-                <input
-                  type="text"
-                  value={addr.postalCode}
-                  onChange={(e) => update(index, "postalCode", e.target.value)}
-                  placeholder="00000-000"
-                  maxLength={9}
-                  disabled={disabled}
-                  className={inputCls()}
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-medium">Logradouro</label>
-                <input
-                  type="text"
-                  value={addr.street}
-                  onChange={(e) => update(index, "street", e.target.value)}
-                  placeholder="Rua, Avenida..."
-                  disabled={disabled}
-                  className={inputCls()}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Número</label>
-                <input
-                  type="text"
-                  value={addr.number}
-                  onChange={(e) => update(index, "number", e.target.value)}
-                  placeholder="123"
-                  disabled={disabled}
-                  className={inputCls()}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Complemento</label>
-                <input
-                  type="text"
-                  value={addr.complement}
-                  onChange={(e) => update(index, "complement", e.target.value)}
-                  placeholder="Apto, Bloco..."
-                  disabled={disabled}
-                  className={inputCls()}
-                />
-              </div>
-
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-medium">Bairro</label>
-                <input
-                  type="text"
-                  value={addr.neighborhood}
-                  onChange={(e) =>
-                    update(index, "neighborhood", e.target.value)
-                  }
-                  disabled={disabled}
-                  className={inputCls()}
-                />
-              </div>
-
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-1.5 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={addr.primary}
-                    onChange={(e) => update(index, "primary", e.target.checked)}
-                    disabled={disabled}
-                    className="accent-primary h-3.5 w-3.5"
-                  />
-                  Principal
-                </label>
-                <label className="flex items-center gap-1.5 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={addr.active}
-                    onChange={(e) => update(index, "active", e.target.checked)}
-                    disabled={disabled}
-                    className="accent-primary h-3.5 w-3.5"
-                  />
-                  Ativo
-                </label>
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
+      <Accordion items={items} defaultOpenId={items[0]?.id ?? null} />
 
       <button
         type="button"
@@ -544,6 +497,7 @@ export function AddressesField({
 
 // ─── Re-exports for convenience ───────────────────────────────────────────────
 
+export { FieldError, Label, inputCls };
 export type { PersonType };
 // Needed for callers that use setValue with typed paths
 export type { UseFormRegister, UseFormWatch, UseFormSetValue, PathValue };

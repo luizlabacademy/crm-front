@@ -16,7 +16,6 @@ import {
   Label,
   FieldError,
   inputCls,
-  SectionTitle,
   PersonTypeSwitch,
   PhysicalFields,
   LegalFields,
@@ -27,6 +26,10 @@ import {
   type AddressRow,
 } from "@/components/shared/PersonFields";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/shared/Button";
+import { Grid } from "@/components/shared/Grid";
+import { Fieldset } from "@/components/shared/Fieldset";
+import { Divider } from "@/components/shared/Divider";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -232,14 +235,15 @@ export function CustomerFormPage() {
     <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={() => void navigate("/customers")}
-          className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           aria-label="Voltar"
         >
           <ArrowLeft size={18} />
-        </button>
+        </Button>
         <div>
           <h1 className="text-2xl font-semibold">
             {isEdit ? "Editar cliente" : "Novo cliente"}
@@ -254,9 +258,7 @@ export function CustomerFormPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
         {/* ── Dados básicos ── */}
-        <div className="space-y-4">
-          <SectionTitle>Dados básicos</SectionTitle>
-
+        <Fieldset legend="Dados básicos" className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="tenantId" required>
               Tenant
@@ -289,7 +291,7 @@ export function CustomerFormPage() {
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <Grid cols={1} gap={4} className="sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail</Label>
               <input
@@ -328,7 +330,7 @@ export function CustomerFormPage() {
                 className={inputCls()}
               />
             </div>
-          </div>
+          </Grid>
 
           <div className="space-y-1.5">
             <Label htmlFor="notes">Observações</Label>
@@ -353,11 +355,10 @@ export function CustomerFormPage() {
               Cliente ativo
             </label>
           </div>
-        </div>
+        </Fieldset>
 
         {/* ── Dados de pessoa ── */}
-        <div className="space-y-4">
-          <SectionTitle>Dados de pessoa</SectionTitle>
+        <Fieldset legend="Dados de pessoa" className="space-y-4">
           <PersonTypeSwitch
             value={personType}
             onChange={setPersonType}
@@ -377,46 +378,41 @@ export function CustomerFormPage() {
               disabled={isSaving}
             />
           )}
-        </div>
+        </Fieldset>
 
         {/* ── Contatos ── */}
-        <div className="space-y-4">
-          <SectionTitle>Contatos</SectionTitle>
+        <Fieldset legend="Contatos" className="space-y-4">
           <ContactsField
             contacts={contacts}
             onChange={setContacts}
             disabled={isSaving}
           />
-        </div>
+        </Fieldset>
 
         {/* ── Endereços ── */}
-        <div className="space-y-4">
-          <SectionTitle>Endereços</SectionTitle>
+        <Fieldset legend="Endereços" className="space-y-4">
           <AddressesField
             addresses={addresses}
             onChange={setAddresses}
             disabled={isSaving}
           />
-        </div>
+        </Fieldset>
 
         {/* ── Actions ── */}
-        <div className="flex items-center gap-3 pt-2 border-t border-border">
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
+        <Divider />
+        <div className="flex items-center gap-3 pt-2">
+          <Button type="submit" disabled={isSaving}>
             {isSaving && <Loader2 size={14} className="animate-spin" />}
             {isEdit ? "Salvar alterações" : "Cadastrar cliente"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
             onClick={() => void navigate("/customers")}
             disabled={isSaving}
-            className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-50"
           >
             Cancelar
-          </button>
+          </Button>
         </div>
       </form>
     </div>

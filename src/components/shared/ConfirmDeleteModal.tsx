@@ -1,4 +1,5 @@
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/shared/Button";
 
 interface ConfirmDeleteModalProps {
   /**
@@ -42,19 +43,19 @@ export function ConfirmDeleteModal({
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onCancel}
             disabled={isDeleting}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors disabled:opacity-50"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="destructive"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="rounded-md bg-destructive/90 text-white px-3 py-1.5 text-sm hover:bg-destructive transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {isDeleting && (
               <RefreshCw
@@ -64,7 +65,7 @@ export function ConfirmDeleteModal({
               />
             )}
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
