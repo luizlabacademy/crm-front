@@ -22,6 +22,7 @@ import {
   ClipboardList,
   Zap,
   BookUser,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/lib/auth/authStore";
@@ -92,6 +93,11 @@ const NAV: NavSection[] = [
         label: "Lista de Contatos",
         to: "/marketing/contacts",
         icon: <BookUser size={16} />,
+      },
+      {
+        label: "Landing Page",
+        to: "/marketing/landing-page",
+        icon: <Globe size={16} />,
       },
     ],
   },

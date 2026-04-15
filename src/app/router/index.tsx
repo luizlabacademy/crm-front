@@ -197,6 +197,18 @@ const LeadsBoardPage = lazy(() =>
   })),
 );
 
+const LandingPageConfigPage = lazy(() =>
+  import("@/features/marketing/pages/LandingPageConfigPage").then((m) => ({
+    default: m.LandingPageConfigPage,
+  })),
+);
+
+const LandingPage = lazy(() =>
+  import("@/features/marketing/pages/LandingPage").then((m) => ({
+    default: m.LandingPage,
+  })),
+);
+
 // Admin - Roles
 const RoleListPage = lazy(() =>
   import("@/features/admin/roles/pages/RoleListPage").then((m) => ({
@@ -269,6 +281,7 @@ export function AppRouter() {
         <Routes>
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginRoute />} />
+          <Route path="/landing" element={<LandingPage />} />
 
           <Route element={<AuthenticatedLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -350,6 +363,10 @@ export function AppRouter() {
               element={<MarketingAutomationPage />}
             />
             <Route path="/marketing/contacts" element={<ContactListPage />} />
+            <Route
+              path="/marketing/landing-page"
+              element={<LandingPageConfigPage />}
+            />
           </Route>
 
           <Route element={<AuthenticatedFullscreenLayout />}>

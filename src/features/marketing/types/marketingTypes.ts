@@ -139,3 +139,43 @@ export interface MarketingAutomation {
   status: AutomationStatus;
   createdAt: string;
 }
+
+// ─── Landing Page Types ───────────────────────────────────────────────────────
+
+export interface LandingPageSlide {
+  id: string;
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+}
+
+export interface LandingPageService {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: string;
+}
+
+export interface LandingPageBusinessInfo {
+  salonName: string;
+  tagline: string;
+  description: string;
+  phone: string;
+  whatsappNumber: string;
+  whatsappMessage: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  instagramUrl: string;
+  facebookUrl: string;
+  logoUrl: string;
+}
+
+export interface LandingPageConfig {
+  businessInfo: LandingPageBusinessInfo;
+  slides: LandingPageSlide[];
+  services: LandingPageService[];
+}
