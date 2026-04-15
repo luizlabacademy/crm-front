@@ -81,7 +81,11 @@ describe("useDeleteConfirm", () => {
       capturedOnSuccess = opts.onSuccess;
     });
     const mutation = makeMutation({
-      mutate: mutateFn as UseMutationResult<void, Error, number>["mutate"],
+      mutate: mutateFn as unknown as UseMutationResult<
+        void,
+        Error,
+        number
+      >["mutate"],
     });
     const { result } = renderHook(() =>
       useDeleteConfirm({ mutation, onSuccess }),

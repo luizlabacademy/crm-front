@@ -6,7 +6,7 @@ interface DeleteTarget<L> {
   label: L;
 }
 
-interface UseDeleteConfirmOptions<L> {
+interface UseDeleteConfirmOptions {
   mutation: UseMutationResult<void, Error, number>;
   onSuccess?: () => void;
 }
@@ -14,7 +14,7 @@ interface UseDeleteConfirmOptions<L> {
 export function useDeleteConfirm<L = string>({
   mutation,
   onSuccess,
-}: UseDeleteConfirmOptions<L>) {
+}: UseDeleteConfirmOptions) {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget<L> | null>(
     null,
   );

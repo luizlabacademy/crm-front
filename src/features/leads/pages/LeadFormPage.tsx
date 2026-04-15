@@ -79,12 +79,12 @@ function CustomerAutocomplete({
   const customers = data?.content ?? [];
   const filtered = search
     ? customers.filter((c) =>
-        c.fullName.toLowerCase().includes(search.toLowerCase()),
+        (c?.fullName ?? "").toLowerCase().includes(search.toLowerCase()),
       )
     : customers;
 
   const selectedName = value
-    ? (customers.find((c) => c.id === value)?.fullName ?? `ID ${value}`)
+    ? (customers.find((c) => c.id === value)?.fullName ?? null) || `ID ${value}`
     : "";
 
   return (
@@ -121,7 +121,7 @@ function CustomerAutocomplete({
                 setOpen(false);
               }}
             >
-              {c.fullName}{" "}
+              {c.fullName ?? `ID ${c.id}`}{" "}
               <span className="text-xs text-muted-foreground">#{c.id}</span>
             </li>
           ))}
