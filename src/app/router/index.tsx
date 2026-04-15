@@ -100,30 +100,6 @@ const OrderDetailsPage = lazy(() =>
   })),
 );
 
-// Persons
-const PersonListPage = lazy(() =>
-  import("@/features/persons/pages/PersonListPage").then((m) => ({
-    default: m.PersonListPage,
-  })),
-);
-const PersonFormPage = lazy(() =>
-  import("@/features/persons/pages/PersonFormPage").then((m) => ({
-    default: m.PersonFormPage,
-  })),
-);
-
-// Addresses
-const AddressListPage = lazy(() =>
-  import("@/features/addresses/pages/AddressListPage").then((m) => ({
-    default: m.AddressListPage,
-  })),
-);
-const AddressFormPage = lazy(() =>
-  import("@/features/addresses/pages/AddressFormPage").then((m) => ({
-    default: m.AddressFormPage,
-  })),
-);
-
 // Catalog - Items
 const ItemListPage = lazy(() =>
   import("@/features/catalog/items/pages/ItemListPage").then((m) => ({
@@ -307,14 +283,6 @@ export function AppRouter() {
             <Route path="/orders/new" element={<OrderFormPage />} />
             <Route path="/orders/:id" element={<OrderDetailsPage />} />
             <Route path="/orders/:id/edit" element={<OrderFormPage />} />
-
-            <Route path="/persons" element={<PersonListPage />} />
-            <Route path="/persons/new" element={<PersonFormPage />} />
-            <Route path="/persons/:id/edit" element={<PersonFormPage />} />
-
-            <Route path="/addresses" element={<AddressListPage />} />
-            <Route path="/addresses/new" element={<AddressFormPage />} />
-            <Route path="/addresses/:id/edit" element={<AddressFormPage />} />
 
             <Route path="/catalog/items" element={<ItemListPage />} />
             <Route path="/catalog/items/new" element={<ItemFormPage />} />

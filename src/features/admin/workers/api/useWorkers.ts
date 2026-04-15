@@ -1,27 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import type {
-  PersonResponse,
-  PersonRequest,
+  WorkerResponse,
+  WorkerRequest,
   PageResponse,
-  TenantResponse,
-} from "@/features/persons/types/personTypes";
+  TenantSummary,
+} from "@/features/admin/workers/types/workerTypes";
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
-interface UsePersonsParams {
+interface UseWorkersParams {
   page?: number;
   size?: number;
   tenantId?: number | null;
 }
 
-export function usePersons(params: UsePersonsParams = {}) {
+export function useWorkers(params: UseWorkersParams = {}) {
   const { page = 0, size = 20, tenantId } = params;
-  return useQuery<PageResponse<PersonResponse>>({
-    queryKey: ["persons", { page, size, tenantId }],
+  return useQuery<PageResponse<WorkerResponse>>({
+    queryKey: ["workers", { page, size, tenantId }],
     queryFn: async () => {
-      const { data } = await api.get<PageResponse<PersonResponse>>(
-        "/api/v1/persons",
+      const { data } = await api.get<PageResponse<WorkerResponse>>(
+        "/api/v1/workers",
         {
           params: {
             page,
@@ -37,11 +37,11 @@ export function usePersons(params: UsePersonsParams = {}) {
 
 // ─── Single ───────────────────────────────────────────────────────────────────
 
-export function usePerson(id: number | null) {
-  return useQuery<PersonResponse>({
-    queryKey: ["persons", id],
+export function useWorker(id: number | null) {
+  return useQuery<WorkerResponse>({
+    queryKey: ["workers", id],
     queryFn: async () => {
-      const { data } = await api.get<PersonResponse>(`/api/v1/persons/${id}`);
+      const { data } = await api.get<WorkerResponse>(`/api/v1/workers/${id}`);
       return data;
     },
     enabled: id != null,
@@ -50,61 +50,63 @@ export function usePerson(id: number | null) {
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
-export function useCreatePerson() {
+export function useCreateWorker() {
   const queryClient = useQueryClient();
-  return useMutation<PersonResponse, Error, PersonRequest>({
+  return useMutation<WorkerResponse, Error, WorkerRequest>({
     mutationFn: async (body) => {
-      const { data } = await api.post<PersonResponse>("/api/v1/persons", body);
+      const { data } = await api.post<WorkerResponse>("/api/v1/workers", body);
       return data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["persons"] });
+      void queryClient.invalidateQueries({ queryKey: ["workers"] });
     },
   });
 }
 
 // ─── Update ───────────────────────────────────────────────────────────────────
 
-export function useUpdatePerson() {
+export function useUpdateWorker() {
   const queryClient = useQueryClient();
   return useMutation<
-    PersonResponse,
+    WorkerResponse,
     Error,
-    { id: number; body: PersonRequest }
+    { id: number; body: WorkerRequest }
   >({
     mutationFn: async ({ id, body }) => {
-      const { data } = await api.put<PersonResponse>(
-        `/api/v1/persons/${id}`,
+      const { data } = await api.put<WorkerResponse>(
+        `/api/v1/workers/${id}`,
         body,
       );
       return data;
     },
     onSuccess: (_data, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: ["persons"] });
-      void queryClient.invalidateQueries({ queryKey: ["persons", id] });
+      void queryClient.invalidateQueries({ queryKey: ["workers"] });
+      void queryClient.invalidateQueries({ queryKey: ["workers", id] });
     },
   });
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
-export function useDeletePerson() {
+export function useDeleteWorker() {
   const queryClient = useQueryClient();
   return useMutation<void, Error, number>({
     mutationFn: async (id) => {
-      await api.delete(`/api/v1/persons/${id}`);
+      await api.delete(`/api/v1/workers/${id}`);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["persons"] });
+      void queryClient.invalidateQueries({ queryKey: ["workers"] });
     },
   });
 }
 
-export function useTenants() {
-  return useQuery<PageResponse<TenantResponse>>({
+// ─── Tenants selector ─────────────────────────────────────────────────────────
+
+export function useTenantsList() {
+  return useQuery<PageResponse<TenantSummary>>({
     queryKey: ["tenants"],
     queryFn: async () => {
-      const { data } = await api.get<PageResponse<TenantResponse>>(
+      const { data } = await api.get<PageResponse<TenantSummary>>(
         "/api/v1/tenants",
         { params: { page: 0, size: 100 } },
       );

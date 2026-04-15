@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Search, X, ChevronDown } from "lucide-react";
+import { ArrowLeft, Loader2, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import {
@@ -17,16 +17,49 @@ import {
   useChangeUserPassword,
 } from "@/features/admin/users/api/useUsers";
 import { ADMIN_SEED_EMAIL } from "@/features/admin/users/types/userTypes";
-import { usePersons } from "@/features/persons/api/usePersons";
-import { getPersonDisplayName } from "@/features/persons/types/personTypes";
+import {
+  PersonTypeSwitch,
+  PhysicalFields,
+  LegalFields,
+  ContactsField,
+  AddressesField,
+  SectionTitle,
+  Label,
+  FieldError,
+  inputCls,
+} from "@/components/shared/PersonFields";
+import type {
+  PersonType,
+  ContactRow,
+  AddressRow,
+} from "@/components/shared/PersonFields";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { cn } from "@/lib/utils";
 
+const physicalSchema = z
+  .object({
+    fullName: z.string().optional().nullable(),
+    cpf: z.string().optional().nullable(),
+    birthDate: z.string().optional().nullable(),
+  })
+  .optional()
+  .nullable();
+
+const legalSchema = z
+  .object({
+    corporateName: z.string().optional().nullable(),
+    tradeName: z.string().optional().nullable(),
+    cnpj: z.string().optional().nullable(),
+  })
+  .optional()
+  .nullable();
+
 const formSchema = z.object({
   tenantId: z.coerce.number().min(1, "Tenant é obrigatório"),
-  personId: z.coerce.number().optional().nullable(),
   email: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
   active: z.boolean(),
+  physical: physicalSchema,
+  legal: legalSchema,
 });
 
 const passwordSchema = z
@@ -44,116 +77,6 @@ const passwordSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 type PasswordValues = z.infer<typeof passwordSchema>;
-
-function Label({
-  htmlFor,
-  children,
-  required,
-}: {
-  htmlFor: string;
-  children: React.ReactNode;
-  required?: boolean;
-}) {
-  return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium">
-      {children}
-      {required && <span className="text-destructive ml-0.5">*</span>}
-    </label>
-  );
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-destructive mt-1">{message}</p>;
-}
-
-function inputCls(hasError?: boolean) {
-  return cn(
-    "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-ring focus:ring-offset-1",
-    "disabled:opacity-50",
-    hasError ? "border-destructive" : "border-input",
-  );
-}
-
-function PersonSelector({
-  value,
-  onChange,
-  disabled,
-  tenantId,
-}: {
-  value: number | null | undefined;
-  onChange: (id: number | null) => void;
-  disabled?: boolean;
-  tenantId?: number | null;
-}) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const { data } = usePersons({
-    page: 0,
-    size: 200,
-    tenantId: tenantId ?? undefined,
-  });
-  const persons = data?.content ?? [];
-  const filtered = persons.filter((person) =>
-    getPersonDisplayName(person).toLowerCase().includes(search.toLowerCase()),
-  );
-  const selected = persons.find((person) => person.id === value);
-
-  return (
-    <div className="relative">
-      <div className="relative">
-        <input
-          type="text"
-          value={open ? search : selected ? getPersonDisplayName(selected) : ""}
-          placeholder="Buscar pessoa..."
-          disabled={disabled}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 pr-8 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        />
-        <Search
-          size={14}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-        />
-      </div>
-
-      {open && (
-        <div className="absolute top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-          <button
-            type="button"
-            onMouseDown={() => {
-              onChange(null);
-              setSearch("");
-              setOpen(false);
-            }}
-            className="w-full px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent"
-          >
-            Nenhuma (sem vínculo)
-          </button>
-          {filtered.map((person) => (
-            <button
-              key={person.id}
-              type="button"
-              onMouseDown={() => {
-                onChange(person.id);
-                setSearch("");
-                setOpen(false);
-              }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
-            >
-              {getPersonDisplayName(person)}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function RoleMultiSelect({
   options,
@@ -409,35 +332,65 @@ export function UserFormPage() {
 
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [personType, setPersonType] = useState<PersonType>("none");
+  const [contacts, setContacts] = useState<ContactRow[]>([]);
+  const [addresses, setAddresses] = useState<AddressRow[]>([]);
 
   const {
     register,
     handleSubmit,
     watch,
-    setValue,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tenantId: 0,
-      personId: null,
       email: "",
       active: true,
+      physical: null,
+      legal: null,
     },
   });
 
   const tenantIdValue = watch("tenantId");
-  const personIdValue = watch("personId");
 
   useEffect(() => {
     if (!user) return;
     reset({
       tenantId: user.tenantId,
-      personId: user.personId ?? null,
       email: user.email,
       active: user.active,
+      physical: user.physical ?? null,
+      legal: user.legal ?? null,
     });
+    if (user.physical?.fullName || user.physical?.cpf) {
+      setPersonType("physical");
+    } else if (user.legal?.corporateName || user.legal?.cnpj) {
+      setPersonType("legal");
+    } else {
+      setPersonType("none");
+    }
+    setContacts(
+      (user.contacts ?? []).map((c) => ({
+        type: c.type ?? "PHONE",
+        contactValue: c.contactValue ?? "",
+        primary: c.primary ?? false,
+        active: c.active ?? true,
+      })),
+    );
+    setAddresses(
+      (user.addresses ?? []).map((a) => ({
+        type: (a.type as "RESIDENTIAL" | "COMMERCIAL") ?? "RESIDENTIAL",
+        street: a.street ?? "",
+        number: a.number ?? "",
+        complement: a.complement ?? "",
+        neighborhood: a.neighborhood ?? "",
+        postalCode: a.postalCode ?? "",
+        primary: a.primary ?? false,
+        active: a.active ?? true,
+      })),
+    );
   }, [user, reset]);
 
   useEffect(() => {
@@ -459,6 +412,9 @@ export function UserFormPage() {
     }
   }, [isEdit, user, userRolesData]);
 
+  // suppress unused warning — tenantIdValue is kept for future use
+  void tenantIdValue;
+
   const roles = useMemo(
     () =>
       (rolesData?.content ?? []).map((role) => ({
@@ -472,10 +428,27 @@ export function UserFormPage() {
     try {
       const body = {
         tenantId: values.tenantId,
-        personId: values.personId ?? null,
         email: values.email,
         active: values.active,
         passwordHash: "",
+        physical: personType === "physical" ? (values.physical ?? null) : null,
+        legal: personType === "legal" ? (values.legal ?? null) : null,
+        contacts: contacts.map((c) => ({
+          type: c.type,
+          contactValue: c.contactValue,
+          primary: c.primary,
+          active: c.active,
+        })),
+        addresses: addresses.map((a) => ({
+          type: a.type,
+          street: a.street,
+          number: a.number,
+          complement: a.complement,
+          neighborhood: a.neighborhood,
+          postalCode: a.postalCode,
+          primary: a.primary,
+          active: a.active,
+        })),
       };
 
       let targetId: number;
@@ -567,6 +540,7 @@ export function UserFormPage() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        {/* Tenant */}
         <div className="space-y-1.5">
           <Label htmlFor="tenantId" required>
             Tenant
@@ -587,16 +561,7 @@ export function UserFormPage() {
           <FieldError message={errors.tenantId?.message} />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="personId">Pessoa Vinculada</Label>
-          <PersonSelector
-            value={personIdValue}
-            onChange={(value) => setValue("personId", value)}
-            disabled={saving}
-            tenantId={tenantIdValue || null}
-          />
-        </div>
-
+        {/* E-mail */}
         <div className="space-y-1.5">
           <Label htmlFor="email" required>
             E-mail
@@ -611,6 +576,51 @@ export function UserFormPage() {
           <FieldError message={errors.email?.message} />
         </div>
 
+        {/* Pessoa */}
+        <div className="space-y-3">
+          <SectionTitle>Dados de Pessoa</SectionTitle>
+          <PersonTypeSwitch
+            value={personType}
+            onChange={setPersonType}
+            disabled={saving}
+          />
+          {personType === "physical" && (
+            <PhysicalFields
+              register={register}
+              errors={errors}
+              disabled={saving}
+            />
+          )}
+          {personType === "legal" && (
+            <LegalFields
+              register={register}
+              errors={errors}
+              disabled={saving}
+            />
+          )}
+        </div>
+
+        {/* Contatos */}
+        <div className="space-y-3">
+          <SectionTitle>Contatos</SectionTitle>
+          <ContactsField
+            contacts={contacts}
+            onChange={setContacts}
+            disabled={saving}
+          />
+        </div>
+
+        {/* Endereços */}
+        <div className="space-y-3">
+          <SectionTitle>Endereços</SectionTitle>
+          <AddressesField
+            addresses={addresses}
+            onChange={setAddresses}
+            disabled={saving}
+          />
+        </div>
+
+        {/* Perfis */}
         <div className="space-y-1.5">
           <Label htmlFor="profiles">Perfis</Label>
           <RoleMultiSelect
@@ -624,6 +634,7 @@ export function UserFormPage() {
           </p>
         </div>
 
+        {/* Senha */}
         {isEdit && userId != null && (
           <div className="space-y-1.5">
             <Label htmlFor="changePassword">Senha</Label>
@@ -639,6 +650,7 @@ export function UserFormPage() {
           </div>
         )}
 
+        {/* Ativo */}
         <div className="flex items-center gap-3">
           <input
             id="active"
@@ -652,6 +664,7 @@ export function UserFormPage() {
           </label>
         </div>
 
+        {/* Timestamps */}
         {isEdit && user && (
           <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
             <div className="space-y-1.5">

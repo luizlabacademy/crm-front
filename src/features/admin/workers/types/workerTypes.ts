@@ -22,35 +22,27 @@ export type {
   PageResponse,
 };
 
-// ─── Customer ─────────────────────────────────────────────────────────────────
+// ─── Worker ───────────────────────────────────────────────────────────────────
 
-export interface CustomerResponse {
+export interface WorkerResponse {
   id: number;
   code?: string;
   tenantId: number;
   personId?: number | null;
-  fullName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  document?: string | null;
-  active: boolean;
-  notes?: string | null;
-  createdAt: string;
+  userId?: number | null;
+  createdAt?: string;
   updatedAt?: string | null;
+  active: boolean;
   physical?: PersonPhysicalResponse | null;
   legal?: PersonLegalResponse | null;
   contacts?: ContactResponse[];
   addresses?: PersonAddressResponse[];
 }
 
-export interface CustomerRequest {
+export interface WorkerRequest {
   tenantId?: number | null;
-  fullName?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  document?: string | null;
+  userId?: number | null;
   active?: boolean;
-  notes?: string | null;
   physical?: PersonPhysicalRequest | null;
   legal?: PersonLegalRequest | null;
   contacts?: ContactRequest[];
@@ -59,11 +51,8 @@ export interface CustomerRequest {
 
 // ─── Tenant (needed for selectors) ───────────────────────────────────────────
 
-export interface TenantResponse {
+export interface TenantSummary {
   id: number;
   name?: string | null;
-  category?: string | null;
   active: boolean;
-  physical?: PersonPhysicalResponse | null;
-  legal?: PersonLegalResponse | null;
 }

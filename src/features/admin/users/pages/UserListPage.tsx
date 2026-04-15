@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   Plus,
@@ -21,8 +21,7 @@ import type {
   TenantResponse,
   UserResponse,
 } from "@/features/admin/users/types/userTypes";
-import { usePersons } from "@/features/persons/api/usePersons";
-import { getPersonDisplayName } from "@/features/persons/types/personTypes";
+import { getEntityDisplayName } from "@/lib/types/personTypes";
 import { cn } from "@/lib/utils";
 
 function SkeletonRow() {
@@ -67,7 +66,7 @@ function TenantAutocomplete({
   const selected = tenants.find((tenant) => tenant.id === value);
   const shownValue = open ? search : (selected?.name ?? "");
   const filtered = tenants.filter((tenant) =>
-    tenant.name.toLowerCase().includes(search.toLowerCase()),
+    (tenant.name ?? "").toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -268,21 +267,11 @@ export function UserListPage() {
   });
   const deleteMutation = useDeleteUser();
   const { data: tenantsData } = useTenants();
-  const { data: personsData } = usePersons({ page: 0, size: 500, tenantId });
 
   const users = data?.content ?? [];
   const tenants = tenantsData?.content ?? [];
-  const persons = personsData?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
-
-  const personsById = useMemo(
-    () =>
-      new Map(
-        persons.map((person) => [person.id, getPersonDisplayName(person)]),
-      ),
-    [persons],
-  );
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -384,10 +373,9 @@ export function UserListPage() {
                 users.map((user) => {
                   const isAdmin = user.email === ADMIN_SEED_EMAIL;
                   const personName =
-                    user.personId != null
-                      ? (personsById.get(user.personId) ??
-                        `Pessoa #${user.personId}`)
-                      : "Sem vínculo";
+                    getEntityDisplayName(user) !== "—"
+                      ? getEntityDisplayName(user)
+                      : user.email;
 
                   return (
                     <tr

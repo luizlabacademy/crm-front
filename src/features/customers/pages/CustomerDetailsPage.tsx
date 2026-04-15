@@ -11,6 +11,8 @@ import {
   ShoppingCart,
   MessageSquare,
   CalendarDays,
+  Phone,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
@@ -19,6 +21,10 @@ import {
   useCustomer,
   useDeleteCustomer,
 } from "@/features/customers/api/useCustomers";
+import {
+  getEntityDisplayName,
+  getEntityDocument,
+} from "@/lib/types/personTypes";
 import { api } from "@/lib/api/client";
 import { formatDateTime, formatShortDate } from "@/lib/utils/formatDate";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
@@ -483,7 +489,9 @@ export function CustomerDetailsPage() {
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold">{customer.fullName}</h1>
+              <h1 className="text-2xl font-semibold">
+                {getEntityDisplayName(customer)}
+              </h1>
               <ActiveBadge active={customer.active} />
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -524,24 +532,17 @@ export function CustomerDetailsPage() {
           <DetailRow label="ID" value={customer.id} />
           {customer.code && <DetailRow label="Código" value={customer.code} />}
           <DetailRow label="Tenant ID" value={customer.tenantId} />
-          {customer.personId && (
-            <DetailRow
-              label="Pessoa vinculada"
-              value={
-                <Link
-                  to={`/persons/${customer.personId}/edit`}
-                  className="text-primary hover:underline"
-                >
-                  #{customer.personId}
-                </Link>
-              }
-            />
-          )}
           <DetailRow label="E-mail" value={customer.email} />
           <DetailRow label="Telefone" value={customer.phone} />
           <DetailRow
             label="Documento"
-            value={customer.document ? formatDocument(customer.document) : null}
+            value={
+              customer.document
+                ? formatDocument(customer.document)
+                : getEntityDocument(customer) !== "—"
+                  ? getEntityDocument(customer)
+                  : null
+            }
           />
           <DetailRow
             label="Cadastrado em"
@@ -554,6 +555,136 @@ export function CustomerDetailsPage() {
             />
           )}
         </div>
+
+        {/* Pessoa Física */}
+        {customer.physical &&
+          (customer.physical.fullName ||
+            customer.physical.cpf ||
+            customer.physical.birthDate) && (
+            <div className="pt-3 border-t border-border space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Pessoa Física
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {customer.physical.fullName && (
+                  <DetailRow label="Nome" value={customer.physical.fullName} />
+                )}
+                {customer.physical.cpf && (
+                  <DetailRow label="CPF" value={customer.physical.cpf} />
+                )}
+                {customer.physical.birthDate && (
+                  <DetailRow
+                    label="Nascimento"
+                    value={customer.physical.birthDate}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+        {/* Pessoa Jurídica */}
+        {customer.legal &&
+          (customer.legal.corporateName ||
+            customer.legal.tradeName ||
+            customer.legal.cnpj) && (
+            <div className="pt-3 border-t border-border space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Pessoa Jurídica
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {customer.legal.corporateName && (
+                  <DetailRow
+                    label="Razão social"
+                    value={customer.legal.corporateName}
+                  />
+                )}
+                {customer.legal.tradeName && (
+                  <DetailRow
+                    label="Nome fantasia"
+                    value={customer.legal.tradeName}
+                  />
+                )}
+                {customer.legal.cnpj && (
+                  <DetailRow label="CNPJ" value={customer.legal.cnpj} />
+                )}
+              </div>
+            </div>
+          )}
+
+        {/* Contatos */}
+        {customer.contacts && customer.contacts.length > 0 && (
+          <div className="pt-3 border-t border-border space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Phone size={13} className="text-muted-foreground" />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Contatos
+              </p>
+            </div>
+            <div className="space-y-1">
+              {customer.contacts.map((c, i) => (
+                <div key={i} className="flex items-center gap-3 text-sm">
+                  <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                    {c.type}
+                  </span>
+                  <span>{c.contactValue}</span>
+                  {c.primary && (
+                    <span className="text-xs text-primary">(principal)</span>
+                  )}
+                  {!c.active && (
+                    <span className="text-xs text-muted-foreground">
+                      (inativo)
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Endereços */}
+        {customer.addresses && customer.addresses.length > 0 && (
+          <div className="pt-3 border-t border-border space-y-2">
+            <div className="flex items-center gap-1.5">
+              <MapPin size={13} className="text-muted-foreground" />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Endereços
+              </p>
+            </div>
+            <div className="space-y-2">
+              {customer.addresses.map((a, i) => (
+                <div key={i} className="text-sm space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                      {a.type === "RESIDENTIAL" ? "Residencial" : "Comercial"}
+                    </span>
+                    {a.primary && (
+                      <span className="text-xs text-primary">(principal)</span>
+                    )}
+                    {!a.active && (
+                      <span className="text-xs text-muted-foreground">
+                        (inativo)
+                      </span>
+                    )}
+                  </div>
+                  {(a.street || a.number) && (
+                    <p className="text-muted-foreground">
+                      {[a.street, a.number, a.complement]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  )}
+                  {(a.neighborhood || a.postalCode) && (
+                    <p className="text-muted-foreground text-xs">
+                      {[a.neighborhood, a.postalCode]
+                        .filter(Boolean)
+                        .join(" — ")}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {customer.notes && (
           <div className="pt-2 border-t border-border">
@@ -571,7 +702,7 @@ export function CustomerDetailsPage() {
       {/* Delete modal */}
       {showDeleteModal && (
         <DeleteModal
-          name={customer.fullName}
+          name={getEntityDisplayName(customer)}
           onConfirm={() => void handleDelete()}
           onCancel={() => setShowDeleteModal(false)}
           isDeleting={deleteMutation.isPending}

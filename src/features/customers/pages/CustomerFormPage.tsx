@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import {
@@ -12,157 +12,57 @@ import {
   useUpdateCustomer,
   useTenants,
 } from "@/features/customers/api/useCustomers";
-import { usePersons } from "@/features/persons/api/usePersons";
-import { getPersonDisplayName } from "@/features/persons/types/personTypes";
+import {
+  Label,
+  FieldError,
+  inputCls,
+  SectionTitle,
+  PersonTypeSwitch,
+  PhysicalFields,
+  LegalFields,
+  ContactsField,
+  AddressesField,
+  type PersonType,
+  type ContactRow,
+  type AddressRow,
+} from "@/components/shared/PersonFields";
 import { cn } from "@/lib/utils";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
+const physicalSchema = z.object({
+  fullName: z.string().optional(),
+  cpf: z.string().optional(),
+  birthDate: z.string().optional(),
+});
+
+const legalSchema = z.object({
+  corporateName: z.string().optional(),
+  tradeName: z.string().optional(),
+  cnpj: z.string().optional(),
+});
+
 const formSchema = z.object({
   tenantId: z.coerce.number().min(1, "Tenant é obrigatório"),
-  personId: z.coerce.number().optional().nullable(),
-  fullName: z.string().min(1, "Nome completo é obrigatório"),
+  fullName: z.string().optional(),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   document: z.string().optional(),
   active: z.boolean(),
   notes: z.string().optional(),
+  physical: physicalSchema.optional(),
+  legal: legalSchema.optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function stripMask(value: string): string {
-  return value.replace(/\D/g, "");
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-destructive mt-1">{message}</p>;
-}
-
-function Label({
-  htmlFor,
-  children,
-  required,
-}: {
-  htmlFor: string;
-  children: React.ReactNode;
-  required?: boolean;
-}) {
-  return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium">
-      {children}
-      {required && <span className="text-destructive ml-0.5">*</span>}
-    </label>
-  );
-}
-
-function inputCls(hasError?: boolean) {
-  return cn(
-    "w-full rounded-md border bg-background px-3 py-2 text-sm outline-none",
-    "focus:ring-2 focus:ring-ring focus:ring-offset-1",
-    "disabled:opacity-50",
-    hasError ? "border-destructive" : "border-input",
-  );
-}
-
-// ─── Person search dropdown ───────────────────────────────────────────────────
-
-interface PersonSelectorProps {
-  value: number | null | undefined;
-  onChange: (id: number | null) => void;
-  disabled?: boolean;
-}
-
-function PersonSelector({ value, onChange, disabled }: PersonSelectorProps) {
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-
-  const { data } = usePersons({ page: 0, size: 50 });
-  const persons = data?.content ?? [];
-
-  const filtered = persons.filter((p) => {
-    const name = getPersonDisplayName(p).toLowerCase();
-    return name.includes(search.toLowerCase());
-  });
-
-  const selectedPerson = persons.find((p) => p.id === value);
-  const displayValue = selectedPerson
-    ? getPersonDisplayName(selectedPerson)
-    : "";
-
-  return (
-    <div className="relative">
-      <div className="relative">
-        <input
-          type="text"
-          value={open ? search : displayValue}
-          placeholder="Buscar pessoa..."
-          disabled={disabled}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setOpen(true);
-          }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          className={cn(
-            "w-full rounded-md border border-input bg-background px-3 py-2 pr-8 text-sm outline-none",
-            "focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50",
-          )}
-        />
-        <Search
-          size={14}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-        />
-      </div>
-      {open && filtered.length > 0 && (
-        <div className="absolute top-full left-0 right-0 z-20 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-          <button
-            type="button"
-            className="w-full px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent transition-colors"
-            onMouseDown={() => {
-              onChange(null);
-              setSearch("");
-              setOpen(false);
-            }}
-          >
-            Nenhuma (sem vínculo)
-          </button>
-          {filtered.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-              onMouseDown={() => {
-                onChange(p.id);
-                setSearch("");
-                setOpen(false);
-              }}
-            >
-              {getPersonDisplayName(p)}{" "}
-              <span className="text-xs text-muted-foreground">#{p.id}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function CustomerFormPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
   const customerId = id ? parseInt(id, 10) : null;
-
-  const prefilledPersonId = searchParams.get("personId")
-    ? parseInt(searchParams.get("personId")!, 10)
-    : null;
 
   const {
     data: customer,
@@ -176,18 +76,19 @@ export function CustomerFormPage() {
 
   const tenants = tenantsData?.content ?? [];
 
+  const [personType, setPersonType] = useState<PersonType>("none");
+  const [contacts, setContacts] = useState<ContactRow[]>([]);
+  const [addresses, setAddresses] = useState<AddressRow[]>([]);
+
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tenantId: 0,
-      personId: prefilledPersonId ?? null,
       fullName: "",
       email: "",
       phone: "",
@@ -197,20 +98,62 @@ export function CustomerFormPage() {
     },
   });
 
-  const personId = watch("personId");
-
   // Populate form on edit
   useEffect(() => {
     if (!customer) return;
+
+    if (customer.physical?.fullName || customer.physical?.cpf) {
+      setPersonType("physical");
+    } else if (customer.legal?.corporateName || customer.legal?.cnpj) {
+      setPersonType("legal");
+    } else {
+      setPersonType("none");
+    }
+
+    if (customer.contacts?.length) {
+      setContacts(
+        customer.contacts.map((c) => ({
+          type: c.type ?? "PHONE",
+          contactValue: c.contactValue ?? "",
+          primary: c.primary ?? false,
+          active: c.active ?? true,
+        })),
+      );
+    }
+
+    if (customer.addresses?.length) {
+      setAddresses(
+        customer.addresses.map((a) => ({
+          type: (a.type as "RESIDENTIAL" | "COMMERCIAL") ?? "RESIDENTIAL",
+          street: a.street ?? "",
+          number: a.number ?? "",
+          complement: a.complement ?? "",
+          neighborhood: a.neighborhood ?? "",
+          postalCode: a.postalCode ?? "",
+          primary: a.primary ?? false,
+          active: a.active ?? true,
+        })),
+      );
+    }
+
     reset({
       tenantId: customer.tenantId,
-      personId: customer.personId ?? null,
-      fullName: customer.fullName,
+      fullName: customer.fullName ?? "",
       email: customer.email ?? "",
       phone: customer.phone ?? "",
       document: customer.document ?? "",
       active: customer.active,
       notes: customer.notes ?? "",
+      physical: {
+        fullName: customer.physical?.fullName ?? "",
+        cpf: customer.physical?.cpf ?? "",
+        birthDate: customer.physical?.birthDate ?? "",
+      },
+      legal: {
+        corporateName: customer.legal?.corporateName ?? "",
+        tradeName: customer.legal?.tradeName ?? "",
+        cnpj: customer.legal?.cnpj ?? "",
+      },
     });
   }, [customer, reset]);
 
@@ -218,13 +161,16 @@ export function CustomerFormPage() {
     try {
       const body = {
         tenantId: values.tenantId,
-        personId: values.personId ?? null,
-        fullName: values.fullName,
-        email: values.email || null,
-        phone: values.phone ? stripMask(values.phone) : null,
-        document: values.document ? stripMask(values.document) : null,
+        fullName: values.fullName || undefined,
+        email: values.email || undefined,
+        phone: values.phone || undefined,
+        document: values.document || undefined,
         active: values.active,
-        notes: values.notes || null,
+        notes: values.notes || undefined,
+        physical: personType === "physical" ? values.physical : undefined,
+        legal: personType === "legal" ? values.legal : undefined,
+        contacts: contacts.length > 0 ? contacts : undefined,
+        addresses: addresses.length > 0 ? addresses : undefined,
       };
 
       if (isEdit && customerId) {
@@ -245,12 +191,13 @@ export function CustomerFormPage() {
           );
         } else if (status === 404) {
           toast.error("Cliente não encontrado.");
+        } else {
+          toast.error("Erro no servidor. Tente novamente.");
         }
       }
     }
   }
 
-  // Loading skeleton (edit mode)
   if (isEdit && isLoadingCustomer) {
     return (
       <div className="space-y-5 max-w-2xl">
@@ -262,7 +209,6 @@ export function CustomerFormPage() {
     );
   }
 
-  // Error loading customer
   if (isEdit && isCustomerError) {
     return (
       <div className="space-y-4">
@@ -306,125 +252,154 @@ export function CustomerFormPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-        {/* Tenant */}
-        <div className="space-y-1.5">
-          <Label htmlFor="tenantId" required>
-            Tenant
-          </Label>
-          <select
-            id="tenantId"
-            {...register("tenantId", { valueAsNumber: true })}
-            disabled={isSaving}
-            className={inputCls(Boolean(errors.tenantId))}
-          >
-            <option value={0}>Selecione um tenant</option>
-            {tenants.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <FieldError message={errors.tenantId?.message} />
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+        {/* ── Dados básicos ── */}
+        <div className="space-y-4">
+          <SectionTitle>Dados básicos</SectionTitle>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="tenantId" required>
+              Tenant
+            </Label>
+            <select
+              id="tenantId"
+              {...register("tenantId", { valueAsNumber: true })}
+              disabled={isSaving}
+              className={inputCls(Boolean(errors.tenantId))}
+            >
+              <option value={0}>Selecione um tenant</option>
+              {tenants.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name ?? `Tenant #${t.id}`}
+                </option>
+              ))}
+            </select>
+            <FieldError message={errors.tenantId?.message} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="fullName">Nome / Identificação</Label>
+            <input
+              id="fullName"
+              type="text"
+              placeholder="Nome do cliente"
+              {...register("fullName")}
+              disabled={isSaving}
+              className={inputCls(Boolean(errors.fullName))}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">E-mail</Label>
+              <input
+                id="email"
+                type="email"
+                placeholder="cliente@exemplo.com"
+                {...register("email")}
+                disabled={isSaving}
+                className={inputCls(Boolean(errors.email))}
+              />
+              <FieldError message={errors.email?.message} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="phone">Telefone</Label>
+              <input
+                id="phone"
+                type="text"
+                placeholder="(XX) XXXXX-XXXX"
+                maxLength={15}
+                {...register("phone")}
+                disabled={isSaving}
+                className={inputCls()}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="document">Documento (CPF / CNPJ)</Label>
+              <input
+                id="document"
+                type="text"
+                placeholder="000.000.000-00"
+                maxLength={18}
+                {...register("document")}
+                disabled={isSaving}
+                className={inputCls()}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">Observações</Label>
+            <textarea
+              id="notes"
+              rows={3}
+              {...register("notes")}
+              disabled={isSaving}
+              className={cn(inputCls(), "resize-none")}
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              id="active"
+              type="checkbox"
+              {...register("active")}
+              disabled={isSaving}
+              className="accent-primary h-4 w-4"
+            />
+            <label htmlFor="active" className="text-sm cursor-pointer">
+              Cliente ativo
+            </label>
+          </div>
         </div>
 
-        {/* Person */}
-        <div className="space-y-1.5">
-          <Label htmlFor="personId">Pessoa vinculada</Label>
-          <PersonSelector
-            value={personId}
-            onChange={(val) => setValue("personId", val)}
+        {/* ── Dados de pessoa ── */}
+        <div className="space-y-4">
+          <SectionTitle>Dados de pessoa</SectionTitle>
+          <PersonTypeSwitch
+            value={personType}
+            onChange={setPersonType}
             disabled={isSaving}
           />
-          <p className="text-xs text-muted-foreground">
-            Opcional. Vincula o cliente a uma pessoa cadastrada no sistema.
-          </p>
+          {personType === "physical" && (
+            <PhysicalFields
+              register={register}
+              errors={errors}
+              disabled={isSaving}
+            />
+          )}
+          {personType === "legal" && (
+            <LegalFields
+              register={register}
+              errors={errors}
+              disabled={isSaving}
+            />
+          )}
         </div>
 
-        {/* Full name */}
-        <div className="space-y-1.5">
-          <Label htmlFor="fullName" required>
-            Nome completo
-          </Label>
-          <input
-            id="fullName"
-            type="text"
-            {...register("fullName")}
+        {/* ── Contatos ── */}
+        <div className="space-y-4">
+          <SectionTitle>Contatos</SectionTitle>
+          <ContactsField
+            contacts={contacts}
+            onChange={setContacts}
             disabled={isSaving}
-            className={inputCls(Boolean(errors.fullName))}
-          />
-          <FieldError message={errors.fullName?.message} />
-        </div>
-
-        {/* Email */}
-        <div className="space-y-1.5">
-          <Label htmlFor="email">E-mail</Label>
-          <input
-            id="email"
-            type="email"
-            placeholder="cliente@exemplo.com"
-            {...register("email")}
-            disabled={isSaving}
-            className={inputCls(Boolean(errors.email))}
-          />
-          <FieldError message={errors.email?.message} />
-        </div>
-
-        {/* Phone */}
-        <div className="space-y-1.5">
-          <Label htmlFor="phone">Telefone</Label>
-          <input
-            id="phone"
-            type="text"
-            placeholder="(XX) XXXXX-XXXX"
-            maxLength={15}
-            {...register("phone")}
-            disabled={isSaving}
-            className={inputCls()}
           />
         </div>
 
-        {/* Document */}
-        <div className="space-y-1.5">
-          <Label htmlFor="document">Documento (CPF / CNPJ)</Label>
-          <input
-            id="document"
-            type="text"
-            placeholder="000.000.000-00 ou 00.000.000/0000-00"
-            maxLength={18}
-            {...register("document")}
+        {/* ── Endereços ── */}
+        <div className="space-y-4">
+          <SectionTitle>Endereços</SectionTitle>
+          <AddressesField
+            addresses={addresses}
+            onChange={setAddresses}
             disabled={isSaving}
-            className={inputCls()}
           />
         </div>
 
-        {/* Notes */}
-        <div className="space-y-1.5">
-          <Label htmlFor="notes">Observações</Label>
-          <textarea
-            id="notes"
-            rows={3}
-            {...register("notes")}
-            disabled={isSaving}
-            className={cn(inputCls(), "resize-none")}
-          />
-        </div>
-
-        {/* Active */}
-        <div className="flex items-center gap-3">
-          <input
-            id="active"
-            type="checkbox"
-            {...register("active")}
-            disabled={isSaving}
-            className="accent-primary h-4 w-4"
-          />
-          <label htmlFor="active" className="text-sm cursor-pointer">
-            Cliente ativo
-          </label>
-        </div>
-
-        {/* Actions */}
+        {/* ── Actions ── */}
         <div className="flex items-center gap-3 pt-2 border-t border-border">
           <button
             type="submit"

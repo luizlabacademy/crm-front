@@ -6,8 +6,6 @@ import {
   MessageSquare,
   MessageCircle,
   ShoppingCart,
-  UserSquare,
-  MapPin,
   Package,
   Tag,
   Ruler,
@@ -81,13 +79,6 @@ const NAV: NavSection[] = [
         icon: <CalendarRange size={16} />,
       },
       { label: "Clientes", to: "/customers", icon: <Users size={16} /> },
-    ],
-  },
-  {
-    section: "Pessoas",
-    items: [
-      { label: "Pessoas", to: "/persons", icon: <UserSquare size={16} /> },
-      { label: "Enderecos", to: "/addresses", icon: <MapPin size={16} /> },
     ],
   },
   {

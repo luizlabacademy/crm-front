@@ -14,6 +14,10 @@ import {
   useCustomers,
   useDeleteCustomer,
 } from "@/features/customers/api/useCustomers";
+import {
+  getEntityDisplayName,
+  getEntityDocument,
+} from "@/lib/types/personTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { cn } from "@/lib/utils";
 
@@ -314,7 +318,7 @@ export function CustomerListPage() {
                       {customer.id}
                     </td>
                     <td className="px-4 py-3 font-medium max-w-[180px] truncate">
-                      {customer.fullName}
+                      {getEntityDisplayName(customer)}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground max-w-[180px] truncate">
                       {customer.email ?? "—"}
@@ -322,7 +326,9 @@ export function CustomerListPage() {
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                       {customer.document
                         ? formatDocument(customer.document)
-                        : "—"}
+                        : getEntityDocument(customer) !== "—"
+                          ? getEntityDocument(customer)
+                          : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <ActiveBadge active={customer.active} />
@@ -361,7 +367,7 @@ export function CustomerListPage() {
                           onClick={() =>
                             setDeleteTarget({
                               id: customer.id,
-                              name: customer.fullName,
+                              name: getEntityDisplayName(customer),
                             })
                           }
                           className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
