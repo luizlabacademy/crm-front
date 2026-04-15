@@ -17,6 +17,8 @@ interface RecentOrdersListProps {
   isLoading?: boolean;
 }
 
+const MAX_VISIBLE_ORDERS = 8;
+
 function StatusBadge({ status }: { status: string }) {
   const label = ORDER_STATUS_LABEL[status] ?? status;
   const colorClass = ORDER_STATUS_COLOR[status] ?? "bg-gray-100 text-gray-700";
@@ -25,25 +27,6 @@ function StatusBadge({ status }: { status: string }) {
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}
     >
       {label}
-    </span>
-  );
-}
-
-function PriorityBadge({ priority }: { priority?: RecentOrder["priority"] }) {
-  if (!priority) return null;
-  const map = {
-    normal: { label: "Normal", cls: "bg-emerald-100 text-emerald-700" },
-    medium: { label: "Media", cls: "bg-blue-100 text-blue-700" },
-    high: { label: "Alta", cls: "bg-orange-100 text-orange-700" },
-    very_high: { label: "Muito alta", cls: "bg-red-100 text-red-700" },
-  } as const;
-  const def = map[priority] ?? map.normal;
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${def.cls}`}
-    >
-      {def.label}
     </span>
   );
 }
@@ -60,11 +43,13 @@ export function RecentOrdersList({
       ? orders
       : orders.filter((o) => o.status === activeFilter);
 
+  const visibleOrders = filtered.slice(0, MAX_VISIBLE_ORDERS);
+
   return (
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       {/* Header */}
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">Pedidos</h2>
+        <h2 className="text-sm font-semibold">Ultimos Pedidos</h2>
         <Link
           to="/orders"
           className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15 transition-colors"
@@ -94,64 +79,61 @@ export function RecentOrdersList({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="max-h-[34rem] overflow-y-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted-foreground">
-              <th className="px-4 py-2 font-medium">#</th>
+              <th className="px-4 py-2 font-medium">Pedido</th>
               <th className="px-4 py-2 font-medium">Cliente</th>
-              <th className="px-4 py-2 font-medium">Itens</th>
-              <th className="px-4 py-2 font-medium">Pagamento</th>
+              <th className="px-4 py-2 font-medium">Detalhes</th>
               <th className="px-4 py-2 font-medium text-right">Valor</th>
               <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">Prioridade</th>
-              <th className="px-4 py-2 font-medium">Data</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <SkeletonRow key={i} cols={8} />
+                <SkeletonRow key={i} cols={5} />
               ))
             ) : filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={5}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   Nenhum pedido encontrado.
                 </td>
               </tr>
             ) : (
-              filtered.map((order) => (
+              visibleOrders.map((order) => (
                 <tr
                   key={order.id}
                   onClick={() => void navigate(`/orders/${order.id}`)}
                   className="cursor-pointer hover:bg-accent/50 transition-colors"
                 >
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {order.code}
+                  <td className="px-4 py-3 align-top">
+                    <p className="font-mono text-xs text-muted-foreground">
+                      {order.code}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {formatShortDate(order.createdAt)}
+                    </p>
                   </td>
-                  <td className="px-4 py-3 max-w-[140px] truncate">
-                    {order.customerName}
+                  <td className="px-4 py-3 align-top">
+                    <p className="max-w-[180px] truncate">
+                      {order.customerName}
+                    </p>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                    {order.itemsCount ?? "-"}
+                  <td className="px-4 py-3 align-top">
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      Itens: {order.itemsCount ?? "-"}
+                    </p>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                    {order.paymentMethod ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  <td className="px-4 py-3 text-right tabular-nums align-top whitespace-nowrap">
                     {formatCurrency(order.totalCents)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 align-top">
                     <StatusBadge status={order.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <PriorityBadge priority={order.priority} />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                    {formatShortDate(order.createdAt)}
                   </td>
                 </tr>
               ))

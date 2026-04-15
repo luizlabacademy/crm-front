@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatRelative } from "@/lib/utils/formatDate";
 import type { RecentMessage } from "@/features/dashboard/types/dashboardTypes";
 
@@ -7,6 +9,17 @@ interface RecentMessagesListProps {
   messages: RecentMessage[];
   isLoading?: boolean;
 }
+
+const MAX_VISIBLE_MESSAGES = 8;
+
+const CHANNEL_FILTERS = [
+  "Todos",
+  "WhatsApp",
+  "Instagram",
+  "Facebook",
+  "Site",
+  "Corporativo",
+] as const;
 
 /** Derives a stable background color class from the customer name. */
 function avatarColor(name: string): string {
@@ -55,7 +68,17 @@ export function RecentMessagesList({
   isLoading = false,
 }: RecentMessagesListProps) {
   const navigate = useNavigate();
-  const unreadTotal = messages.reduce(
+  const [activeFilter, setActiveFilter] =
+    useState<(typeof CHANNEL_FILTERS)[number]>("Todos");
+
+  const filteredMessages =
+    activeFilter === "Todos"
+      ? messages
+      : messages.filter((item) => item.channel === activeFilter);
+
+  const visibleMessages = filteredMessages.slice(0, MAX_VISIBLE_MESSAGES);
+
+  const unreadTotal = filteredMessages.reduce(
     (sum, item) => sum + (item.unreadCount ?? 0),
     0,
   );
@@ -64,7 +87,7 @@ export function RecentMessagesList({
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Conversas</h2>
+          <h2 className="text-sm font-semibold">Últimas Conversas</h2>
           <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
             {unreadTotal} não lidas
           </span>
@@ -78,24 +101,42 @@ export function RecentMessagesList({
         </Link>
       </div>
 
-      <div className="divide-y divide-border">
+      <div className="flex flex-wrap gap-1.5 border-b border-border px-5 py-2.5">
+        {CHANNEL_FILTERS.map((channel) => (
+          <button
+            key={channel}
+            type="button"
+            onClick={() => setActiveFilter(channel)}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              activeFilter === channel
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background border-border text-muted-foreground hover:bg-accent",
+            )}
+          >
+            {channel}
+          </button>
+        ))}
+      </div>
+
+      <div className="max-h-[34rem] overflow-y-auto divide-y divide-border">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="px-5">
               <SkeletonRow />
             </div>
           ))
-        ) : messages.length === 0 ? (
+        ) : filteredMessages.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-muted-foreground">
             Nenhuma mensagem recente.
           </p>
         ) : (
-          messages.map((msg) => (
+          visibleMessages.map((msg) => (
             <button
               key={msg.id}
               type="button"
               onClick={() => void navigate(`/leads/${msg.leadId}`)}
-              className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-accent/50 transition-colors"
+              className="flex w-full cursor-pointer items-center gap-3 px-5 py-3 text-left hover:bg-accent/50 transition-colors"
             >
               <span
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(msg.customerName)}`}
@@ -134,6 +175,13 @@ export function RecentMessagesList({
           ))
         )}
       </div>
+
+      {!isLoading && filteredMessages.length > MAX_VISIBLE_MESSAGES && (
+        <div className="border-t border-border px-5 py-2 text-xs text-muted-foreground">
+          Mostrando {MAX_VISIBLE_MESSAGES} de {filteredMessages.length}{" "}
+          conversas.
+        </div>
+      )}
     </div>
   );
 }

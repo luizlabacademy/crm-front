@@ -84,7 +84,7 @@ export function ConversionRateChart() {
   }, [period]);
 
   return (
-    <div className="rounded-xl border border-border/80 bg-card shadow-sm">
+    <div className="self-start rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between">
         <h2 className="text-sm font-semibold">Curva de Conversão</h2>
         <select
