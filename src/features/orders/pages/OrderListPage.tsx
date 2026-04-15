@@ -16,17 +16,43 @@ export function OrderListPage() {
   const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
-  const [tenantIdInput, setTenantIdInput] = useState("");
-  const [tenantId, setTenantId] = useState<number | null>(null);
+  const [draftFilters, setDraftFilters] = useState({
+    q: "",
+    tenantId: "",
+    customerId: "",
+    userId: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
+  });
+  const [filters, setFilters] = useState({
+    q: "",
+    tenantId: "",
+    customerId: "",
+    userId: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
+  });
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
     label: string;
   } | null>(null);
 
+  const tenantId = filters.tenantId ? Number(filters.tenantId) : null;
+  const customerId = filters.customerId ? Number(filters.customerId) : null;
+  const userId = filters.userId ? Number(filters.userId) : null;
+
   const { data, isLoading, isError, refetch } = useOrders({
     page,
     size: 20,
     tenantId,
+    customerId,
+    userId,
+    status: filters.status || undefined,
+    q: filters.q.trim() || undefined,
+    dateFrom: filters.dateFrom || undefined,
+    dateTo: filters.dateTo || undefined,
   });
   const deleteMutation = useDeleteOrder();
 
@@ -34,16 +60,24 @@ export function OrderListPage() {
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
 
-  function handleTenantFilter(e: React.FormEvent) {
+  function handleApplyFilters(e: React.FormEvent) {
     e.preventDefault();
-    const val = parseInt(tenantIdInput, 10);
-    setTenantId(isNaN(val) ? null : val);
+    setFilters(draftFilters);
     setPage(0);
   }
 
   function handleClearFilter() {
-    setTenantIdInput("");
-    setTenantId(null);
+    const cleared = {
+      q: "",
+      tenantId: "",
+      customerId: "",
+      userId: "",
+      status: "",
+      dateFrom: "",
+      dateTo: "",
+    };
+    setDraftFilters(cleared);
+    setFilters(cleared);
     setPage(0);
   }
 
@@ -68,7 +102,7 @@ export function OrderListPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Pedidos</h1>
+          <h1 className="text-2xl font-semibold">Busca de Pedidos</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isLoading
               ? "Carregando..."
@@ -87,31 +121,94 @@ export function OrderListPage() {
 
       {/* Filters */}
       <form
-        onSubmit={handleTenantFilter}
-        className="flex items-center gap-2 flex-wrap"
+        onSubmit={handleApplyFilters}
+        className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4"
       >
         <input
-          type="number"
-          value={tenantIdInput}
-          onChange={(e) => setTenantIdInput(e.target.value)}
-          placeholder="Filtrar por Tenant ID"
-          className="rounded-md border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-48"
+          type="text"
+          value={draftFilters.q}
+          onChange={(e) =>
+            setDraftFilters((prev) => ({ ...prev, q: e.target.value }))
+          }
+          placeholder="Buscar por ID/código"
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
         />
-        <button
-          type="submit"
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors"
+        <select
+          value={draftFilters.status}
+          onChange={(e) =>
+            setDraftFilters((prev) => ({ ...prev, status: e.target.value }))
+          }
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
         >
-          Filtrar
-        </button>
-        {tenantId !== null && (
+          <option value="">Todos os status</option>
+          <option value="DRAFT">DRAFT</option>
+          <option value="PENDING">PENDING</option>
+          <option value="CONFIRMED">CONFIRMED</option>
+          <option value="DELIVERED">DELIVERED</option>
+          <option value="CANCELLED">CANCELLED</option>
+        </select>
+        <input
+          type="number"
+          min="1"
+          value={draftFilters.tenantId}
+          onChange={(e) =>
+            setDraftFilters((prev) => ({ ...prev, tenantId: e.target.value }))
+          }
+          placeholder="Tenant ID"
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        <input
+          type="number"
+          min="1"
+          value={draftFilters.customerId}
+          onChange={(e) =>
+            setDraftFilters((prev) => ({ ...prev, customerId: e.target.value }))
+          }
+          placeholder="Cliente ID"
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        <input
+          type="number"
+          min="1"
+          value={draftFilters.userId}
+          onChange={(e) =>
+            setDraftFilters((prev) => ({ ...prev, userId: e.target.value }))
+          }
+          placeholder="Responsável ID"
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        <input
+          type="date"
+          value={draftFilters.dateFrom}
+          onChange={(e) =>
+            setDraftFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
+          }
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        <input
+          type="date"
+          value={draftFilters.dateTo}
+          onChange={(e) =>
+            setDraftFilters((prev) => ({ ...prev, dateTo: e.target.value }))
+          }
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+
+        <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-4">
+          <button
+            type="submit"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-accent transition-colors"
+          >
+            Aplicar filtros
+          </button>
           <button
             type="button"
             onClick={handleClearFilter}
-            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Limpar filtro
+            Limpar
           </button>
-        )}
+        </div>
       </form>
 
       {/* Error */}
@@ -138,6 +235,7 @@ export function OrderListPage() {
                 <th className="px-4 py-3 font-medium">ID</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Cliente ID</th>
+                <th className="px-4 py-3 font-medium">Resp. ID</th>
                 <th className="px-4 py-3 font-medium">Subtotal</th>
                 <th className="px-4 py-3 font-medium">Desconto</th>
                 <th className="px-4 py-3 font-medium">Total</th>
@@ -149,12 +247,12 @@ export function OrderListPage() {
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <SkeletonRow key={i} cols={9} />
+                  <SkeletonRow key={i} cols={10} />
                 ))
               ) : orders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     <p>Nenhum pedido encontrado.</p>
@@ -185,6 +283,9 @@ export function OrderListPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
                       {order.customerId}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
+                      {order.userId}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">
                       {formatCurrencyCode(
@@ -254,6 +355,7 @@ export function OrderListPage() {
         <TablePagination
           page={page}
           totalPages={totalPages}
+          totalElements={totalElements}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() => setPage((p) => p + 1)}
         />

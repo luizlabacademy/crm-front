@@ -4,7 +4,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import {
   useOrder,
   useCreateOrder,
@@ -15,7 +15,7 @@ import {
 import { useCustomers } from "@/features/customers/api/useCustomers";
 import { useTenantsSelector } from "@/lib/api/useTenants";
 import { cn } from "@/lib/utils";
-import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
+import { OrderBudgetComposer } from "@/features/orders/components/OrderBudgetComposer";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -85,7 +85,9 @@ function CustomerAutocomplete({
   const customers = data?.content ?? [];
   const filtered = search
     ? customers.filter((c) =>
-        c.fullName.toLowerCase().includes(search.toLowerCase()),
+        String(c.fullName ?? "")
+          .toLowerCase()
+          .includes(search.toLowerCase()),
       )
     : customers;
   const selectedName = value
@@ -119,7 +121,7 @@ function CustomerAutocomplete({
                   setOpen(false);
                 }}
               >
-                {c.fullName}{" "}
+                {c.fullName ?? `Cliente #${c.id}`}{" "}
                 <span className="text-xs text-muted-foreground">#{c.id}</span>
               </li>
             ))}
@@ -128,37 +130,6 @@ function CustomerAutocomplete({
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
-  );
-}
-
-// ─── Item selector ────────────────────────────────────────────────────────────
-
-function ItemSelector({
-  items,
-  value,
-  onChange,
-}: {
-  items: CatalogItemResponse[];
-  value: number;
-  onChange: (id: number, priceCents: number) => void;
-}) {
-  return (
-    <select
-      value={value || ""}
-      onChange={(e) => {
-        const id = parseInt(e.target.value, 10);
-        const item = items.find((i) => i.id === id);
-        onChange(id, item?.priceCents ?? 0);
-      }}
-      className={cn(inputClass, "bg-background")}
-    >
-      <option value="">Selecionar item...</option>
-      {items.map((item) => (
-        <option key={item.id} value={item.id}>
-          {item.name}
-        </option>
-      ))}
-    </select>
   );
 }
 
@@ -187,6 +158,7 @@ export function OrderFormPage() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<FormValues>({
@@ -202,11 +174,12 @@ export function OrderFormPage() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({ control, name: "items" });
+  const { append, remove } = useFieldArray({ control, name: "items" });
 
   const watchedTenantId = watch("tenantId");
-  const watchedItems = watch("items");
+  const watchedItems = watch("items") ?? [];
   const watchedDiscount = watch("discount") ?? 0;
+  const watchedNotes = watch("notes") ?? "";
   const watchedCurrency = watch("currencyCode") ?? "BRL";
 
   const { data: catalogData } = useCatalogItems(
@@ -214,19 +187,83 @@ export function OrderFormPage() {
   );
   const catalogItems = Array.isArray(catalogData) ? catalogData : [];
 
-  // Compute totals
-  const subtotalCents = watchedItems.reduce((acc, item) => {
-    const qty = Number(item.quantity) || 0;
-    const price = Math.round((Number(item.unitPrice) || 0) * 100);
-    return acc + qty * price;
-  }, 0);
-  const discountCents = Math.round((Number(watchedDiscount) || 0) * 100);
-  const totalCents = Math.max(0, subtotalCents - discountCents);
+  const discountCents = Math.max(0, Math.round(Number(watchedDiscount) * 100));
 
-  function formatCents(cents: number): string {
-    return (cents / 100).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: watchedCurrency || "BRL",
+  const lines = watchedItems
+    .filter((item) => Number(item.itemId) > 0)
+    .map((item) => ({
+      itemId: Number(item.itemId),
+      quantity: Math.max(1, Number(item.quantity) || 1),
+      unitPriceCents: Math.max(
+        0,
+        Math.round(Number(item.unitPrice || 0) * 100),
+      ),
+    }));
+
+  function findItemIndex(itemId: number): number {
+    return getValues("items").findIndex(
+      (item) => Number(item.itemId) === itemId,
+    );
+  }
+
+  function handleAddCatalogItem(item: { id: number; priceCents: number }) {
+    const existingIndex = findItemIndex(item.id);
+    if (existingIndex >= 0) {
+      const currentQty =
+        Number(getValues(`items.${existingIndex}.quantity`)) || 1;
+      setValue(`items.${existingIndex}.quantity`, currentQty + 1, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      return;
+    }
+
+    append({
+      itemId: item.id,
+      quantity: 1,
+      unitPrice: item.priceCents / 100,
+    });
+  }
+
+  function handleIncreaseItem(itemId: number) {
+    const index = findItemIndex(itemId);
+    if (index < 0) return;
+
+    const currentQty = Number(getValues(`items.${index}.quantity`)) || 1;
+    setValue(`items.${index}.quantity`, currentQty + 1, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+
+  function handleDecreaseItem(itemId: number) {
+    const index = findItemIndex(itemId);
+    if (index < 0) return;
+
+    const currentQty = Number(getValues(`items.${index}.quantity`)) || 1;
+    if (currentQty <= 1) {
+      remove(index);
+      return;
+    }
+
+    setValue(`items.${index}.quantity`, currentQty - 1, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+
+  function handleRemoveItem(itemId: number) {
+    const index = findItemIndex(itemId);
+    if (index >= 0) remove(index);
+  }
+
+  function handleUnitPriceChange(itemId: number, unitPriceCents: number) {
+    const index = findItemIndex(itemId);
+    if (index < 0) return;
+
+    setValue(`items.${index}.unitPrice`, unitPriceCents / 100, {
+      shouldDirty: true,
+      shouldValidate: true,
     });
   }
 
@@ -312,7 +349,7 @@ export function OrderFormPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -389,17 +426,6 @@ export function OrderFormPage() {
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Desconto */}
-            <Field label="Desconto (R$)" error={errors.discount?.message}>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                {...register("discount")}
-                className={inputClass}
-              />
-            </Field>
-
             {/* Moeda */}
             <Field label="Moeda" error={errors.currencyCode?.message}>
               <input
@@ -409,131 +435,54 @@ export function OrderFormPage() {
                 placeholder="BRL"
               />
             </Field>
-          </div>
 
-          {/* Notas */}
-          <Field label="Notas" error={errors.notes?.message}>
-            <textarea
-              {...register("notes")}
-              rows={2}
-              placeholder="Observações sobre este pedido..."
-              className={cn(inputClass, "resize-none")}
-            />
-          </Field>
-        </div>
-
-        {/* Items */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-semibold">Itens do pedido</h2>
-            <button
-              type="button"
-              onClick={() => append({ itemId: 0, quantity: 1, unitPrice: 0 })}
-              className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors"
-            >
-              <Plus size={12} />
-              Adicionar item
-            </button>
-          </div>
-
-          {fields.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Nenhum item adicionado.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/40">
-                    <th className="px-4 py-2 font-medium">Item</th>
-                    <th className="px-4 py-2 font-medium w-24">Qtd.</th>
-                    <th className="px-4 py-2 font-medium w-32">Preço unit.</th>
-                    <th className="px-4 py-2 font-medium w-32">Total</th>
-                    <th className="px-4 py-2 w-10" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {fields.map((field, index) => {
-                    const qty = Number(watchedItems[index]?.quantity) || 0;
-                    const price = Number(watchedItems[index]?.unitPrice) || 0;
-                    const lineTotal = qty * price;
-                    return (
-                      <tr key={field.id}>
-                        <td className="px-4 py-2">
-                          <ItemSelector
-                            items={catalogItems}
-                            value={watchedItems[index]?.itemId ?? 0}
-                            onChange={(id, priceCents) => {
-                              setValue(`items.${index}.itemId`, id);
-                              if (priceCents > 0) {
-                                setValue(
-                                  `items.${index}.unitPrice`,
-                                  priceCents / 100,
-                                );
-                              }
-                            }}
-                          />
-                          {errors.items?.[index]?.itemId && (
-                            <p className="text-xs text-destructive mt-0.5">
-                              {errors.items[index].itemId?.message}
-                            </p>
-                          )}
-                        </td>
-                        <td className="px-4 py-2">
-                          <input
-                            type="number"
-                            min="1"
-                            {...register(`items.${index}.quantity`)}
-                            className={inputClass}
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            {...register(`items.${index}.unitPrice`)}
-                            className={inputClass}
-                          />
-                        </td>
-                        <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
-                          {formatCents(Math.round(lineTotal * 100))}
-                        </td>
-                        <td className="px-4 py-2">
-                          <button
-                            type="button"
-                            onClick={() => remove(index)}
-                            className="rounded-md p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Totals footer */}
-          <div className="border-t border-border px-5 py-4 space-y-1.5 text-sm">
-            <div className="flex justify-between text-muted-foreground">
-              <span>Subtotal</span>
-              <span className="font-mono">{formatCents(subtotalCents)}</span>
-            </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>Desconto</span>
-              <span className="font-mono">
-                {discountCents > 0 ? `- ${formatCents(discountCents)}` : "—"}
-              </span>
-            </div>
-            <div className="flex justify-between font-semibold border-t border-border pt-1.5">
-              <span>Total</span>
-              <span className="font-mono">{formatCents(totalCents)}</span>
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-muted-foreground">
+                Montagem de itens
+              </label>
+              <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+                Use o mesmo componente de Orçamento da tela de Conversas para
+                montar os itens do pedido.
+              </p>
             </div>
           </div>
         </div>
+
+        <OrderBudgetComposer
+          catalogItems={catalogItems}
+          lines={lines}
+          currencyCode={watchedCurrency}
+          notes={watchedNotes}
+          discountCents={discountCents}
+          isCatalogLoading={!catalogData}
+          onAddItem={handleAddCatalogItem}
+          onIncrease={handleIncreaseItem}
+          onDecrease={handleDecreaseItem}
+          onRemove={handleRemoveItem}
+          onUnitPriceChange={handleUnitPriceChange}
+          onDiscountChange={(nextDiscountCents) =>
+            setValue("discount", nextDiscountCents / 100, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+          onNotesChange={(nextNotes) =>
+            setValue("notes", nextNotes, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+        />
+
+        {(errors.items?.message ||
+          errors.discount?.message ||
+          errors.notes?.message) && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {errors.items?.message ||
+              errors.discount?.message ||
+              errors.notes?.message}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-3">

@@ -23,9 +23,6 @@ import {
   ShoppingCart,
   CalendarPlus,
   FileText,
-  Package,
-  Minus,
-  Trash2,
   User,
   Users,
   ClipboardList,
@@ -46,6 +43,7 @@ import type {
 import contactsMock from "@/features/conversations/mocks/contacts.json";
 import messagesMock from "@/features/conversations/mocks/messages.json";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
+import { OrderBudgetComposer } from "@/features/orders/components/OrderBudgetComposer";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -108,6 +106,13 @@ function formatContactTime(dateString: string): string {
   } catch {
     return "";
   }
+}
+
+let localIdCounter = 0;
+
+function nextLocalId(prefix = "local"): string {
+  localIdCounter += 1;
+  return `${prefix}-${localIdCounter}`;
 }
 
 interface PersonResponse {
@@ -353,20 +358,12 @@ function PdvModal({
   onConfirm: (items: CartItem[], discount: number, notes: string) => void;
   contactName: string;
 }) {
-  const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [discountInput, setDiscountInput] = useState("0");
+  const [discountCents, setDiscountCents] = useState(0);
   const [notes, setNotes] = useState("");
 
   const catalogItems = MOCK_CATALOG_ITEMS;
   const isLoading = false;
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return catalogItems;
-    return catalogItems.filter((i) =>
-      i.name.toLowerCase().includes(search.toLowerCase()),
-    );
-  }, [catalogItems, search]);
 
   function addToCart(item: CatalogItemResponse) {
     setCart((prev) => {
@@ -394,11 +391,26 @@ function PdvModal({
     setCart((prev) => prev.filter((c) => c.item.id !== itemId));
   }
 
+  function updateUnitPrice(itemId: number, unitPriceCents: number) {
+    setCart((prev) =>
+      prev.map((c) => (c.item.id === itemId ? { ...c, unitPriceCents } : c)),
+    );
+  }
+
+  const lines = useMemo(
+    () =>
+      cart.map((entry) => ({
+        itemId: entry.item.id,
+        quantity: entry.quantity,
+        unitPriceCents: entry.unitPriceCents,
+      })),
+    [cart],
+  );
+
   const subtotal = cart.reduce(
     (sum, c) => sum + c.unitPriceCents * c.quantity,
     0,
   );
-  const discountCents = Math.round(parseFloat(discountInput || "0") * 100);
   const total = Math.max(0, subtotal - discountCents);
 
   return (
@@ -435,162 +447,22 @@ function PdvModal({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Catalog */}
-        <div className="flex w-2/3 flex-col border-r border-border">
-          <div className="border-b border-border px-4 py-3">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar produto pelo nome..."
-                className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              </div>
-            ) : filtered.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                Nenhum produto encontrado
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
-                {filtered.map((item) => {
-                  const inCart = cart.find((c) => c.item.id === item.id);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => addToCart(item)}
-                      className="group relative flex flex-col gap-2 rounded-xl border border-border bg-card p-3 text-left hover:border-primary/50 hover:bg-primary/5 transition-all"
-                    >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-                        <Package size={24} className="text-muted-foreground" />
-                      </div>
-                      <p className="text-xs font-medium leading-tight line-clamp-2">
-                        {item.name}
-                      </p>
-                      <p className="text-sm font-semibold text-primary">
-                        {formatCurrency(item.priceCents)}
-                      </p>
-                      {inCart && (
-                        <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                          {inCart.quantity}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Cart + Totals */}
-        <div className="flex w-1/3 flex-col">
-          <div className="border-b border-border px-4 py-3">
-            <h3 className="text-sm font-semibold">
-              Carrinho ({cart.length} {cart.length === 1 ? "item" : "itens"})
-            </h3>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {cart.length === 0 ? (
-              <p className="py-8 text-center text-xs text-muted-foreground">
-                Adicione produtos ao orçamento
-              </p>
-            ) : (
-              cart.map((c) => (
-                <div
-                  key={c.item.id}
-                  className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">
-                      {c.item.name}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatCurrency(c.unitPriceCents)} cada
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => updateQty(c.item.id, -1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full border border-border hover:bg-accent transition-colors"
-                    >
-                      <Minus size={10} />
-                    </button>
-                    <span className="w-6 text-center text-xs font-medium tabular-nums">
-                      {c.quantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateQty(c.item.id, 1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full border border-border hover:bg-accent transition-colors"
-                    >
-                      <Plus size={10} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeFromCart(c.item.id)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 size={10} />
-                    </button>
-                  </div>
-                  <span className="text-xs font-semibold tabular-nums">
-                    {formatCurrency(c.unitPriceCents * c.quantity)}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Totals */}
-          <div className="border-t border-border p-4 space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium tabular-nums">
-                {formatCurrency(subtotal)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground whitespace-nowrap">
-                Desconto (R$)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={discountInput}
-                onChange={(e) => setDiscountInput(e.target.value)}
-                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm text-right outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div className="flex items-center justify-between border-t border-border pt-2">
-              <span className="text-base font-semibold">Total</span>
-              <span className="text-base font-bold text-primary tabular-nums">
-                {formatCurrency(total)}
-              </span>
-            </div>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Observações do orçamento..."
-              rows={2}
-              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
-            />
-          </div>
-        </div>
+      <div className="flex flex-1 overflow-hidden p-4">
+        <OrderBudgetComposer
+          className="h-full w-full"
+          catalogItems={catalogItems}
+          lines={lines}
+          discountCents={discountCents}
+          notes={notes}
+          isCatalogLoading={isLoading}
+          onAddItem={addToCart}
+          onIncrease={(itemId) => updateQty(itemId, 1)}
+          onDecrease={(itemId) => updateQty(itemId, -1)}
+          onRemove={removeFromCart}
+          onUnitPriceChange={updateUnitPrice}
+          onDiscountChange={setDiscountCents}
+          onNotesChange={setNotes}
+        />
       </div>
     </div>
   );
@@ -1022,7 +894,7 @@ export function ConversationsPage() {
     if (!newMessage.trim() || !activeContactId) return;
     const contact = contacts.find((c) => c.id === activeContactId);
     const msg: ChatMessage = {
-      id: `local-${Date.now()}`,
+      id: nextLocalId(),
       contactId: activeContactId,
       content: newMessage.trim(),
       createdAt: new Date().toISOString(),
@@ -1056,7 +928,7 @@ export function ConversationsPage() {
       return;
     }
     const now = new Date().toISOString();
-    const newId = `local-conv-${person.id}-${Date.now()}`;
+    const newId = nextLocalId(`local-conv-${person.id}`);
     const newContact: ConversationContact = {
       id: newId,
       leadId: `person-${person.id}`,
@@ -1080,7 +952,7 @@ export function ConversationsPage() {
   function handlePdvConfirm(
     items: CartItem[],
     discountCents: number,
-    _notes: string,
+    notes: string,
   ) {
     if (items.length === 0) return;
     const subtotal = items.reduce(
@@ -1092,9 +964,9 @@ export function ConversationsPage() {
       .map((c) => `${c.quantity}x ${c.item.name}`)
       .join(", ");
     const msg: ChatMessage = {
-      id: `local-${Date.now()}`,
+      id: nextLocalId(),
       contactId: activeContactId!,
-      content: `Orçamento enviado:\n${summary}\nTotal: ${formatCurrency(total)}`,
+      content: `Orçamento enviado:\n${summary}\nTotal: ${formatCurrency(total)}${notes ? `\nObs: ${notes}` : ""}`,
       createdAt: new Date().toISOString(),
       direction: "outbound",
       status: "sent",
@@ -1109,7 +981,7 @@ export function ConversationsPage() {
 
   function handleScheduleConfirm(date: string, time: string, notes: string) {
     const msg: ChatMessage = {
-      id: `local-${Date.now()}`,
+      id: nextLocalId(),
       contactId: activeContactId!,
       content: `Agendamento confirmado:\nData: ${date} às ${time}${notes ? `\nObs: ${notes}` : ""}`,
       createdAt: new Date().toISOString(),

@@ -28,27 +28,6 @@ const ConversationsPage = lazy(() =>
   })),
 );
 
-// Orders Board
-const OrdersBoardPage = lazy(() =>
-  import("@/features/orders-board/pages/OrdersBoardPage").then((m) => ({
-    default: m.OrdersBoardPage,
-  })),
-);
-
-// Sales Board
-const SalesBoardPage = lazy(() =>
-  import("@/features/orders-board/pages/SalesBoardPage").then((m) => ({
-    default: m.SalesBoardPage,
-  })),
-);
-
-// Delivery Board
-const DeliveryBoardPage = lazy(() =>
-  import("@/features/orders-board/pages/DeliveryBoardPage").then((m) => ({
-    default: m.DeliveryBoardPage,
-  })),
-);
-
 // Customers
 const CustomerListPage = lazy(() =>
   import("@/features/customers/pages/CustomerListPage").then((m) => ({
@@ -193,7 +172,7 @@ const CampaignsPage = lazy(() =>
   })),
 );
 
-// Marketing e Vendas
+// Marketing
 const MarketingCampaignsPage = lazy(() =>
   import("@/features/marketing/pages/MarketingCampaignsPage").then((m) => ({
     default: m.MarketingCampaignsPage,
@@ -361,7 +340,7 @@ export function AppRouter() {
 
             <Route path="/campaigns" element={<CampaignsPage />} />
 
-            {/* Marketing e Vendas */}
+            {/* Marketing */}
             <Route
               path="/marketing/campaigns"
               element={<MarketingCampaignsPage />}
@@ -375,12 +354,6 @@ export function AppRouter() {
 
           <Route element={<AuthenticatedFullscreenLayout />}>
             <Route path="/conversations" element={<ConversationsPage />} />
-            <Route path="/orders/board" element={<OrdersBoardPage />} />
-            <Route path="/orders/sales-board" element={<SalesBoardPage />} />
-            <Route
-              path="/orders/delivery-board"
-              element={<DeliveryBoardPage />}
-            />
             <Route path="/schedules/board" element={<SchedulesBoardPage />} />
             <Route path="/marketing/leads" element={<LeadsBoardPage />} />
           </Route>

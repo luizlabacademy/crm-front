@@ -14,12 +14,32 @@ interface UseOrdersParams {
   page?: number;
   size?: number;
   tenantId?: number | null;
+  status?: string;
+  customerId?: number | null;
+  userId?: number | null;
+  q?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export function useOrders(params: UseOrdersParams = {}) {
-  const { page = 0, size = 20, tenantId } = params;
+  const {
+    page = 0,
+    size = 20,
+    tenantId,
+    status,
+    customerId,
+    userId,
+    q,
+    dateFrom,
+    dateTo,
+  } = params;
+
   return useQuery<PageResponse<OrderResponse>>({
-    queryKey: ["orders", { page, size, tenantId }],
+    queryKey: [
+      "orders",
+      { page, size, tenantId, status, customerId, userId, q, dateFrom, dateTo },
+    ],
     queryFn: async () => {
       const { data } = await api.get<PageResponse<OrderResponse>>(
         "/api/v1/orders",
@@ -28,6 +48,12 @@ export function useOrders(params: UseOrdersParams = {}) {
             page,
             size,
             ...(tenantId != null ? { tenantId } : {}),
+            ...(status ? { status } : {}),
+            ...(customerId != null ? { customerId } : {}),
+            ...(userId != null ? { userId } : {}),
+            ...(q ? { q } : {}),
+            ...(dateFrom ? { dateFrom } : {}),
+            ...(dateTo ? { dateTo } : {}),
           },
         },
       );

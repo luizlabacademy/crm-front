@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import {
   LayoutDashboard,
   Users,
-  MessageSquare,
   MessageCircle,
   ShoppingCart,
   Package,
@@ -18,11 +17,9 @@ import {
   LogOut,
   Menu,
   X,
-  ShoppingBag,
-  Truck,
   CalendarRange,
   Megaphone,
-  ChevronDown,
+  ClipboardList,
   Zap,
   BookUser,
 } from "lucide-react";
@@ -41,13 +38,6 @@ interface NavSection {
   items: NavItem[];
 }
 
-interface NavSectionWithSubmenu {
-  section: string;
-  icon: ReactNode;
-  submenu: NavItem[];
-}
-
-// Regular sections (flat list)
 const NAV: NavSection[] = [
   {
     section: "Principal",
@@ -68,19 +58,14 @@ const NAV: NavSection[] = [
     section: "Operacoes",
     items: [
       {
+        label: "Leads",
+        to: "/marketing/leads",
+        icon: <ClipboardList size={16} />,
+      },
+      {
         label: "Buscar Pedidos",
         to: "/orders",
         icon: <ShoppingCart size={16} />,
-      },
-      {
-        label: "Board de Pedidos",
-        to: "/orders/sales-board",
-        icon: <ShoppingBag size={16} />,
-      },
-      {
-        label: "Board de Expedição/Entrega",
-        to: "/orders/delivery-board",
-        icon: <Truck size={16} />,
       },
       {
         label: "Agendamentos",
@@ -91,7 +76,27 @@ const NAV: NavSection[] = [
     ],
   },
   {
-    section: "Catalogo",
+    section: "Marketing",
+    items: [
+      {
+        label: "Campanhas de Marketing",
+        to: "/marketing/campaigns",
+        icon: <Megaphone size={16} />,
+      },
+      {
+        label: "Marketing Automatizado",
+        to: "/marketing/automation",
+        icon: <Zap size={16} />,
+      },
+      {
+        label: "Lista de Contatos",
+        to: "/marketing/contacts",
+        icon: <BookUser size={16} />,
+      },
+    ],
+  },
+  {
+    section: "Cadastros",
     items: [
       { label: "Itens", to: "/catalog/items", icon: <Package size={16} /> },
       {
@@ -104,24 +109,19 @@ const NAV: NavSection[] = [
         to: "/catalog/units-of-measure",
         icon: <Ruler size={16} />,
       },
+      { label: "Tenants", to: "/tenants", icon: <Building2 size={16} /> },
+      { label: "Usuarios", to: "/users", icon: <UserCog size={16} /> },
+      { label: "Workers", to: "/workers", icon: <Wrench size={16} /> },
     ],
   },
   {
-    section: "Pipeline",
+    section: "Configuracoes",
     items: [
       {
         label: "Fluxos de Pipeline",
         to: "/pipeline-flows",
         icon: <GitBranch size={16} />,
       },
-    ],
-  },
-  {
-    section: "Administracao",
-    items: [
-      { label: "Tenants", to: "/tenants", icon: <Building2 size={16} /> },
-      { label: "Usuarios", to: "/users", icon: <UserCog size={16} /> },
-      { label: "Workers", to: "/workers", icon: <Wrench size={16} /> },
       { label: "Perfis", to: "/admin/roles", icon: <ShieldCheck size={16} /> },
       {
         label: "Permissoes",
@@ -130,42 +130,6 @@ const NAV: NavSection[] = [
       },
     ],
   },
-];
-
-// Submenu section for Marketing e Vendas
-const MARKETING_SECTION: NavSectionWithSubmenu = {
-  section: "Marketing e Vendas",
-  icon: <Megaphone size={16} />,
-  submenu: [
-    {
-      label: "Leads",
-      to: "/marketing/leads",
-      icon: <MessageSquare size={14} />,
-    },
-    {
-      label: "Campanhas de Marketing",
-      to: "/marketing/campaigns",
-      icon: <Megaphone size={14} />,
-    },
-    {
-      label: "Marketing Automatizado",
-      to: "/marketing/automation",
-      icon: <Zap size={14} />,
-    },
-    {
-      label: "Lista de Contatos",
-      to: "/marketing/contacts",
-      icon: <BookUser size={14} />,
-    },
-  ],
-};
-
-// Marketing routes to detect active submenu
-const MARKETING_ROUTES = [
-  "/marketing/leads",
-  "/marketing/campaigns",
-  "/marketing/automation",
-  "/marketing/contacts",
 ];
 
 // ─── Sidebar Link ─────────────────────────────────────────────────────────────
@@ -192,60 +156,6 @@ function SidebarLink({ item, onClick }: SidebarLinkProps) {
       {item.icon}
       <span>{item.label}</span>
     </NavLink>
-  );
-}
-
-// ─── Marketing Submenu Section ────────────────────────────────────────────────
-
-interface MarketingSectionProps {
-  section: NavSectionWithSubmenu;
-  onLinkClick?: () => void;
-}
-
-function MarketingSection({ section, onLinkClick }: MarketingSectionProps) {
-  const location = useLocation();
-  const isAnyActive = MARKETING_ROUTES.some((r) =>
-    location.pathname.startsWith(r),
-  );
-  const [open, setOpen] = useState(isAnyActive);
-
-  return (
-    <div>
-      <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-        {section.section}
-      </p>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-          isAnyActive
-            ? "text-sidebar-foreground font-medium"
-            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        )}
-      >
-        <span className="flex items-center gap-2">
-          {section.icon}
-          {section.section}
-        </span>
-        <ChevronDown
-          size={14}
-          className={cn(
-            "transition-transform duration-200",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-
-      {open && (
-        <ul className="mt-0.5 ml-3 space-y-0.5 border-l border-sidebar-border pl-2">
-          {section.submenu.map((item) => (
-            <li key={item.to}>
-              <SidebarLink item={item} onClick={onLinkClick} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }
 
@@ -310,9 +220,6 @@ function Sidebar({ open, onClose }: SidebarProps) {
               </ul>
             </div>
           ))}
-
-          {/* Marketing e Vendas — submenu section */}
-          <MarketingSection section={MARKETING_SECTION} onLinkClick={onClose} />
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
