@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
 import {
   Bell,
   BookUser,
   Building2,
   CalendarRange,
   ChevronDown,
+  ChevronRight,
   ClipboardList,
   Command,
   Expand,
   GitBranch,
   Globe,
+  House,
   LayoutDashboard,
   Lock,
   LogOut,
@@ -199,7 +201,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex w-64 flex-col bg-sidebar border-r border-sidebar-border",
+          "fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-sidebar-border bg-white dark:bg-sidebar",
           "transition-transform duration-200",
           open ? "translate-x-0" : "-translate-x-full",
           "lg:static lg:translate-x-0 lg:z-auto",
@@ -237,6 +239,73 @@ function Sidebar({ open, onClose }: SidebarProps) {
         </div>
       </aside>
     </>
+  );
+}
+
+interface BreadcrumbItem {
+  label: string;
+  to?: string;
+  current?: boolean;
+}
+
+function findNavTrail(items: NavItem[], pathname: string): NavItem[] | null {
+  for (const item of items) {
+    const isDirectMatch =
+      pathname === item.to || pathname.startsWith(`${item.to}/`);
+    if (isDirectMatch) return [item];
+
+    if (item.children?.length) {
+      const childTrail = findNavTrail(item.children, pathname);
+      if (childTrail) return [item, ...childTrail];
+    }
+  }
+  return null;
+}
+
+function BreadcrumbBar({ items }: { items: BreadcrumbItem[] }) {
+  const navigate = useNavigate();
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-4 flex items-center gap-2 text-sm">
+      <button
+        type="button"
+        onClick={() => void navigate("/dashboard")}
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        aria-label="Ir para dashboard"
+      >
+        <House size={14} />
+      </button>
+
+      {items.map((item, index) => (
+        <div
+          key={`${item.label}-${index}`}
+          className="inline-flex items-center gap-2"
+        >
+          <ChevronRight size={14} className="text-muted-foreground" />
+          {item.to && !item.current ? (
+            <button
+              type="button"
+              onClick={() => void navigate(item.to as string)}
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {item.label}
+            </button>
+          ) : (
+            <span
+              className={cn(
+                item.current
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              {item.label}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -563,7 +632,7 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
   }
 
   return (
-    <header className="h-16 w-full border-b border-border bg-background">
+    <header className="h-16 w-full border-b border-border bg-white dark:bg-card">
       <div className="flex h-full w-full items-center gap-3 px-4 lg:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <button
@@ -756,6 +825,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [featureSearchOpen, setFeatureSearchOpen] = useState(false);
   const [featureQuery, setFeatureQuery] = useState("");
@@ -824,6 +894,40 @@ export function AppLayout({ children }: AppLayoutProps) {
     });
   }, [featureIndex, featureQuery, sectionFilter]);
 
+  const breadcrumbs = useMemo<BreadcrumbItem[]>(() => {
+    const directMap: Record<string, BreadcrumbItem[]> = {
+      "/notifications": [{ label: "Notificacoes", current: true }],
+      "/me/profile": [{ label: "Meu perfil", current: true }],
+      "/settings": [{ label: "Configuracoes", current: true }],
+    };
+
+    if (directMap[location.pathname]) {
+      return directMap[location.pathname];
+    }
+
+    for (const section of NAV) {
+      const trail = findNavTrail(section.items, location.pathname);
+      if (!trail || trail.length === 0) continue;
+
+      const sectionCrumb: BreadcrumbItem = {
+        label: section.section,
+      };
+
+      const itemCrumbs = trail.map((item, index) => {
+        const isLast = index === trail.length - 1;
+        return {
+          label: item.label,
+          to: isLast ? undefined : item.to,
+          current: isLast,
+        } satisfies BreadcrumbItem;
+      });
+
+      return [sectionCrumb, ...itemCrumbs];
+    }
+
+    return [];
+  }, [location.pathname]);
+
   const openFeatureSearch = useCallback(() => {
     setFeatureSearchOpen(true);
   }, []);
@@ -864,7 +968,10 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex min-h-[calc(100vh-4rem)]">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+        <main className="min-w-0 flex-1 p-4 md:p-6">
+          <BreadcrumbBar items={breadcrumbs} />
+          {children}
+        </main>
       </div>
 
       <FeatureSearchModal

@@ -1198,7 +1198,7 @@ export function SchedulesBoardPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden bg-white text-foreground dark:bg-background">
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between gap-4 border-b border-border px-4 shrink-0">
         <div className="flex items-center gap-3">
@@ -1264,8 +1264,8 @@ export function SchedulesBoardPage() {
       </div>
 
       {/* Calendar body */}
-      <div className="flex-1 p-4 overflow-hidden">
-        <div className="h-full flex gap-4">
+      <div className="flex-1 overflow-hidden bg-white p-4 dark:bg-background">
+        <div className="flex h-full gap-4">
           <aside
             className="w-64 shrink-0 overflow-y-auto space-y-3 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
             style={{ scrollbarWidth: "thin", scrollbarGutter: "stable" }}
