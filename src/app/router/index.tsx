@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router";
 import { AuthGuard } from "@/app/guards/auth-guard";
 import { AppLayout } from "@/app/layouts/app-layout";
@@ -186,10 +186,35 @@ const SchedulesBoardPage = lazy(() =>
   })),
 );
 
-// Campaigns
+// Campaigns (legacy — mantido para compatibilidade com rota /campaigns)
 const CampaignsPage = lazy(() =>
   import("@/features/campaigns/pages/CampaignsPage").then((m) => ({
     default: m.CampaignsPage,
+  })),
+);
+
+// Marketing e Vendas
+const MarketingCampaignsPage = lazy(() =>
+  import("@/features/marketing/pages/MarketingCampaignsPage").then((m) => ({
+    default: m.MarketingCampaignsPage,
+  })),
+);
+
+const MarketingAutomationPage = lazy(() =>
+  import("@/features/marketing/pages/MarketingAutomationPage").then((m) => ({
+    default: m.MarketingAutomationPage,
+  })),
+);
+
+const ContactListPage = lazy(() =>
+  import("@/features/marketing/pages/ContactListPage").then((m) => ({
+    default: m.ContactListPage,
+  })),
+);
+
+const LeadsBoardPage = lazy(() =>
+  import("@/features/marketing/pages/LeadsBoardPage").then((m) => ({
+    default: m.LeadsBoardPage,
   })),
 );
 
@@ -335,6 +360,17 @@ export function AppRouter() {
             <Route path="/admin/permissions" element={<PermissionListPage />} />
 
             <Route path="/campaigns" element={<CampaignsPage />} />
+
+            {/* Marketing e Vendas */}
+            <Route
+              path="/marketing/campaigns"
+              element={<MarketingCampaignsPage />}
+            />
+            <Route
+              path="/marketing/automation"
+              element={<MarketingAutomationPage />}
+            />
+            <Route path="/marketing/contacts" element={<ContactListPage />} />
           </Route>
 
           <Route element={<AuthenticatedFullscreenLayout />}>
@@ -346,6 +382,7 @@ export function AppRouter() {
               element={<DeliveryBoardPage />}
             />
             <Route path="/schedules/board" element={<SchedulesBoardPage />} />
+            <Route path="/marketing/leads" element={<LeadsBoardPage />} />
           </Route>
 
           <Route path="*" element={<RootRedirect />} />

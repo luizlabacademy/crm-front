@@ -1,0 +1,78 @@
+{
+  "templates": [
+    {
+      "id": "tpl-001",
+      "name": "Carrinho Abandonado",
+      "type": "carrinho_abandonado",
+      "message": "Oi, {{nome}}! Vimos que você deixou alguns itens no carrinho. Que tal finalizar sua compra? Temos um cupom especial para você: {{cupom}}. Acesse: {{link}}"
+    },
+    {
+      "id": "tpl-002",
+      "name": "Reativação de Clientes",
+      "type": "reativacao_clientes",
+      "message": "Olá, {{nome}}! Sentimos sua falta! Faz um tempo que você não nos visita. Que tal conferir as novidades? Clique aqui: {{link}}"
+    },
+    {
+      "id": "tpl-003",
+      "name": "Lembrete de Agendamento",
+      "type": "lembrete_agendamento",
+      "message": "Olá, {{nome}}! Lembramos que você tem um agendamento amanhã, {{data}}, às {{hora}}. Para confirmar ou cancelar, responda esta mensagem."
+    },
+    {
+      "id": "tpl-004",
+      "name": "Follow-up Pós-Atendimento",
+      "type": "followup_pos_atendimento",
+      "message": "Oi, {{nome}}! Como foi sua experiência com a gente? Sua opinião é muito importante! Avalie aqui: {{link_avaliacao}}"
+    }
+  ],
+  "automations": [
+    {
+      "id": "auto-001",
+      "name": "Recuperar Carrinho Abandonado",
+      "templateId": "tpl-001",
+      "trigger": {
+        "type": "tempo",
+        "event": "abandono_carrinho",
+        "delayHours": 1
+      },
+      "status": "Ativa",
+      "createdAt": "2026-02-10T10:00:00Z"
+    },
+    {
+      "id": "auto-002",
+      "name": "Reativar Cliente Inativo",
+      "templateId": "tpl-002",
+      "trigger": {
+        "type": "tempo",
+        "event": "sem_retorno",
+        "delayDays": 7
+      },
+      "status": "Ativa",
+      "createdAt": "2026-02-15T11:00:00Z"
+    },
+    {
+      "id": "auto-003",
+      "name": "Lembrete 24h Antes do Agendamento",
+      "templateId": "tpl-003",
+      "trigger": {
+        "type": "status",
+        "event": "agendado",
+        "delayHours": -24
+      },
+      "status": "Ativa",
+      "createdAt": "2026-03-01T09:00:00Z"
+    },
+    {
+      "id": "auto-004",
+      "name": "Follow-up Após Atendimento",
+      "templateId": "tpl-004",
+      "trigger": {
+        "type": "status",
+        "event": "atendido",
+        "delayHours": 2
+      },
+      "status": "Pausada",
+      "createdAt": "2026-03-10T14:00:00Z"
+    }
+  ]
+}
