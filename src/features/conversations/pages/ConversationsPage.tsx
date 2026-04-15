@@ -36,26 +36,15 @@ import { formatRelative } from "@/lib/utils/formatDate";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { usePersons } from "@/features/persons/api/usePersons";
-import {
-  getPersonDisplayName,
-  type PersonResponse,
-} from "@/features/persons/types/personTypes";
 import type {
   ConversationContact,
   ChatMessage,
   ConversationChannel,
   ConversationContactType,
 } from "@/features/conversations/types/conversationTypes";
-import {
-  useConversations,
-  useConversationMessages,
-  useSendMessage,
-  useCreateConversation,
-} from "@/features/conversations/api/useConversations";
-import { useCatalogItems } from "@/features/orders/api/useOrders";
+import contactsMock from "@/features/conversations/mocks/contacts.json";
+import messagesMock from "@/features/conversations/mocks/messages.json";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
-import { useOrders } from "@/features/orders/api/useOrders";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -119,6 +108,85 @@ function formatContactTime(dateString: string): string {
     return "";
   }
 }
+
+interface PersonResponse {
+  id: number;
+  fullName: string;
+}
+
+function getPersonDisplayName(person: PersonResponse): string {
+  return person.fullName;
+}
+
+interface MockOrder {
+  id: number;
+  code?: string | null;
+  totalCents: number;
+  status: string;
+}
+
+const MOCK_CONTACTS: ConversationContact[] = (
+  contactsMock as Array<
+    ConversationContact & { contactType?: ConversationContactType }
+  >
+).map((contact) => ({
+  ...contact,
+  channel: contact.channel as ConversationChannel,
+  contactType: (contact.contactType ?? "customer") as ConversationContactType,
+}));
+
+const MOCK_MESSAGES = messagesMock as Record<string, ChatMessage[]>;
+
+const MOCK_PERSONS: PersonResponse[] = MOCK_CONTACTS.map((contact, index) => ({
+  id: index + 1,
+  fullName: contact.name,
+}));
+
+const MOCK_CATALOG_ITEMS: CatalogItemResponse[] = [
+  {
+    id: 101,
+    tenantId: 1,
+    name: "Plano Starter",
+    description: "Implantacao basica",
+    priceCents: 19900,
+  },
+  {
+    id: 102,
+    tenantId: 1,
+    name: "Plano Pro",
+    description: "Implantacao com automacoes",
+    priceCents: 49900,
+  },
+  {
+    id: 103,
+    tenantId: 1,
+    name: "Treinamento Comercial",
+    description: "Capacitacao para time de vendas",
+    priceCents: 12900,
+  },
+  {
+    id: 104,
+    tenantId: 1,
+    name: "Pacote Follow-up",
+    description: "Sequencias prontas de mensagens",
+    priceCents: 8900,
+  },
+  {
+    id: 105,
+    tenantId: 1,
+    name: "Suporte Prioritario",
+    description: "Fila acelerada de atendimento",
+    priceCents: 15900,
+  },
+];
+
+const MOCK_RECENT_ORDERS: MockOrder[] = [
+  { id: 4521, code: "PED-4521", totalCents: 245000, status: "CONFIRMED" },
+  { id: 4518, code: "PED-4518", totalCents: 179900, status: "PENDING" },
+  { id: 4509, code: "PED-4509", totalCents: 98900, status: "DELIVERED" },
+  { id: 4503, code: "PED-4503", totalCents: 312500, status: "DRAFT" },
+  { id: 4497, code: "PED-4497", totalCents: 221000, status: "CANCELLED" },
+];
 
 function MessageStatus({ status }: { status?: string }) {
   if (status === "read")
@@ -289,7 +357,8 @@ function PdvModal({
   const [discountInput, setDiscountInput] = useState("0");
   const [notes, setNotes] = useState("");
 
-  const { data: catalogItems = [], isLoading } = useCatalogItems();
+  const catalogItems = MOCK_CATALOG_ITEMS;
+  const isLoading = false;
 
   const filtered = useMemo(() => {
     if (!search.trim()) return catalogItems;
@@ -529,8 +598,8 @@ function PdvModal({
 // ─── Orders Panel (inside chat) ───────────────────────────────────────────────
 
 function OrdersPanel({ onClose }: { onClose: () => void }) {
-  const { data: ordersPage, isLoading } = useOrders({ page: 0, size: 20 });
-  const orders = ordersPage?.content ?? [];
+  const orders = MOCK_RECENT_ORDERS;
+  const isLoading = false;
 
   return (
     <div className="absolute bottom-20 right-4 z-30 w-80 rounded-xl border border-border bg-card shadow-xl">
@@ -676,11 +745,8 @@ function NewChatModal({
   const [selectedType, setSelectedType] =
     useState<ConversationContactType>("customer");
 
-  const { data: personsData, isLoading: isLoadingPersons } = usePersons({
-    page: 0,
-    size: 100,
-  });
-  const persons = personsData?.content ?? [];
+  const persons = MOCK_PERSONS;
+  const isLoadingPersons = false;
   const filteredPersons = persons.filter((p) => {
     const name = getPersonDisplayName(p);
     return name.toLowerCase().includes(personSearch.toLowerCase());
@@ -896,10 +962,10 @@ const ALL_CHANNELS: { value: string; label: string }[] = [
 export function ConversationsPage() {
   const navigate = useNavigate();
   const [activeContactId, setActiveContactId] = useState<string | null>(null);
-  const [localContacts, setLocalContacts] = useState<ConversationContact[]>([]);
-  const [localMessages, setLocalMessages] = useState<
-    Record<string, ChatMessage[]>
-  >({});
+  const [localContacts, setLocalContacts] =
+    useState<ConversationContact[]>(MOCK_CONTACTS);
+  const [localMessages, setLocalMessages] =
+    useState<Record<string, ChatMessage[]>>(MOCK_MESSAGES);
   const [search, setSearch] = useState("");
   const [channelFilter, setChannelFilter] = useState("Todos");
   const [chatTab, setChatTab] = useState<"all" | "open" | "closed">("open");
@@ -921,43 +987,19 @@ export function ConversationsPage() {
     photoUrl: "https://i.pravatar.cc/240?img=12",
   };
 
-  // ─── API Data ────────────────────────────────────────────────────────────────
-  const { data: apiContacts = [], isLoading: isLoadingContacts } =
-    useConversations();
-  const { data: apiMessages = [] } = useConversationMessages(
-    activeContactId,
-    localContacts.find((c) => c.id === activeContactId)?.leadId,
-  );
-  const sendMessageMutation = useSendMessage();
-  const createConversationMutation = useCreateConversation();
+  const isLoadingContacts = false;
 
-  // Merge API contacts with locally created ones
-  const contacts = useMemo(() => {
-    const apiIds = new Set(apiContacts.map((c) => c.id));
-    const onlyLocal = localContacts.filter((c) => !apiIds.has(c.id));
-    return [...apiContacts, ...onlyLocal];
-  }, [apiContacts, localContacts]);
+  const contacts = useMemo(() => localContacts, [localContacts]);
 
-  // Merge API messages with locally sent ones
   const activeMessages = useMemo(() => {
     if (!activeContactId) return [];
-    const local = localMessages[activeContactId] ?? [];
-    const api = apiMessages;
-    // Deduplicate by id
-    const seen = new Set<string>();
-    const merged: ChatMessage[] = [];
-    for (const m of [...api, ...local]) {
-      if (!seen.has(m.id)) {
-        seen.add(m.id);
-        merged.push(m);
-      }
-    }
-    merged.sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    );
-    return merged;
-  }, [activeContactId, apiMessages, localMessages]);
+    return (localMessages[activeContactId] ?? [])
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+  }, [activeContactId, localMessages]);
 
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? null;
 
@@ -1025,12 +1067,6 @@ export function ConversationsPage() {
       [activeContactId]: [...(prev[activeContactId] ?? []), msg],
     }));
     setNewMessage("");
-    // Fire-and-forget API call
-    void sendMessageMutation.mutateAsync({
-      conversationId: activeContactId,
-      leadId: contact?.leadId,
-      payload: { content: newMessage.trim(), direction: "outbound" },
-    });
   }
 
   function handleCreateChat(
@@ -1070,12 +1106,6 @@ export function ConversationsPage() {
     setShowMobileChat(true);
     setShowNewChatModal(false);
     setChatTab("open");
-    // Also fire create via API
-    void createConversationMutation.mutateAsync({
-      personId: person.id,
-      channel,
-      contactType,
-    });
   }
 
   function handlePdvConfirm(

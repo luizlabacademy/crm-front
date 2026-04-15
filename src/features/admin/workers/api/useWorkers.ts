@@ -4,7 +4,6 @@ import type {
   WorkerResponse,
   WorkerRequest,
   PageResponse,
-  TenantSummary,
 } from "@/features/admin/workers/types/workerTypes";
 
 // ─── List ─────────────────────────────────────────────────────────────────────
@@ -97,21 +96,5 @@ export function useDeleteWorker() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["workers"] });
     },
-  });
-}
-
-// ─── Tenants selector ─────────────────────────────────────────────────────────
-
-export function useTenantsList() {
-  return useQuery<PageResponse<TenantSummary>>({
-    queryKey: ["tenants"],
-    queryFn: async () => {
-      const { data } = await api.get<PageResponse<TenantSummary>>(
-        "/api/v1/tenants",
-        { params: { page: 0, size: 100 } },
-      );
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
   });
 }

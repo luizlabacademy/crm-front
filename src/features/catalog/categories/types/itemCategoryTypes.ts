@@ -17,12 +17,6 @@ export interface ItemCategoryRequest {
   active: boolean;
 }
 
-// ─── Page Response ────────────────────────────────────────────────────────────
+// ─── Shared ───────────────────────────────────────────────────────────────────
 
-export interface PageResponse<T> {
-  content: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
+export type { PageResponse } from "@/lib/types/personTypes";

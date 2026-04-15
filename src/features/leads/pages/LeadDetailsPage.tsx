@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   Pencil,
   Trash2,
-  AlertCircle,
   RefreshCw,
   Loader2,
   Send,
@@ -20,18 +19,13 @@ import {
   useSendLeadMessage,
 } from "@/features/leads/api/useLeads";
 import { useAuthStore } from "@/lib/auth/authStore";
+import { LEAD_STATUS_COLORS } from "@/features/leads/types/leadTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
-import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatCents(cents: number | null | undefined): string {
-  if (cents == null) return "—";
-  return (cents / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
 
 function decodeJwtSub(token: string | null): number | null {
   if (!token) return null;
@@ -45,13 +39,6 @@ function decodeJwtSub(token: string | null): number | null {
   }
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-100 text-blue-800",
-  WON: "bg-green-100 text-green-800",
-  LOST: "bg-red-100 text-red-800",
-  IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-};
-
 // ─── Message schema ───────────────────────────────────────────────────────────
 
 const messageSchema = z.object({
@@ -60,53 +47,6 @@ const messageSchema = z.object({
 });
 
 type MessageForm = z.infer<typeof messageSchema>;
-
-// ─── Delete modal ─────────────────────────────────────────────────────────────
-
-function DeleteModal({
-  onConfirm,
-  onCancel,
-  isDeleting,
-}: {
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg space-y-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={20} className="text-destructive mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">Confirmar exclusão</p>
-            <p className="text-sm text-muted-foreground">
-              Deseja excluir este lead? Esta ação não pode ser desfeita.
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="rounded-md bg-destructive/90 text-white px-3 py-1.5 text-sm hover:bg-destructive transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {isDeleting && <RefreshCw size={12} className="animate-spin" />}
-            Excluir
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -229,14 +169,7 @@ export function LeadDetailsPage() {
           </button>
           <div>
             <h1 className="text-2xl font-semibold">Lead #{lead.id}</h1>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1",
-                STATUS_COLORS[lead.status] ?? "bg-gray-100 text-gray-700",
-              )}
-            >
-              {lead.status}
-            </span>
+            <StatusBadge status={lead.status} colorMap={LEAD_STATUS_COLORS} />
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -291,7 +224,9 @@ export function LeadDetailsPage() {
           <div>
             <dt className="text-muted-foreground">Valor estimado</dt>
             <dd className="font-medium">
-              {formatCents(lead.estimatedValueCents)}
+              {lead.estimatedValueCents != null
+                ? formatCurrency(lead.estimatedValueCents)
+                : "—"}
             </dd>
           </div>
           <div>
@@ -402,7 +337,8 @@ export function LeadDetailsPage() {
       </div>
 
       {showDeleteModal && (
-        <DeleteModal
+        <ConfirmDeleteModal
+          description="Deseja excluir este lead? Esta ação não pode ser desfeita."
           onConfirm={() => void handleDelete()}
           onCancel={() => setShowDeleteModal(false)}
           isDeleting={deleteMutation.isPending}

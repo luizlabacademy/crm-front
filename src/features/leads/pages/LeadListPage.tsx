@@ -6,144 +6,18 @@ import {
   Trash2,
   Eye,
   MessageSquare,
-  AlertCircle,
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { useLeads, useDeleteLead } from "@/features/leads/api/useLeads";
+import { LEAD_STATUS_COLORS } from "@/features/leads/types/leadTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
-import { cn } from "@/lib/utils";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatCents(cents: number | null | undefined): string {
-  if (cents == null) return "—";
-  return (cents / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-100 text-blue-800",
-  WON: "bg-green-100 text-green-800",
-  LOST: "bg-red-100 text-red-800",
-  IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-};
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        STATUS_COLORS[status] ?? "bg-gray-100 text-gray-700",
-      )}
-    >
-      {status}
-    </span>
-  );
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function SkeletonRow() {
-  return (
-    <tr>
-      {Array.from({ length: 7 }).map((_, i) => (
-        <td key={i} className="px-4 py-3">
-          <div className="h-3 w-full animate-pulse rounded bg-muted" />
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-interface DeleteModalProps {
-  label: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
-}
-
-function DeleteModal({
-  label,
-  onConfirm,
-  onCancel,
-  isDeleting,
-}: DeleteModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg space-y-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={20} className="text-destructive mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">Confirmar exclusão</p>
-            <p className="text-sm text-muted-foreground">
-              Deseja excluir o lead <span className="font-medium">{label}</span>
-              ? Esta ação não pode ser desfeita.
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="rounded-md bg-destructive/90 text-white px-3 py-1.5 text-sm hover:bg-destructive transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {isDeleting && <RefreshCw size={12} className="animate-spin" />}
-            Excluir
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface PaginationProps {
-  page: number;
-  totalPages: number;
-  onPrev: () => void;
-  onNext: () => void;
-}
-
-function Pagination({ page, totalPages, onPrev, onNext }: PaginationProps) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-muted-foreground">
-      <span>
-        Página {page + 1} de {totalPages}
-      </span>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={page === 0}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
-        >
-          Anterior
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={page >= totalPages - 1}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
-        >
-          Próxima
-        </button>
-      </div>
-    </div>
-  );
-}
+import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { SkeletonRow } from "@/components/shared/SkeletonRow";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { TablePagination } from "@/components/shared/TablePagination";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -281,7 +155,9 @@ export function LeadListPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                Array.from({ length: 5 }).map((_, i) => (
+                  <SkeletonRow key={i} cols={7} />
+                ))
               ) : leads.length === 0 ? (
                 <tr>
                   <td
@@ -309,13 +185,18 @@ export function LeadListPage() {
                       {lead.id}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge status={lead.status} />
+                      <StatusBadge
+                        status={lead.status}
+                        colorMap={LEAD_STATUS_COLORS}
+                      />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {lead.source ?? "—"}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">
-                      {formatCents(lead.estimatedValueCents)}
+                      {lead.estimatedValueCents != null
+                        ? formatCurrency(lead.estimatedValueCents)
+                        : "—"}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
                       {lead.customerId != null ? (
@@ -389,7 +270,7 @@ export function LeadListPage() {
           </table>
         </div>
 
-        <Pagination
+        <TablePagination
           page={page}
           totalPages={totalPages}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
@@ -399,8 +280,14 @@ export function LeadListPage() {
 
       {/* Delete confirmation modal */}
       {deleteTarget && (
-        <DeleteModal
-          label={deleteTarget.label}
+        <ConfirmDeleteModal
+          description={
+            <>
+              Deseja excluir o lead{" "}
+              <span className="font-medium">{deleteTarget.label}</span>? Esta
+              ação não pode ser desfeita.
+            </>
+          }
           onConfirm={() => void handleDelete()}
           onCancel={() => setDeleteTarget(null)}
           isDeleting={deleteMutation.isPending}

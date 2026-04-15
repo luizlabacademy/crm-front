@@ -10,8 +10,8 @@ import {
   useWorker,
   useCreateWorker,
   useUpdateWorker,
-  useTenantsList,
 } from "@/features/admin/workers/api/useWorkers";
+import { useTenantsSelector } from "@/lib/api/useTenants";
 import {
   Label,
   FieldError,
@@ -56,7 +56,7 @@ export function WorkerFormPage() {
   const workerId = id ? parseInt(id, 10) : null;
 
   const { data: worker, isLoading, isError } = useWorker(workerId);
-  const { data: tenantsData } = useTenantsList();
+  const { data: tenantsData } = useTenantsSelector();
 
   const createMutation = useCreateWorker();
   const updateMutation = useUpdateWorker();

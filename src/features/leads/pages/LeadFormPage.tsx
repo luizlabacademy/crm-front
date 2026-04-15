@@ -12,7 +12,7 @@ import {
   usePipelineFlows,
 } from "@/features/leads/api/useLeads";
 import { useCustomers } from "@/features/customers/api/useCustomers";
-import { useTenants } from "@/features/customers/api/useCustomers";
+import { useTenantsSelector } from "@/lib/api/useTenants";
 import { cn } from "@/lib/utils";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -142,7 +142,7 @@ export function LeadFormPage() {
   const leadId = isEdit ? parseInt(id!, 10) : null;
 
   const { data: leadData, isLoading: leadLoading } = useLead(leadId);
-  const { data: tenantsData, isLoading: tenantsLoading } = useTenants();
+  const { data: tenantsData, isLoading: tenantsLoading } = useTenantsSelector();
   const createMutation = useCreateLead();
   const updateMutation = useUpdateLead();
 

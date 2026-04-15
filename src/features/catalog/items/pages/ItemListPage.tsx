@@ -13,68 +13,10 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { ActiveBadge } from "@/components/shared/ActiveBadge";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { useItems, useDeleteItem } from "@/features/catalog/items/api/useItems";
 import { useItemCategoriesCatalog } from "@/features/catalog/categories/api/useItemCategories";
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
-function StatusBadge({ active }: { active: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-        active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500",
-      )}
-    >
-      {active ? "Ativo" : "Inativo"}
-    </span>
-  );
-}
-
-// ─── Delete Modal ─────────────────────────────────────────────────────────────
-
-function DeleteModal({
-  name,
-  onConfirm,
-  onCancel,
-  isLoading,
-}: {
-  name: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isLoading: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg">
-        <h2 className="text-base font-semibold">Excluir item</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tem certeza que deseja excluir{" "}
-          <span className="font-medium text-foreground">{name}</span>? Esta acao
-          nao pode ser desfeita.
-        </p>
-        <div className="mt-5 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isLoading}
-            className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {isLoading ? "Excluindo..." : "Excluir"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -118,14 +60,20 @@ export function ItemListPage() {
   return (
     <div className="space-y-6">
       {deleteId !== null && (
-        <DeleteModal
-          name={deleteName}
+        <ConfirmDeleteModal
+          description={
+            <>
+              Tem certeza que deseja excluir{" "}
+              <span className="font-medium text-foreground">{deleteName}</span>?
+              Esta ação não pode ser desfeita.
+            </>
+          }
           onConfirm={() => void handleDelete()}
           onCancel={() => {
             setDeleteId(null);
             setDeleteName("");
           }}
-          isLoading={deleteMutation.isPending}
+          isDeleting={deleteMutation.isPending}
         />
       )}
 
@@ -297,7 +245,7 @@ export function ItemListPage() {
                     {formatCurrency(item.priceCents)}
                   </td>
                   <td className="px-4 py-3">
-                    <StatusBadge active={item.active} />
+                    <ActiveBadge active={item.active} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">

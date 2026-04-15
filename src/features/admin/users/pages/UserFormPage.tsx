@@ -10,12 +10,12 @@ import {
   useUser,
   useCreateUser,
   useUpdateUser,
-  useTenants,
   useRolesCatalog,
   useUserRoles,
   useUpdateUserRoles,
   useChangeUserPassword,
 } from "@/features/admin/users/api/useUsers";
+import { useTenantsSelector } from "@/lib/api/useTenants";
 import { ADMIN_SEED_EMAIL } from "@/features/admin/users/types/userTypes";
 import {
   PersonTypeSwitch,
@@ -323,7 +323,7 @@ export function UserFormPage() {
     isError: isUserError,
   } = useUser(userId);
   const { data: userRolesData } = useUserRoles(userId);
-  const { data: tenantsData } = useTenants();
+  const { data: tenantsData } = useTenantsSelector();
   const { data: rolesData } = useRolesCatalog();
 
   const createMutation = useCreateUser();

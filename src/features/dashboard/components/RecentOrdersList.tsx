@@ -10,22 +10,11 @@ import {
   ORDER_STATUS_COLOR,
 } from "@/features/dashboard/constants/orderStatus";
 import type { RecentOrder } from "@/features/dashboard/types/dashboardTypes";
+import { SkeletonRow } from "@/components/shared/SkeletonRow";
 
 interface RecentOrdersListProps {
   orders: RecentOrder[];
   isLoading?: boolean;
-}
-
-function SkeletonRow() {
-  return (
-    <tr>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <td key={i} className="px-4 py-3">
-          <div className="h-3 w-full animate-pulse rounded bg-muted" />
-        </td>
-      ))}
-    </tr>
-  );
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -121,7 +110,9 @@ export function RecentOrdersList({
           </thead>
           <tbody className="divide-y divide-border">
             {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+              Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonRow key={i} cols={8} />
+              ))
             ) : filtered.length === 0 ? (
               <tr>
                 <td

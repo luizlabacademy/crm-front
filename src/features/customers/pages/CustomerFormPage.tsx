@@ -10,8 +10,8 @@ import {
   useCustomer,
   useCreateCustomer,
   useUpdateCustomer,
-  useTenants,
 } from "@/features/customers/api/useCustomers";
+import { useTenantsSelector } from "@/lib/api/useTenants";
 import {
   Label,
   FieldError,
@@ -69,7 +69,7 @@ export function CustomerFormPage() {
     isLoading: isLoadingCustomer,
     isError: isCustomerError,
   } = useCustomer(customerId);
-  const { data: tenantsData } = useTenants();
+  const { data: tenantsData } = useTenantsSelector();
 
   const createMutation = useCreateCustomer();
   const updateMutation = useUpdateCustomer();

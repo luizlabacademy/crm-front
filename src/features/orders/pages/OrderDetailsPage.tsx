@@ -1,80 +1,13 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Pencil,
-  Trash2,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { useOrder, useDeleteOrder } from "@/features/orders/api/useOrders";
+import { ORDER_STATUS_COLORS } from "@/features/orders/types/orderTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
-import { cn } from "@/lib/utils";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatCents(cents: number, currencyCode = "BRL"): string {
-  return (cents / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: currencyCode,
-  });
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  PENDING: "bg-yellow-100 text-yellow-800",
-  CONFIRMED: "bg-blue-100 text-blue-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-800",
-};
-
-// ─── Delete modal ─────────────────────────────────────────────────────────────
-
-function DeleteModal({
-  onConfirm,
-  onCancel,
-  isDeleting,
-}: {
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg space-y-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={20} className="text-destructive mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">Confirmar exclusão</p>
-            <p className="text-sm text-muted-foreground">
-              Deseja excluir este pedido? Esta ação não pode ser desfeita.
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="rounded-md bg-destructive/90 text-white px-3 py-1.5 text-sm hover:bg-destructive transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {isDeleting && <RefreshCw size={12} className="animate-spin" />}
-            Excluir
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { formatCurrencyCode } from "@/lib/utils/formatCurrency";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -155,14 +88,7 @@ export function OrderDetailsPage() {
               </p>
             )}
           </div>
-          <span
-            className={cn(
-              "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-              STATUS_COLORS[order.status] ?? "bg-gray-100 text-gray-700",
-            )}
-          >
-            {order.status}
-          </span>
+          <StatusBadge status={order.status} colorMap={ORDER_STATUS_COLORS} />
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -267,10 +193,16 @@ export function OrderDetailsPage() {
                     </td>
                     <td className="px-4 py-3">{item.quantity}</td>
                     <td className="px-4 py-3 font-mono text-xs">
-                      {formatCents(item.unitPriceCents, order.currencyCode)}
+                      {formatCurrencyCode(
+                        item.unitPriceCents,
+                        order.currencyCode,
+                      )}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-right font-medium">
-                      {formatCents(item.totalPriceCents, order.currencyCode)}
+                      {formatCurrencyCode(
+                        item.totalPriceCents,
+                        order.currencyCode,
+                      )}
                     </td>
                   </tr>
                 ))
@@ -284,28 +216,29 @@ export function OrderDetailsPage() {
           <div className="flex justify-between text-muted-foreground">
             <span>Subtotal</span>
             <span className="font-mono">
-              {formatCents(order.subtotalCents, order.currencyCode)}
+              {formatCurrencyCode(order.subtotalCents, order.currencyCode)}
             </span>
           </div>
           {order.discountCents > 0 && (
             <div className="flex justify-between text-muted-foreground">
               <span>Desconto</span>
               <span className="font-mono">
-                - {formatCents(order.discountCents, order.currencyCode)}
+                - {formatCurrencyCode(order.discountCents, order.currencyCode)}
               </span>
             </div>
           )}
           <div className="flex justify-between font-semibold border-t border-border pt-1.5">
             <span>Total</span>
             <span className="font-mono">
-              {formatCents(order.totalCents, order.currencyCode)}
+              {formatCurrencyCode(order.totalCents, order.currencyCode)}
             </span>
           </div>
         </div>
       </div>
 
       {showDeleteModal && (
-        <DeleteModal
+        <ConfirmDeleteModal
+          description="Deseja excluir este pedido? Esta ação não pode ser desfeita."
           onConfirm={() => void handleDelete()}
           onCancel={() => setShowDeleteModal(false)}
           isDeleting={deleteMutation.isPending}

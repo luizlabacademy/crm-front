@@ -4,7 +4,6 @@ import type {
   CustomerResponse,
   CustomerRequest,
   PageResponse,
-  TenantResponse,
 } from "@/features/customers/types/customerTypes";
 
 // ─── List ─────────────────────────────────────────────────────────────────────
@@ -102,21 +101,5 @@ export function useDeleteCustomer() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
-  });
-}
-
-// ─── Tenants selector ─────────────────────────────────────────────────────────
-
-export function useTenants() {
-  return useQuery<PageResponse<TenantResponse>>({
-    queryKey: ["tenants"],
-    queryFn: async () => {
-      const { data } = await api.get<PageResponse<TenantResponse>>(
-        "/api/v1/tenants",
-        { params: { page: 0, size: 100 } },
-      );
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
   });
 }

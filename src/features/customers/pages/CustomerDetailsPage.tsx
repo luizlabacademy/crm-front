@@ -5,8 +5,6 @@ import {
   Pencil,
   Trash2,
   Plus,
-  RefreshCw,
-  AlertCircle,
   User,
   ShoppingCart,
   MessageSquare,
@@ -24,11 +22,13 @@ import {
 import {
   getEntityDisplayName,
   getEntityDocument,
+  type PageResponse,
 } from "@/lib/types/personTypes";
 import { api } from "@/lib/api/client";
 import { formatDateTime, formatShortDate } from "@/lib/utils/formatDate";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
-import { cn } from "@/lib/utils";
+import { ActiveBadge } from "@/components/shared/ActiveBadge";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,10 +55,6 @@ interface Schedule {
   createdAt: string;
 }
 
-interface PageResponse<T> {
-  content: T[];
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDocument(doc: string): string {
@@ -73,19 +69,6 @@ function formatDocument(doc: string): string {
     );
   }
   return doc;
-}
-
-function ActiveBadge({ active }: { active: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-        active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600",
-      )}
-    >
-      {active ? "Ativo" : "Inativo"}
-    </span>
-  );
 }
 
 function DetailRow({
@@ -356,59 +339,6 @@ function SchedulesSection({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Delete modal ─────────────────────────────────────────────────────────────
-
-interface DeleteModalProps {
-  name: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
-}
-
-function DeleteModal({
-  name,
-  onConfirm,
-  onCancel,
-  isDeleting,
-}: DeleteModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg space-y-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={20} className="text-destructive mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">Confirmar exclusão</p>
-            <p className="text-sm text-muted-foreground">
-              Deseja excluir o cliente{" "}
-              <span className="font-medium">{name}</span>? Esta ação não pode
-              ser desfeita.
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="rounded-md bg-destructive/90 text-white px-3 py-1.5 text-sm hover:bg-destructive transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {isDeleting && <RefreshCw size={12} className="animate-spin" />}
-            Excluir
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -701,8 +631,16 @@ export function CustomerDetailsPage() {
 
       {/* Delete modal */}
       {showDeleteModal && (
-        <DeleteModal
-          name={getEntityDisplayName(customer)}
+        <ConfirmDeleteModal
+          description={
+            <>
+              Deseja excluir o cliente{" "}
+              <span className="font-medium">
+                {getEntityDisplayName(customer)}
+              </span>
+              ? Esta ação não pode ser desfeita.
+            </>
+          }
           onConfirm={() => void handleDelete()}
           onCancel={() => setShowDeleteModal(false)}
           isDeleting={deleteMutation.isPending}

@@ -13,7 +13,7 @@ import {
   useUsers,
 } from "@/features/orders/api/useOrders";
 import { useCustomers } from "@/features/customers/api/useCustomers";
-import { useTenants } from "@/features/customers/api/useCustomers";
+import { useTenantsSelector } from "@/lib/api/useTenants";
 import { cn } from "@/lib/utils";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
 
@@ -173,7 +173,7 @@ export function OrderFormPage() {
   const orderId = isEdit ? parseInt(id!, 10) : null;
 
   const { data: orderData, isLoading: orderLoading } = useOrder(orderId);
-  const { data: tenantsData } = useTenants();
+  const { data: tenantsData } = useTenantsSelector();
   const { data: usersData } = useUsers();
   const createMutation = useCreateOrder();
   const updateMutation = useUpdateOrder();

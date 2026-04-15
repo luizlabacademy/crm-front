@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Eye,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import {
@@ -19,7 +12,10 @@ import {
   getEntityDocument,
 } from "@/lib/types/personTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
-import { cn } from "@/lib/utils";
+import { SkeletonRow } from "@/components/shared/SkeletonRow";
+import { ActiveBadge } from "@/components/shared/ActiveBadge";
+import { TablePagination } from "@/components/shared/TablePagination";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,122 +31,6 @@ function formatDocument(doc: string): string {
     );
   }
   return doc;
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function SkeletonRow() {
-  return (
-    <tr>
-      {Array.from({ length: 7 }).map((_, i) => (
-        <td key={i} className="px-4 py-3">
-          <div className="h-3 w-full animate-pulse rounded bg-muted" />
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-function ActiveBadge({ active }: { active: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600",
-      )}
-    >
-      {active ? "Ativo" : "Inativo"}
-    </span>
-  );
-}
-
-interface DeleteModalProps {
-  name: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
-}
-
-function DeleteModal({
-  name,
-  onConfirm,
-  onCancel,
-  isDeleting,
-}: DeleteModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg space-y-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={20} className="text-destructive mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">Confirmar exclusão</p>
-            <p className="text-sm text-muted-foreground">
-              Deseja excluir o cliente{" "}
-              <span className="font-medium">{name}</span>? Esta ação não pode
-              ser desfeita.
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="rounded-md bg-destructive/90 text-white px-3 py-1.5 text-sm hover:bg-destructive transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {isDeleting && <RefreshCw size={12} className="animate-spin" />}
-            Excluir
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
-
-interface PaginationProps {
-  page: number;
-  totalPages: number;
-  onPrev: () => void;
-  onNext: () => void;
-}
-
-function Pagination({ page, totalPages, onPrev, onNext }: PaginationProps) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-muted-foreground">
-      <span>
-        Página {page + 1} de {totalPages}
-      </span>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={page === 0}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
-        >
-          Anterior
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={page >= totalPages - 1}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
-        >
-          Próxima
-        </button>
-      </div>
-    </div>
-  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -290,7 +170,9 @@ export function CustomerListPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                Array.from({ length: 5 }).map((_, i) => (
+                  <SkeletonRow key={i} cols={7} />
+                ))
               ) : customers.length === 0 ? (
                 <tr>
                   <td
@@ -383,7 +265,7 @@ export function CustomerListPage() {
           </table>
         </div>
 
-        <Pagination
+        <TablePagination
           page={page}
           totalPages={totalPages}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
@@ -393,8 +275,14 @@ export function CustomerListPage() {
 
       {/* Delete confirmation modal */}
       {deleteTarget && (
-        <DeleteModal
-          name={deleteTarget.name}
+        <ConfirmDeleteModal
+          description={
+            <>
+              Deseja excluir o cliente{" "}
+              <span className="font-medium">{deleteTarget.name}</span>? Esta
+              ação não pode ser desfeita.
+            </>
+          }
           onConfirm={() => void handleDelete()}
           onCancel={() => setDeleteTarget(null)}
           isDeleting={deleteMutation.isPending}

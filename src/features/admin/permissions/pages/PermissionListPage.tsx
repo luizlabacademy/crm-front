@@ -7,7 +7,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  AlertCircle,
   RefreshCw,
   X,
   Loader2,
@@ -25,6 +24,10 @@ import {
 import type { PermissionResponse } from "@/features/admin/permissions/types/permissionTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { cn } from "@/lib/utils";
+import { SkeletonRow } from "@/components/shared/SkeletonRow";
+import { ActiveBadge } from "@/components/shared/ActiveBadge";
+import { TablePagination } from "@/components/shared/TablePagination";
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -41,120 +44,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function SkeletonRow() {
-  return (
-    <tr>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <td key={i} className="px-4 py-3">
-          <div className="h-3 w-full animate-pulse rounded bg-muted" />
-        </td>
-      ))}
-    </tr>
-  );
-}
-
-function ActiveBadge({ active }: { active: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600",
-      )}
-    >
-      {active ? "Ativo" : "Inativo"}
-    </span>
-  );
-}
-
-interface DeleteModalProps {
-  code: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  isDeleting: boolean;
-}
-
-function DeleteModal({
-  code,
-  onConfirm,
-  onCancel,
-  isDeleting,
-}: DeleteModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-lg space-y-4">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={20} className="text-destructive mt-0.5 shrink-0" />
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">Confirmar exclusão</p>
-            <p className="text-sm text-muted-foreground">
-              Deseja excluir a permissão{" "}
-              <span className="font-mono font-medium">{code}</span>? Esta ação
-              não pode ser desfeita.
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isDeleting}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="rounded-md bg-destructive/90 text-white px-3 py-1.5 text-sm hover:bg-destructive transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {isDeleting && <RefreshCw size={12} className="animate-spin" />}
-            Excluir
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface PaginationProps {
-  page: number;
-  totalPages: number;
-  onPrev: () => void;
-  onNext: () => void;
-}
-
-function Pagination({ page, totalPages, onPrev, onNext }: PaginationProps) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-muted-foreground">
-      <span>
-        Página {page + 1} de {totalPages}
-      </span>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={page === 0}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
-        >
-          Anterior
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={page >= totalPages - 1}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-accent transition-colors disabled:opacity-40"
-        >
-          Próxima
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ─── Permission Form Modal ────────────────────────────────────────────────────
 
@@ -475,7 +364,9 @@ export function PermissionListPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                Array.from({ length: 5 }).map((_, i) => (
+                  <SkeletonRow key={i} cols={6} />
+                ))
               ) : permissions.length === 0 ? (
                 <tr>
                   <td
@@ -552,7 +443,7 @@ export function PermissionListPage() {
           </table>
         </div>
 
-        <Pagination
+        <TablePagination
           page={page}
           totalPages={totalPages}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
@@ -567,8 +458,14 @@ export function PermissionListPage() {
 
       {/* Delete confirmation modal */}
       {deleteTarget && (
-        <DeleteModal
-          code={deleteTarget.code}
+        <ConfirmDeleteModal
+          description={
+            <>
+              Deseja excluir a permissão{" "}
+              <span className="font-mono font-medium">{deleteTarget.code}</span>
+              ? Esta ação não pode ser desfeita.
+            </>
+          }
           onConfirm={() => void handleDelete()}
           onCancel={() => setDeleteTarget(null)}
           isDeleting={deleteMutation.isPending}

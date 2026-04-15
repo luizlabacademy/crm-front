@@ -26,10 +26,6 @@ export interface RolePermissionsRequest {
   permissionIds: number[];
 }
 
-export interface PageResponse<T> {
-  content: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
+// ─── Shared ───────────────────────────────────────────────────────────────────
+
+export type { PageResponse } from "@/lib/types/personTypes";

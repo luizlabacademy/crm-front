@@ -6,7 +6,6 @@ import type {
   UserRequest,
   UserPasswordChangeRequest,
   PageResponse,
-  TenantResponse,
 } from "@/features/admin/users/types/userTypes";
 import type { RoleResponse } from "@/features/admin/roles/types/roleTypes";
 
@@ -199,22 +198,6 @@ export function useDeleteUser() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["users"] });
     },
-  });
-}
-
-// ─── Tenants selector ─────────────────────────────────────────────────────────
-
-export function useTenants() {
-  return useQuery<PageResponse<TenantResponse>>({
-    queryKey: ["tenants"],
-    queryFn: async () => {
-      const { data } = await api.get<PageResponse<TenantResponse>>(
-        "/api/v1/tenants",
-        { params: { page: 0, size: 100 } },
-      );
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
   });
 }
 
