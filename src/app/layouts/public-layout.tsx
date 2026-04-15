@@ -9,45 +9,47 @@ export function PublicLayout({ children }: PublicLayoutProps) {
     <div className="relative min-h-screen bg-background text-foreground flex items-center justify-center overflow-hidden">
       <svg
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-40"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-45"
         viewBox="0 0 1440 900"
         preserveAspectRatio="xMidYMid slice"
       >
         <defs>
-          <linearGradient id="login-bg-gradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+          <linearGradient id="login-bg-soft" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.07" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.01" />
           </linearGradient>
           <pattern
-            id="login-bg-grid"
-            width="48"
-            height="48"
+            id="login-bg-lines"
+            width="64"
+            height="64"
             patternUnits="userSpaceOnUse"
+            patternTransform="rotate(24)"
           >
             <path
-              d="M48 0H0V48"
+              d="M0 32H64"
               fill="none"
               stroke="currentColor"
-              strokeOpacity="0.07"
+              strokeOpacity="0.05"
               strokeWidth="1"
             />
           </pattern>
-          <radialGradient id="login-bg-radial" cx="50%" cy="50%" r="70%">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.16" />
+          <radialGradient id="login-bg-spot" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.12" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </radialGradient>
         </defs>
 
-        <rect width="100%" height="100%" fill="url(#login-bg-grid)" />
+        <rect width="100%" height="100%" fill="url(#login-bg-lines)" />
         <path
-          d="M-80 620C180 480 410 760 670 620C930 480 1110 320 1520 430V980H-80Z"
-          fill="url(#login-bg-gradient)"
+          d="M-120 720C220 560 430 830 760 690C1030 575 1190 430 1560 520V980H-120Z"
+          fill="url(#login-bg-soft)"
         />
-        <circle cx="1120" cy="220" r="320" fill="url(#login-bg-radial)" />
+        <circle cx="1160" cy="180" r="260" fill="url(#login-bg-spot)" />
+        <circle cx="280" cy="760" r="220" fill="url(#login-bg-spot)" />
       </svg>
 
-      <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/[0.03] blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-primary/[0.04] blur-3xl" />
+      <div className="pointer-events-none absolute -top-28 right-[-8rem] h-80 w-80 rounded-full bg-primary/[0.03] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 left-[-10rem] h-[24rem] w-[24rem] rounded-full bg-primary/[0.035] blur-3xl" />
 
       <div className="relative z-10 w-full">{children}</div>
     </div>
