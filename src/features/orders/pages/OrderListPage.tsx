@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Plus, Pencil, Trash2, Eye, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { useOrders, useDeleteOrder } from "@/features/orders/api/useOrders";
@@ -197,9 +197,10 @@ export function OrderListPage() {
         <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-4">
           <button
             type="submit"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-accent transition-colors"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-sm hover:bg-accent transition-colors"
           >
-            Aplicar filtros
+            <Search size={16} />
+            Buscar
           </button>
           <button
             type="button"
