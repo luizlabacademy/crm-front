@@ -14,6 +14,9 @@ import {
   ChevronUp,
   ChevronDown,
   Globe,
+  Sparkles,
+  Palette,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -21,6 +24,7 @@ import type {
   LandingPageConfig,
   LandingPageSlide,
   LandingPageService,
+  LandingPageTheme,
 } from "@/features/marketing/types/marketingTypes";
 
 // ─── Storage key ──────────────────────────────────────────────────────────────
@@ -30,6 +34,7 @@ const STORAGE_KEY = "crm_landing_page_config";
 // ─── Default data ─────────────────────────────────────────────────────────────
 
 const DEFAULT_CONFIG: LandingPageConfig = {
+  theme: "rose",
   businessInfo: {
     salonName: "Studio Belle",
     tagline: "Beleza, Cuidado e Bem-Estar",
@@ -233,6 +238,11 @@ export function LandingPageConfigPage() {
     }
   }, []);
 
+  // ── Theme ──
+  function setTheme(theme: LandingPageTheme) {
+    setConfig((prev) => ({ ...prev, theme }));
+  }
+
   // ── Business info updaters ──
   function updateBiz<K extends keyof LandingPageConfig["businessInfo"]>(
     key: K,
@@ -401,6 +411,100 @@ export function LandingPageConfigPage() {
       {/* ─── Tab: Info ─── */}
       {activeTab === "info" && (
         <div className="space-y-6">
+          {/* Theme Selector */}
+          <Section title="Estilo Visual" icon={<Palette size={16} />}>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Escolha o estilo visual da sua landing page pública.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {(
+                [
+                  {
+                    key: "rose" as LandingPageTheme,
+                    label: "Rose",
+                    description: "Alegre e feminino",
+                    preview: (
+                      <div className="h-20 rounded-lg overflow-hidden border border-gray-100">
+                        <div className="h-10 bg-gradient-to-r from-rose-400 to-pink-500 flex items-center justify-center">
+                          <span className="text-[8px] font-bold text-white tracking-wide uppercase">
+                            Hero
+                          </span>
+                        </div>
+                        <div className="h-10 bg-white flex items-center justify-center gap-1">
+                          <div className="h-5 w-5 rounded-sm bg-rose-100 border border-rose-200" />
+                          <div className="h-5 w-5 rounded-sm bg-rose-100 border border-rose-200" />
+                          <div className="h-5 w-5 rounded-sm bg-rose-100 border border-rose-200" />
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "dark" as LandingPageTheme,
+                    label: "Dark Luxo",
+                    description: "Elegante e sofisticado",
+                    preview: (
+                      <div className="h-20 rounded-lg overflow-hidden border border-neutral-700">
+                        <div className="h-10 bg-neutral-950 flex items-center justify-center gap-1">
+                          <div className="h-px w-6 bg-yellow-400/50" />
+                          <Sparkles size={8} className="text-yellow-400/70" />
+                          <div className="h-px w-6 bg-yellow-400/50" />
+                        </div>
+                        <div className="h-10 bg-neutral-900 flex items-center justify-center gap-1">
+                          <div className="h-5 w-5 bg-neutral-800 border border-neutral-700" />
+                          <div className="h-5 w-5 bg-neutral-800 border border-neutral-700" />
+                          <div className="h-5 w-5 bg-neutral-800 border border-neutral-700" />
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "minimal" as LandingPageTheme,
+                    label: "Minimal",
+                    description: "Limpo e moderno",
+                    preview: (
+                      <div className="h-20 rounded-lg overflow-hidden border border-gray-200">
+                        <div className="h-10 bg-white flex items-end px-3 pb-1">
+                          <span className="text-[9px] font-black text-gray-900 tracking-tight uppercase">
+                            Studio
+                          </span>
+                        </div>
+                        <div className="h-10 bg-gray-50 flex items-center justify-center gap-px border-t border-gray-200">
+                          <div className="h-5 w-5 bg-white border border-gray-200" />
+                          <div className="h-5 w-5 bg-white border border-gray-200" />
+                          <div className="h-5 w-5 bg-white border border-gray-200" />
+                        </div>
+                      </div>
+                    ),
+                  },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTheme(t.key)}
+                  className={cn(
+                    "relative flex flex-col gap-3 rounded-xl border-2 p-3 text-left transition-colors hover:border-primary/50",
+                    config.theme === t.key
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card",
+                  )}
+                >
+                  {config.theme === t.key && (
+                    <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                      <Check size={11} className="text-primary-foreground" />
+                    </div>
+                  )}
+                  {t.preview}
+                  <div>
+                    <p className="text-sm font-semibold">{t.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.description}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </Section>
           <Section title="Dados do Negócio" icon={<Store size={16} />}>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field

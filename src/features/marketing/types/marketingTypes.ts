@@ -142,6 +142,8 @@ export interface MarketingAutomation {
 
 // ─── Landing Page Types ───────────────────────────────────────────────────────
 
+export type LandingPageTheme = "rose" | "dark" | "minimal";
+
 export interface LandingPageSlide {
   id: string;
   imageUrl: string;
@@ -175,6 +177,7 @@ export interface LandingPageBusinessInfo {
 }
 
 export interface LandingPageConfig {
+  theme: LandingPageTheme;
   businessInfo: LandingPageBusinessInfo;
   slides: LandingPageSlide[];
   services: LandingPageService[];
