@@ -14,12 +14,12 @@ const TABS: TabDef[] = [
   },
   {
     key: "pending",
-    label: "Despesas a Pagar",
+    label: "Contas a Pagar",
     icon: <Clock size={14} />,
   },
   {
     key: "paid",
-    label: "Despesas Pagas",
+    label: "Pagamentos Realizados",
     icon: <CheckCircle2 size={14} />,
   },
 ];

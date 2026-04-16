@@ -157,7 +157,7 @@ export function PaidExpensesTab() {
         </div>
         <Button type="button" onClick={openCreate}>
           <Plus size={16} />
-          Novo Lançamento Pago
+          Lançar Pagamento
         </Button>
       </div>
 
@@ -396,7 +396,7 @@ function PaidExpenseDrawer({
   const isView = mode === "view";
   const isCreate = mode === "create";
   const title = isCreate
-    ? "Novo Lançamento Pago"
+    ? "Lançar Pagamento"
     : isView
       ? "Detalhes da Despesa Paga"
       : "Editar Despesa Paga";

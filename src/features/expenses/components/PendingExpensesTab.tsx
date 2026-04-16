@@ -174,7 +174,7 @@ export function PendingExpensesTab() {
         </div>
         <Button type="button" onClick={openCreate}>
           <Plus size={16} />
-          Nova Despesa
+          Lançar Conta a Pagar
         </Button>
       </div>
 
@@ -438,7 +438,7 @@ function PendingExpenseDrawer({
   const isView = mode === "view";
   const isCreate = mode === "create";
   const title = isCreate
-    ? "Nova Despesa"
+    ? "Lançar Conta a Pagar"
     : isView
       ? "Detalhes da Despesa"
       : "Editar Despesa";

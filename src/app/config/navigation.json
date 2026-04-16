@@ -43,6 +43,11 @@
     "section": "Marketing",
     "items": [
       {
+        "label": "Landing Page",
+        "to": "/marketing/landing-page",
+        "icon": "globe"
+      },
+      {
         "label": "Campanhas de Marketing",
         "to": "/marketing/campaigns",
         "icon": "megaphone"
@@ -51,16 +56,6 @@
         "label": "Marketing Automatizado",
         "to": "/marketing/automation",
         "icon": "zap"
-      },
-      {
-        "label": "Lista de Contatos",
-        "to": "/marketing/contacts",
-        "icon": "book-user"
-      },
-      {
-        "label": "Landing Page",
-        "to": "/marketing/landing-page",
-        "icon": "globe"
       },
       {
         "label": "Cupons",

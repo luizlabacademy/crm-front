@@ -19,7 +19,7 @@ export function ExpenseTabs({
   onTabChange,
 }: ExpenseTabsProps) {
   return (
-    <div className="flex items-center gap-1 border-b border-border overflow-x-auto">
+    <div className="flex items-center gap-1 border-b border-border overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {tabs.map((tab) => (
         <button
           key={tab.key}

@@ -172,7 +172,7 @@ export function AccountsTab() {
         </div>
         <Button type="button" onClick={openCreate}>
           <Plus size={16} />
-          Nova Conta
+          Cadastrar Conta
         </Button>
       </div>
 
@@ -386,7 +386,7 @@ function AccountDrawer({
   const isView = mode === "view";
   const isCreate = mode === "create";
   const title = isCreate
-    ? "Nova Conta"
+    ? "Cadastrar Conta"
     : isView
       ? "Detalhes da Conta"
       : "Editar Conta";
