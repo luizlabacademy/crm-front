@@ -62,7 +62,7 @@ const REVENUE_KPI_DEFS: KpiDef[] = [
     storageKey: "rev_year",
   },
   {
-    label: "Contas a Pagar",
+    label: "Contas Atrasadas",
     key: "accountsPayable",
     type: "currency",
     icon: CircleAlert,

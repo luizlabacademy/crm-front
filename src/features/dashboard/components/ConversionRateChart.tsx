@@ -390,19 +390,38 @@ export function ConversionRateChart() {
       const yearlyGrowthFactor = cumulativeGrowthFactor(selectedYear);
       const annualRate = annualRateForYear(selectedYear);
       let previous = profile.monthlyBase * yearlyGrowthFactor * 0.86;
+      const monthlyGrowthCurve = MONTH_LABELS_SHORT.map((_, monthIdx) => {
+        if (monthIdx === 0) return 1;
+        if (monthIdx === 11) return 2;
+
+        const trend = 1 + monthIdx / 11;
+        const irregularWave =
+          1 +
+          Math.sin(monthIdx * 1.35 + selectedYear * 0.09) * 0.09 +
+          Math.cos(monthIdx * 0.72 + selectedYear * 0.04) * 0.06;
+        const irregularNoise =
+          1 + noise(selectedYear * 230 + monthIdx * 17) * 0.12;
+        const raw = trend * irregularWave * irregularNoise;
+        const floor = trend * 0.78;
+        const ceil = trend * 1.22;
+
+        return Math.max(floor, Math.min(ceil, raw));
+      });
 
       return MONTH_LABELS_SHORT.map((monthLabel, idx) => {
         const monthWeight = MONTH_SEASONALITY[idx];
+        const monthGrowthFactor = monthlyGrowthCurve[idx];
         const quarterWave = 1 + Math.sin((idx / 12) * Math.PI * 4 - 0.5) * 0.11;
         const monthShock =
           1 + noise(selectedYear * 200 + idx + 1) * profile.volatility * 1.2;
-        const intraYearTrend = 1 + idx * annualRate * 0.08;
+        const intraYearTrend = 1 + idx * annualRate * 0.05;
 
         let target =
           profile.monthlyBase *
           yearlyGrowthFactor *
+          monthGrowthFactor *
           intraYearTrend *
-          (1 + (monthWeight - 1) * profile.seasonality * 4.4) *
+          (1 + (monthWeight - 1) * profile.seasonality * 1.8) *
           quarterWave *
           monthShock;
 
@@ -413,7 +432,7 @@ export function ConversionRateChart() {
         if (mode === "conversion") {
           target =
             profile.monthlyBase *
-            (0.98 + idx * 0.007) *
+            (0.98 + idx * 0.01) *
             (1 + (monthWeight - 1) * 0.65) *
             (1 + noise(selectedYear * 140 + idx + 1) * 0.06);
         }
