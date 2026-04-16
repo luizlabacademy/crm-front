@@ -7,6 +7,11 @@ import {
   PAGE_SIZE_OPTIONS,
   setDefaultPageSize,
 } from "@/lib/pagination/pageSizePreference";
+import {
+  getDefaultDashboardChartType,
+  setDefaultDashboardChartType,
+  type DashboardChartType,
+} from "@/lib/dashboardChartTypePreference";
 import { cn } from "@/lib/utils";
 
 export function SettingsPage() {
@@ -14,6 +19,8 @@ export function SettingsPage() {
   const [defaultPageSize, setDefaultPageSizeState] = useState<number>(() =>
     getDefaultPageSize(),
   );
+  const [defaultDashboardChartType, setDefaultDashboardChartTypeState] =
+    useState<DashboardChartType>(() => getDefaultDashboardChartType());
 
   const themeOptions = useMemo(
     () => [
@@ -49,6 +56,12 @@ export function SettingsPage() {
     setDefaultPageSize(value);
     setDefaultPageSizeState(value);
     toast.success("Preferência de paginação atualizada!");
+  }
+
+  function handleDefaultDashboardChartTypeChange(value: DashboardChartType) {
+    setDefaultDashboardChartType(value);
+    setDefaultDashboardChartTypeState(value);
+    toast.success("Preferência de grafico atualizada!");
   }
 
   return (
@@ -133,6 +146,32 @@ export function SettingsPage() {
           </select>
           <p className="text-xs text-muted-foreground">
             Essa preferencia sera usada por padrao nas telas de busca e listas.
+          </p>
+        </div>
+
+        <div className="mt-5 max-w-sm space-y-1.5">
+          <label
+            htmlFor="default-dashboard-chart-type"
+            className="block text-sm font-medium text-foreground"
+          >
+            Tipo padrao do grafico de desempenho
+          </label>
+          <select
+            id="default-dashboard-chart-type"
+            value={defaultDashboardChartType}
+            onChange={(event) =>
+              handleDefaultDashboardChartTypeChange(
+                event.target.value as DashboardChartType,
+              )
+            }
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="area">Area</option>
+            <option value="line">Linhas</option>
+            <option value="bar">Barras</option>
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Essa preferencia define o tipo inicial do grafico no dashboard.
           </p>
         </div>
       </section>
