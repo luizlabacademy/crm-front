@@ -1,0 +1,12 @@
+[
+  { "id": "cat-01", "name": "Aluguel e Imóveis" },
+  { "id": "cat-02", "name": "Serviços e Utilidades" },
+  { "id": "cat-03", "name": "Materiais e Suprimentos" },
+  { "id": "cat-04", "name": "Salários e Encargos" },
+  { "id": "cat-05", "name": "Marketing e Publicidade" },
+  { "id": "cat-06", "name": "Manutenção e Reparos" },
+  { "id": "cat-07", "name": "Tecnologia e Software" },
+  { "id": "cat-08", "name": "Impostos e Taxas" },
+  { "id": "cat-09", "name": "Seguros" },
+  { "id": "cat-10", "name": "Outros" }
+]

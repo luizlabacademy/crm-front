@@ -227,6 +227,13 @@ const AffiliatesPage = lazy(() =>
   })),
 );
 
+// Expenses
+const ExpensesPage = lazy(() =>
+  import("@/features/expenses/pages/ExpensesPage").then((m) => ({
+    default: m.ExpensesPage,
+  })),
+);
+
 // Notifications
 const NotificationsPage = lazy(() =>
   import("@/features/notifications/pages/NotificationsPage").then((m) => ({
@@ -408,6 +415,9 @@ export function AppRouter() {
             <Route path="/marketing/coupons" element={<CouponsPage />} />
             <Route path="/marketing/cashback" element={<CashbackPage />} />
             <Route path="/marketing/affiliates" element={<AffiliatesPage />} />
+
+            {/* Expenses */}
+            <Route path="/expenses" element={<ExpensesPage />} />
 
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/me/profile" element={<MyProfilePage />} />

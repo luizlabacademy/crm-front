@@ -33,9 +33,9 @@
         "icon": "calendar-range"
       },
       {
-        "label": "Clientes",
-        "to": "/customers",
-        "icon": "users"
+        "label": "Despesas",
+        "to": "/expenses",
+        "icon": "receipt"
       }
     ]
   },
@@ -83,6 +83,26 @@
     "section": "Cadastros",
     "items": [
       {
+        "label": "Clientes",
+        "to": "/customers",
+        "icon": "users"
+      },
+      {
+        "label": "Empresas",
+        "to": "/tenants",
+        "icon": "building-2"
+      },
+      {
+        "label": "Workers",
+        "to": "/workers",
+        "icon": "wrench"
+      },
+      {
+        "label": "Usuários",
+        "to": "/users",
+        "icon": "user-cog"
+      },
+      {
         "label": "Itens",
         "to": "/catalog/items",
         "icon": "package"
@@ -96,21 +116,6 @@
         "label": "Unidades de Medida",
         "to": "/catalog/units-of-measure",
         "icon": "ruler"
-      },
-      {
-        "label": "Tenants",
-        "to": "/tenants",
-        "icon": "building-2"
-      },
-      {
-        "label": "Usuarios",
-        "to": "/users",
-        "icon": "user-cog"
-      },
-      {
-        "label": "Workers",
-        "to": "/workers",
-        "icon": "wrench"
       }
     ]
   },
