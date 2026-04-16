@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Check,
@@ -10,6 +10,11 @@ import {
   UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TablePagination } from "@/components/shared/TablePagination";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 
 type NotificationType = "lead" | "order" | "campaign" | "chat";
 
@@ -85,6 +90,8 @@ function typeIcon(type: NotificationType) {
 export function NotificationsPage() {
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const [items, setItems] = useState<NotificationItem[]>(MOCK_NOTIFICATIONS);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
 
   const unreadCount = items.filter((item) => item.unread).length;
 
@@ -93,6 +100,22 @@ export function NotificationsPage() {
     if (filter === "read") return items.filter((item) => !item.unread);
     return items;
   }, [filter, items]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pagedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   function markAsRead(id: string) {
     setItems((prev) =>
@@ -189,7 +212,7 @@ export function NotificationsPage() {
           </div>
         ) : (
           <ul className="divide-y divide-border">
-            {filtered.map((item) => (
+            {pagedItems.map((item) => (
               <li key={item.id} className="px-4 py-3">
                 <div className="flex items-start gap-3">
                   <span
@@ -233,6 +256,22 @@ export function NotificationsPage() {
             ))}
           </ul>
         )}
+
+        <TablePagination
+          page={page - 1}
+          totalPages={totalPages}
+          totalElements={filtered.length}
+          pageSize={pageSize}
+          onPageSizeChange={(size) => {
+            setDefaultPageSize(size);
+            setPageSize(size);
+            setPage(1);
+          }}
+          onFirst={() => setPage(1)}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          onLast={() => setPage(totalPages)}
+        />
       </div>
     </div>
   );

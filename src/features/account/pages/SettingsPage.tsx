@@ -2,10 +2,18 @@ import { useMemo, useState } from "react";
 import { Check, Laptop, Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { getStoredTheme, setTheme, type ThemeMode } from "@/lib/theme/theme";
+import {
+  getDefaultPageSize,
+  PAGE_SIZE_OPTIONS,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 import { cn } from "@/lib/utils";
 
 export function SettingsPage() {
   const [theme, setThemeState] = useState<ThemeMode>(() => getStoredTheme());
+  const [defaultPageSize, setDefaultPageSizeState] = useState<number>(() =>
+    getDefaultPageSize(),
+  );
 
   const themeOptions = useMemo(
     () => [
@@ -35,6 +43,12 @@ export function SettingsPage() {
     setTheme(mode);
     setThemeState(mode);
     toast.success("Tema atualizado com sucesso!");
+  }
+
+  function handleDefaultPageSizeChange(value: number) {
+    setDefaultPageSize(value);
+    setDefaultPageSizeState(value);
+    toast.success("Preferência de paginação atualizada!");
   }
 
   return (
@@ -93,8 +107,34 @@ export function SettingsPage() {
       <section className="rounded-2xl border border-border bg-card p-6">
         <h2 className="text-base font-semibold">Preferencias</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Mais opcoes de configuracao serao disponibilizadas em breve.
+          Defina o comportamento padrao das listagens do CRM.
         </p>
+
+        <div className="mt-4 max-w-sm space-y-1.5">
+          <label
+            htmlFor="default-page-size"
+            className="block text-sm font-medium text-foreground"
+          >
+            Quantidade padrao de registros por pagina
+          </label>
+          <select
+            id="default-page-size"
+            value={defaultPageSize}
+            onChange={(event) =>
+              handleDefaultPageSizeChange(Number(event.target.value))
+            }
+            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          >
+            {PAGE_SIZE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option} registros
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Essa preferencia sera usada por padrao nas telas de busca e listas.
+          </p>
+        </div>
       </section>
     </div>
   );

@@ -15,6 +15,10 @@ import { SkeletonRow } from "@/components/shared/SkeletonRow";
 import { ActiveBadge } from "@/components/shared/ActiveBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 
 interface TenantAutocompleteProps {
   tenants: TenantResponse[];
@@ -134,6 +138,7 @@ function getProfileLabel(user: UserResponse): string {
 export function UserListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [tenantId, setTenantId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
@@ -142,7 +147,7 @@ export function UserListPage() {
 
   const { data, isLoading, isError, refetch } = useUsers({
     page,
-    size: 20,
+    size: pageSize,
     tenantId,
   });
   const deleteMutation = useDeleteUser();
@@ -329,8 +334,17 @@ export function UserListPage() {
         <TablePagination
           page={page}
           totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageSizeChange={(size) => {
+            setDefaultPageSize(size);
+            setPageSize(size);
+            setPage(0);
+          }}
+          onFirst={() => setPage(0)}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() => setPage((p) => p + 1)}
+          onLast={() => setPage(Math.max(totalPages - 1, 0))}
         />
       </div>
 

@@ -19,6 +19,10 @@ import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { Button } from "@/components/shared/Button";
 import { InputGroup, InputGroupAddon } from "@/components/shared/InputGroup";
 import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
+import {
   DataTableContainer,
   Table,
   TableBody,
@@ -52,6 +56,7 @@ export function CustomerListPage() {
   const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [tenantIdInput, setTenantIdInput] = useState("");
   const [tenantId, setTenantId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -61,7 +66,7 @@ export function CustomerListPage() {
 
   const { data, isLoading, isError, refetch } = useCustomers({
     page,
-    size: 20,
+    size: pageSize,
     tenantId,
   });
 
@@ -276,8 +281,17 @@ export function CustomerListPage() {
         <TablePagination
           page={page}
           totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageSizeChange={(size) => {
+            setDefaultPageSize(size);
+            setPageSize(size);
+            setPage(0);
+          }}
+          onFirst={() => setPage(0)}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() => setPage((p) => p + 1)}
+          onLast={() => setPage(Math.max(totalPages - 1, 0))}
         />
       </DataTableContainer>
 

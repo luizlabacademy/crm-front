@@ -6,7 +6,6 @@ import {
   TrendingUp,
   MessageSquare,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   Megaphone,
 } from "lucide-react";
@@ -21,6 +20,11 @@ import type {
 } from "@/features/marketing/types/marketingTypes";
 import campaignsData from "@/features/marketing/mocks/campaigns.json";
 import { CreateCampaignModal } from "./CreateCampaignModal";
+import { TablePagination } from "@/components/shared/TablePagination";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 
 // ─── Mock service (substitui futura API) ──────────────────────────────────────
 
@@ -201,13 +205,13 @@ function CampaignRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function MarketingCampaignsPage() {
-  const PAGE_SIZE = 6;
   const navigate = useNavigate();
   const { campaigns, addCampaign } = useCampaigns();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<CampaignType | "all">("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
 
   const filtered = useMemo(
     () =>
@@ -220,11 +224,11 @@ export function MarketingCampaignsPage() {
     [campaigns, search, typeFilter],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pagedCampaigns = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   useEffect(() => {
     setPage(1);
@@ -360,36 +364,21 @@ export function MarketingCampaignsPage() {
         </table>
 
         {filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
-            <span>
-              {(page - 1) * PAGE_SIZE + 1}-
-              {Math.min(page * PAGE_SIZE, filtered.length)} de {filtered.length}{" "}
-              campanhas
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-accent"
-              >
-                <ChevronLeft size={12} />
-                Anterior
-              </button>
-              <span className="px-2 text-[11px]">
-                Página {page} de {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-accent"
-              >
-                Próxima
-                <ChevronRight size={12} />
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={page - 1}
+            totalPages={totalPages}
+            totalElements={filtered.length}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setDefaultPageSize(size);
+              setPageSize(size);
+              setPage(1);
+            }}
+            onFirst={() => setPage(1)}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onLast={() => setPage(totalPages)}
+          />
         )}
       </div>
 

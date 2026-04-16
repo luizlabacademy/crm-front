@@ -8,6 +8,10 @@ import { SkeletonRow } from "@/components/shared/SkeletonRow";
 import { ActiveBadge } from "@/components/shared/ActiveBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -15,12 +19,16 @@ export function RoleListPage() {
   const navigate = useNavigate();
 
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
     name: string;
   } | null>(null);
 
-  const { data, isLoading, isError, refetch } = useRoles({ page, size: 20 });
+  const { data, isLoading, isError, refetch } = useRoles({
+    page,
+    size: pageSize,
+  });
   const deleteMutation = useDeleteRole();
 
   const roles = data?.content ?? [];
@@ -187,8 +195,17 @@ export function RoleListPage() {
         <TablePagination
           page={page}
           totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageSizeChange={(size) => {
+            setDefaultPageSize(size);
+            setPageSize(size);
+            setPage(0);
+          }}
+          onFirst={() => setPage(0)}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() => setPage((p) => p + 1)}
+          onLast={() => setPage(Math.max(totalPages - 1, 0))}
         />
       </div>
 

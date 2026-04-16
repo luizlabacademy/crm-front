@@ -1,32 +1,33 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  Tag,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { ActiveBadge } from "@/components/shared/ActiveBadge";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
+import { TablePagination } from "@/components/shared/TablePagination";
 import {
   useItemCategories,
   useDeleteItemCategory,
 } from "@/features/catalog/categories/api/useItemCategories";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function ItemCategoryListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteName, setDeleteName] = useState("");
 
-  const { data, isLoading, isError } = useItemCategories({ page, size: 20 });
+  const { data, isLoading, isError } = useItemCategories({
+    page,
+    size: pageSize,
+  });
   const deleteMutation = useDeleteItemCategory();
 
   const categories = data?.content ?? [];
@@ -204,35 +205,21 @@ export function ItemCategoryListPage() {
           </tbody>
         </table>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-border px-4 py-3">
-            <span className="text-xs text-muted-foreground">
-              {totalElements} categorias
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((p) => p - 1)}
-                disabled={page === 0}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent disabled:opacity-40 transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-xs text-muted-foreground">
-                {page + 1} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent disabled:opacity-40 transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageSizeChange={(size) => {
+            setDefaultPageSize(size);
+            setPageSize(size);
+            setPage(0);
+          }}
+          onFirst={() => setPage(0)}
+          onPrev={() => setPage((p) => Math.max(0, p - 1))}
+          onNext={() => setPage((p) => p + 1)}
+          onLast={() => setPage(Math.max(totalPages - 1, 0))}
+        />
       </div>
     </div>
   );

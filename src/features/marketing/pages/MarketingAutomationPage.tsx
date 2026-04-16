@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Zap,
-  FileText,
-  Plus,
-  Pencil,
-  Check,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Zap, FileText, Plus, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,6 +10,11 @@ import type {
   AutomationTemplateType,
 } from "@/features/marketing/types/marketingTypes";
 import automationData from "@/features/marketing/mocks/marketing-automation.json";
+import { TablePagination } from "@/components/shared/TablePagination";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 
 // ─── Mock service ─────────────────────────────────────────────────────────────
 
@@ -364,7 +360,6 @@ function NewAutomationForm({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function MarketingAutomationPage() {
-  const PAGE_SIZE = 5;
   const {
     templates,
     automations,
@@ -374,12 +369,13 @@ export function MarketingAutomationPage() {
   } = useAutomationData();
   const [showNewForm, setShowNewForm] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
 
-  const totalPages = Math.max(1, Math.ceil(automations.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(automations.length / pageSize));
   const pagedAutomations = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return automations.slice(start, start + PAGE_SIZE);
-  }, [automations, page]);
+    const start = (page - 1) * pageSize;
+    return automations.slice(start, start + pageSize);
+  }, [automations, page, pageSize]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -488,38 +484,21 @@ export function MarketingAutomationPage() {
             </tbody>
           </table>
 
-          {automations.length > 0 && (
-            <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
-              <span>
-                {(page - 1) * PAGE_SIZE + 1}-
-                {Math.min(page * PAGE_SIZE, automations.length)} de{" "}
-                {automations.length} automações
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-accent"
-                >
-                  <ChevronLeft size={12} />
-                  Anterior
-                </button>
-                <span className="px-2 text-[11px]">
-                  Página {page} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-accent"
-                >
-                  Próxima
-                  <ChevronRight size={12} />
-                </button>
-              </div>
-            </div>
-          )}
+          <TablePagination
+            page={page - 1}
+            totalPages={totalPages}
+            totalElements={automations.length}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setDefaultPageSize(size);
+              setPageSize(size);
+              setPage(1);
+            }}
+            onFirst={() => setPage(1)}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onLast={() => setPage(totalPages)}
+          />
         </div>
       </section>
     </div>

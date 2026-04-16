@@ -3,8 +3,6 @@ import {
   Plus,
   Search,
   UserPlus,
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
   DollarSign,
   Users,
@@ -24,6 +22,11 @@ import type {
 } from "@/features/marketing/types/marketingTypes";
 import affiliatesData from "@/features/marketing/mocks/affiliates.json";
 import { toast } from "sonner";
+import { TablePagination } from "@/components/shared/TablePagination";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 
 // ─── Mock service ─────────────────────────────────────────────────────────────
 
@@ -397,7 +400,6 @@ function AffiliateRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function AffiliatesPage() {
-  const PAGE_SIZE = 6;
   const { affiliates, addAffiliate, deleteAffiliate, toggleStatus } =
     useAffiliates();
   const [search, setSearch] = useState("");
@@ -406,6 +408,7 @@ export function AffiliatesPage() {
   );
   const [modalOpen, setModalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
 
   const filtered = useMemo(
     () =>
@@ -421,11 +424,11 @@ export function AffiliatesPage() {
     [affiliates, search, statusFilter],
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pagedAffiliates = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   useEffect(() => {
     setPage(1);
@@ -561,38 +564,21 @@ export function AffiliatesPage() {
           </tbody>
         </table>
 
-        {filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
-            <span>
-              {(page - 1) * PAGE_SIZE + 1}-
-              {Math.min(page * PAGE_SIZE, filtered.length)} de {filtered.length}{" "}
-              afiliados
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-accent"
-              >
-                <ChevronLeft size={12} />
-                Anterior
-              </button>
-              <span className="px-2 text-[11px]">
-                Pagina {page} de {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-accent"
-              >
-                Proxima
-                <ChevronRight size={12} />
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination
+          page={page - 1}
+          totalPages={totalPages}
+          totalElements={filtered.length}
+          pageSize={pageSize}
+          onPageSizeChange={(size) => {
+            setDefaultPageSize(size);
+            setPageSize(size);
+            setPage(1);
+          }}
+          onFirst={() => setPage(1)}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          onLast={() => setPage(totalPages)}
+        />
       </div>
 
       {/* Create Modal */}
