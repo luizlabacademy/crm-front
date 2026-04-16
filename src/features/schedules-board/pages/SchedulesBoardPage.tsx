@@ -1204,11 +1204,12 @@ export function SchedulesBoardPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => void navigate("/dashboard")}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] leading-none text-muted-foreground transition-colors hover:text-foreground"
           >
-            <Home size={14} />
-            Home
+            <Home size={16} />
+            <span>Home</span>
           </button>
+          <span className="h-7 w-px bg-border/60" aria-hidden="true" />
           <CalendarCheck size={20} className="text-primary shrink-0" />
           <span className="font-semibold text-base">Board de Agendamentos</span>
         </div>

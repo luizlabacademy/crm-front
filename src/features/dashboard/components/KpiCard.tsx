@@ -67,10 +67,10 @@ export function KpiCard({
   const visibleValueLength = (visible ? displayValue : HIDDEN_VALUE).length;
   const largeValueSizeClass =
     visibleValueLength >= 14
-      ? "text-lg sm:text-xl xl:text-2xl"
+      ? "text-base sm:text-lg xl:text-xl"
       : visibleValueLength >= 12
-        ? "text-xl sm:text-2xl xl:text-[1.75rem]"
-        : "text-2xl md:text-[1.75rem] xl:text-3xl";
+        ? "text-lg sm:text-xl xl:text-2xl"
+        : "text-xl md:text-2xl xl:text-[1.65rem]";
 
   if (variant === "compact") {
     return (
