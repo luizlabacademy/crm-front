@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { getFunnelData } from "@/features/dashboard/api/dashboardMockService";
+import { CampaignFilterDropdown } from "@/features/dashboard/components/CampaignFilterDropdown";
 import { MetricSummaryCard } from "@/features/dashboard/components/MetricSummaryCard";
+import {
+  CAMPAIGN_OPTIONS,
+  getCampaignWeightRatio,
+} from "@/features/dashboard/constants/campaignFilter";
 import type {
   FunnelData,
   FunnelPeriod,
@@ -17,14 +22,6 @@ const FUNNEL_PERIOD_OPTIONS: { value: FunnelPeriod; label: string }[] = [
   { value: "5y", label: "Ultimos 5 anos" },
   { value: "all", label: "Todos" },
 ];
-
-const CAMPAIGN_OPTIONS = [
-  { id: "whatsapp-vip", label: "WhatsApp VIP", weight: 0.25 },
-  { id: "email-news", label: "E-mail Newsletter", weight: 0.2 },
-  { id: "retarget-meta", label: "Retarget Meta", weight: 0.2 },
-  { id: "google-search", label: "Google Search", weight: 0.2 },
-  { id: "indicacoes", label: "Indicacoes", weight: 0.15 },
-] as const;
 
 // ─── Funnel step bar ─────────────────────────────────────────────────────────
 
@@ -135,12 +132,7 @@ export function FunnelPanel() {
   const filteredData = useMemo(() => {
     if (!data) return null;
 
-    const allWeight = CAMPAIGN_OPTIONS.reduce((sum, c) => sum + c.weight, 0);
-    const selectedWeight = CAMPAIGN_OPTIONS.filter((c) =>
-      selectedCampaigns.includes(c.id),
-    ).reduce((sum, c) => sum + c.weight, 0);
-
-    const ratio = Math.max(0.15, selectedWeight / allWeight);
+    const ratio = getCampaignWeightRatio(selectedCampaigns);
     const firstStepValue = Math.max(1, Math.round(data.steps[0].value * ratio));
 
     const steps = data.steps.map((step) => {
@@ -159,60 +151,16 @@ export function FunnelPanel() {
     ? Math.max(...filteredData.steps.map((s) => s.value), 1)
     : 1;
 
-  function toggleCampaign(campaignId: string) {
-    setSelectedCampaigns((prev) =>
-      prev.includes(campaignId)
-        ? prev.filter((id) => id !== campaignId)
-        : [...prev, campaignId],
-    );
-  }
-
   return (
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Funil de Conversão</h2>
         <div className="flex items-center gap-2">
-          <details className="relative">
-            <summary className="list-none cursor-pointer rounded-md border border-border bg-background px-2.5 py-1 text-sm text-foreground hover:bg-accent transition-colors">
-              Campanhas ({selectedCampaigns.length})
-            </summary>
-            <div className="absolute right-0 mt-1 w-56 rounded-md border border-border bg-popover p-2 shadow-lg z-20">
-              <div className="mb-2 flex items-center justify-between text-xs">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelectedCampaigns(CAMPAIGN_OPTIONS.map((c) => c.id))
-                  }
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Marcar todas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCampaigns([])}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Limpar
-                </button>
-              </div>
-              <div className="space-y-1">
-                {CAMPAIGN_OPTIONS.map((campaign) => (
-                  <label
-                    key={campaign.id}
-                    className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-accent cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCampaigns.includes(campaign.id)}
-                      onChange={() => toggleCampaign(campaign.id)}
-                      className="h-4 w-4 accent-primary"
-                    />
-                    <span>{campaign.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </details>
+          <CampaignFilterDropdown
+            options={CAMPAIGN_OPTIONS}
+            selectedIds={selectedCampaigns}
+            onChange={setSelectedCampaigns}
+          />
 
           <select
             value={period}

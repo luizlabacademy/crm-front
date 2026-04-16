@@ -64,6 +64,14 @@ export function KpiCard({
       ? formatCurrency(value)
       : new Intl.NumberFormat("pt-BR").format(value);
 
+  const visibleValueLength = (visible ? displayValue : HIDDEN_VALUE).length;
+  const largeValueSizeClass =
+    visibleValueLength >= 14
+      ? "text-lg sm:text-xl xl:text-2xl"
+      : visibleValueLength >= 12
+        ? "text-xl sm:text-2xl xl:text-[1.75rem]"
+        : "text-2xl md:text-[1.75rem] xl:text-3xl";
+
   if (variant === "compact") {
     return (
       <div className="relative rounded-xl border border-border/80 bg-card p-5 shadow-sm flex flex-col gap-3">
@@ -155,16 +163,21 @@ export function KpiCard({
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {Icon && (
-            <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
-              <Icon size={30} strokeWidth={1.8} />
+            <span className="inline-flex h-12 w-12 xl:h-16 xl:w-16 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
+              <Icon
+                size={24}
+                strokeWidth={1.8}
+                className="xl:h-[30px] xl:w-[30px]"
+              />
             </span>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p
               className={cn(
-                "text-4xl font-semibold leading-none tracking-tight tabular-nums",
+                "whitespace-nowrap font-semibold leading-none tracking-tight",
+                largeValueSizeClass,
                 !visible && "select-none",
               )}
             >

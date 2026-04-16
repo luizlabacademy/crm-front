@@ -8,7 +8,7 @@
         "icon": "layout-dashboard"
       },
       {
-        "label": "Conversas",
+        "label": "Chat",
         "to": "/conversations",
         "icon": "message-circle"
       }

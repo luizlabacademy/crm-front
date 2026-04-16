@@ -1,25 +1,12 @@
 {
   "period": "daily",
   "data": [
-    { "label": "00h", "conversionRate": 12 },
-    { "label": "02h", "conversionRate": 8 },
-    { "label": "04h", "conversionRate": 5 },
-    { "label": "06h", "conversionRate": 10 },
-    { "label": "08h", "conversionRate": 22 },
-    { "label": "09h", "conversionRate": 28 },
-    { "label": "10h", "conversionRate": 35 },
-    { "label": "11h", "conversionRate": 32 },
-    { "label": "12h", "conversionRate": 25 },
-    { "label": "13h", "conversionRate": 20 },
-    { "label": "14h", "conversionRate": 30 },
-    { "label": "15h", "conversionRate": 34 },
-    { "label": "16h", "conversionRate": 28 },
-    { "label": "17h", "conversionRate": 24 },
-    { "label": "18h", "conversionRate": 18 },
-    { "label": "19h", "conversionRate": 15 },
-    { "label": "20h", "conversionRate": 12 },
-    { "label": "21h", "conversionRate": 10 },
-    { "label": "22h", "conversionRate": 8 },
-    { "label": "23h", "conversionRate": 6 }
+    { "label": "Seg", "conversionRate": 24 },
+    { "label": "Ter", "conversionRate": 27 },
+    { "label": "Qua", "conversionRate": 26 },
+    { "label": "Qui", "conversionRate": 29 },
+    { "label": "Sex", "conversionRate": 33 },
+    { "label": "Sab", "conversionRate": 21 },
+    { "label": "Dom", "conversionRate": 18 }
   ]
 }

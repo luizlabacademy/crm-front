@@ -68,6 +68,7 @@ async function buildDashboardData(): Promise<DashboardData> {
   let revenueToday = 0;
   let revenueMonth = 0;
   let revenueYear = 0;
+  let accountsPayable = 0;
   let newOrdersMonth = 0;
   let pendingOrders = 0;
   let closedOrdersMonth = 0;
@@ -76,7 +77,10 @@ async function buildDashboardData(): Promise<DashboardData> {
     const date = parseISO(order.createdAt);
     const closed = isClosed(order.status);
 
-    if (isPending(order.status)) pendingOrders++;
+    if (isPending(order.status)) {
+      pendingOrders++;
+      accountsPayable += order.totalCents;
+    }
 
     if (isToday(date) && closed) revenueToday += order.totalCents;
     if (isThisMonth(date)) {
@@ -152,6 +156,7 @@ async function buildDashboardData(): Promise<DashboardData> {
       revenueToday,
       revenueMonth,
       revenueYear,
+      accountsPayable,
       newOrdersMonth,
       pendingOrders,
       closedOrdersMonth,

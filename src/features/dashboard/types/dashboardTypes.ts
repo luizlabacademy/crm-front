@@ -40,6 +40,8 @@ export interface DashboardKpi {
   revenueMonth: number;
   /** centavos */
   revenueYear: number;
+  /** centavos */
+  accountsPayable: number;
   newOrdersMonth: number;
   pendingOrders: number;
   closedOrdersMonth: number;

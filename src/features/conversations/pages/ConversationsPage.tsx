@@ -1125,7 +1125,7 @@ export function ConversationsPage() {
             )}
           >
             <div className="flex h-16 items-center justify-between gap-3 border-b border-border px-4">
-              <h1 className="text-lg font-semibold">Conversas</h1>
+              <h1 className="text-lg font-semibold">Chat</h1>
               <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                 {contacts.reduce((s, c) => s + c.unreadCount, 0)} nao lidas
               </span>

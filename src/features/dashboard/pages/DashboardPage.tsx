@@ -3,12 +3,13 @@ import {
   BadgeDollarSign,
   BanknoteArrowUp,
   HandCoins,
-  CheckCircle2,
   CircleAlert,
   MessageSquare,
   RefreshCw,
   ShoppingCart,
   MessageCircle,
+  UserCheck,
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -47,22 +48,36 @@ const REVENUE_KPI_DEFS: KpiDef[] = [
     storageKey: "rev_today",
   },
   {
-    label: "Vendas Mês",
+    label: "Vendas do Mês",
     key: "revenueMonth",
     type: "currency",
     icon: BadgeDollarSign,
     storageKey: "rev_month",
   },
   {
-    label: "Vendas Ano",
+    label: "Vendas do Ano",
     key: "revenueYear",
     type: "currency",
     icon: BanknoteArrowUp,
     storageKey: "rev_year",
   },
+  {
+    label: "Contas a Pagar",
+    key: "accountsPayable",
+    type: "currency",
+    icon: CircleAlert,
+    storageKey: "accounts_payable",
+  },
 ];
 
 const SECONDARY_KPI_DEFS: KpiDef[] = [
+  {
+    label: "Clientes Ativos",
+    key: "closedLeadsMonth",
+    type: "count",
+    icon: UserCheck,
+    storageKey: "leads_closed",
+  },
   {
     label: "Novos Pedidos",
     key: "newOrdersMonth",
@@ -71,10 +86,10 @@ const SECONDARY_KPI_DEFS: KpiDef[] = [
     storageKey: "orders_new",
   },
   {
-    label: "Com Pendências",
+    label: "Novos Leads",
     key: "pendingOrders",
     type: "count",
-    icon: CircleAlert,
+    icon: UserPlus,
     storageKey: "orders_pending",
   },
   {
@@ -90,13 +105,6 @@ const SECONDARY_KPI_DEFS: KpiDef[] = [
     type: "count",
     icon: MessageCircle,
     storageKey: "leads_active",
-  },
-  {
-    label: "Chats Concluídos",
-    key: "closedLeadsMonth",
-    type: "count",
-    icon: CheckCircle2,
-    storageKey: "leads_closed",
   },
 ];
 
@@ -175,8 +183,8 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Revenue KPIs — 3 columns */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Revenue KPIs */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {REVENUE_KPI_DEFS.map((def) => (
           <KpiCard
             key={def.storageKey}
@@ -193,7 +201,7 @@ export function DashboardPage() {
         ))}
       </div>
 
-      {/* Secondary KPIs — last 4 in a single row on desktop */}
+      {/* Secondary KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {SECONDARY_KPI_DEFS.map((def) => (
           <KpiCard
