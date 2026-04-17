@@ -6,7 +6,6 @@ import {
   Package,
   Plus,
   Search,
-  Trash2,
   X,
   Minus,
 } from "lucide-react";
@@ -298,6 +297,17 @@ export function QuoteComposerOverlay({
     focusSearchInput();
   }
 
+  function setQuantity(itemId: number, value: string) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) return;
+    const quantity = Math.max(1, parsed);
+    setCart((prev) =>
+      prev.map((line) =>
+        line.itemId === itemId ? { ...line, quantity } : line,
+      ),
+    );
+  }
+
   function decrease(itemId: number) {
     setCart((prev) =>
       prev
@@ -308,11 +318,6 @@ export function QuoteComposerOverlay({
         )
         .filter((line) => line.quantity > 0),
     );
-    focusSearchInput();
-  }
-
-  function remove(itemId: number) {
-    setCart((prev) => prev.filter((line) => line.itemId !== itemId));
     focusSearchInput();
   }
 
@@ -584,8 +589,8 @@ export function QuoteComposerOverlay({
       </header>
 
       <main className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-[1.5fr_1fr]">
-        <section className="flex min-h-0 flex-col rounded-xl border border-border/60 bg-white">
-          <div className="border-b border-border/60 px-4 py-3">
+        <section className="flex min-h-0 flex-col rounded-xl border border-slate-300 bg-slate-100">
+          <div className="border-b border-slate-300 bg-slate-100 px-4 py-3">
             <div className="relative">
               <Search
                 size={16}
@@ -596,15 +601,15 @@ export function QuoteComposerOverlay({
                 autoFocus
                 type="text"
                 value={searchItem}
-                onChange={(e) => setSearchItem(e.target.value)}
+                onChange={(e) => setSearchItem(e.target.value.toUpperCase())}
                 onKeyDown={handleItemSearchKeyDown}
                 placeholder="Buscar item pelo nome..."
-                className="w-full rounded-lg border border-input bg-background py-2.5 pl-9 pr-3 text-[17px] font-medium outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-input bg-background py-2.5 pl-9 pr-3 text-[17px] font-medium uppercase outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto bg-slate-200/70 p-3">
             {isCatalogLoading ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 Carregando itens...
@@ -619,13 +624,13 @@ export function QuoteComposerOverlay({
                   <article
                     key={item.id}
                     data-search-item-id={item.id}
-                    className={`flex items-center gap-3 rounded-[4px] border px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.08)] ${
+                    className={`flex items-center gap-3 rounded-[3px] border px-3 py-2.5 shadow-[0_2px_8px_rgba(15,23,42,0.12)] ${
                       filteredCatalogItems[activeCatalogIndex]?.id === item.id
-                        ? "border-primary/60 bg-primary/10"
-                        : "border-slate-300/70 bg-slate-50"
+                        ? "border-primary/70 bg-white ring-1 ring-primary/25"
+                        : "border-slate-300 bg-white"
                     }`}
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-200">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-md bg-slate-100">
                       <Package size={22} className="text-slate-600" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -653,14 +658,14 @@ export function QuoteComposerOverlay({
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-col rounded-xl border border-border/60 bg-slate-100">
-          <div className="border-b border-border/60 px-4 py-3">
+        <section className="flex min-h-0 flex-col rounded-xl border border-slate-300 bg-slate-100">
+          <div className="border-b border-slate-300 bg-slate-100 px-4 py-3">
             <h3 className="text-lg font-semibold">
               Itens do Orçamento ({cartQty} {cartQty === 1 ? "item" : "itens"})
             </h3>
           </div>
 
-          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+          <div className="flex-1 space-y-2 overflow-y-auto bg-slate-200/70 p-3">
             {cart.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
                 Adicione itens para montar o orçamento.
@@ -673,14 +678,11 @@ export function QuoteComposerOverlay({
                   <article
                     key={line.itemId}
                     data-cart-item-id={line.itemId}
-                    className="space-y-1.5 rounded-[4px] border border-slate-300/70 bg-white p-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+                    className="space-y-1 rounded-[3px] border border-slate-300 bg-white px-3 py-2 shadow-[0_2px_8px_rgba(15,23,42,0.12)]"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-200">
-                        <Package size={16} className="text-slate-600" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[15px] font-semibold text-slate-900">
+                    <div className="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-center gap-x-3 gap-y-1">
+                      <div className="min-w-0">
+                        <p className="truncate text-[19px] font-semibold leading-tight text-slate-900">
                           {item?.name ?? `Item #${line.itemId}`}
                         </p>
                         <p className="text-xs font-medium text-slate-600">
@@ -689,7 +691,7 @@ export function QuoteComposerOverlay({
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-1.5">
+                      <div className="row-span-2 flex min-w-[170px] self-stretch items-center justify-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => decrease(line.itemId)}
@@ -698,9 +700,17 @@ export function QuoteComposerOverlay({
                         >
                           <Minus size={16} />
                         </button>
-                        <span className="w-8 text-center text-lg font-semibold tabular-nums text-slate-900">
-                          {line.quantity}
-                        </span>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={line.quantity}
+                          onChange={(e) =>
+                            setQuantity(line.itemId, e.target.value)
+                          }
+                          className="h-9 w-12 rounded-md border border-slate-300 bg-slate-50 text-center text-lg font-semibold tabular-nums text-slate-900 outline-none focus:ring-2 focus:ring-ring"
+                          style={{ textAlign: "center" }}
+                        />
                         <button
                           type="button"
                           onClick={() => increase(line.itemId)}
@@ -709,18 +719,10 @@ export function QuoteComposerOverlay({
                         >
                           <Plus size={16} />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => remove(line.itemId)}
-                          onMouseDown={(e) => e.preventDefault()}
-                          className="flex h-9 w-9 items-center justify-center rounded-md border border-destructive/30 text-destructive transition-colors hover:bg-destructive/10"
-                        >
-                          <Trash2 size={17} />
-                        </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
                       <label className="text-sm font-medium text-slate-700">
                         Unitário R$:
                       </label>
@@ -732,7 +734,7 @@ export function QuoteComposerOverlay({
                         onChange={(e) =>
                           updateUnitPrice(line.itemId, e.target.value)
                         }
-                        className="w-40 rounded-md border border-input bg-background px-2 py-1.5 text-right text-base font-medium outline-none focus:ring-2 focus:ring-ring"
+                        className="w-36 rounded-md border border-transparent bg-transparent px-2 py-1 text-left text-base font-medium outline-none transition-colors hover:border-slate-300 hover:bg-slate-50 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-ring"
                       />
                     </div>
                   </article>
@@ -774,7 +776,7 @@ export function QuoteComposerOverlay({
                 step="0.01"
                 value={(totalCents / 100).toFixed(2)}
                 onChange={(e) => updateTotal(e.target.value)}
-                className="w-40 rounded-md border border-primary/30 bg-white px-2 py-1.5 text-right text-xl font-bold text-primary tabular-nums outline-none focus:ring-2 focus:ring-ring"
+                className="w-44 rounded-md border border-primary/30 bg-white px-2 py-1.5 text-right text-2xl font-bold text-primary tabular-nums outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
