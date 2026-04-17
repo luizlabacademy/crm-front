@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Pencil, Trash2, Eye, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
-import { useOrders, useDeleteOrder } from "@/features/orders/api/useOrders";
+import {
+  useCatalogItems,
+  useOrders,
+  useDeleteOrder,
+} from "@/features/orders/api/useOrders";
+import { useCustomers } from "@/features/customers/api/useCustomers";
 import { ORDER_STATUS_COLORS } from "@/features/orders/types/orderTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { formatCurrencyCode } from "@/lib/utils/formatCurrency";
@@ -11,6 +16,12 @@ import { SkeletonRow } from "@/components/shared/SkeletonRow";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
+import {
+  QuoteComposerOverlay,
+  type QuoteFinalizePayload,
+} from "@/features/orders/components/QuoteComposerOverlay";
+import catalogMock from "@/mocks/conversations/get-catalog-items.json";
+import contactsMock from "@/mocks/conversations/get-contacts.json";
 import {
   getDefaultPageSize,
   setDefaultPageSize,
@@ -43,6 +54,7 @@ export function OrderListPage() {
     id: number;
     label: string;
   } | null>(null);
+  const [showComposer, setShowComposer] = useState(false);
 
   const tenantId = filters.tenantId ? Number(filters.tenantId) : null;
   const customerId = filters.customerId ? Number(filters.customerId) : null;
@@ -60,10 +72,44 @@ export function OrderListPage() {
     dateTo: filters.dateTo || undefined,
   });
   const deleteMutation = useDeleteOrder();
+  const { data: catalogData, isLoading: isCatalogLoading } = useCatalogItems();
+  const { data: customersData } = useCustomers({ page: 0, size: 100 });
 
   const orders = data?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
+  const catalogItems = Array.isArray(catalogData) ? catalogData : [];
+  const fallbackCatalogItems = useMemo(
+    () =>
+      (catalogMock.data ?? []).map((item) => ({
+        id: item.id,
+        tenantId: item.tenantId,
+        name: item.name,
+        description: item.description,
+        priceCents: item.priceCents,
+      })),
+    [],
+  );
+  const composerCatalogItems =
+    catalogItems.length > 0 ? catalogItems : fallbackCatalogItems;
+  const composerCustomers = useMemo(
+    () =>
+      (customersData?.content ?? []).map((customer) => ({
+        id: customer.id,
+        name: customer.fullName?.trim() || `Customer #${customer.id}`,
+      })),
+    [customersData],
+  );
+  const fallbackCustomers = useMemo(
+    () =>
+      (contactsMock.data ?? []).slice(0, 50).map((contact, index) => ({
+        id: index + 1,
+        name: contact.name,
+      })),
+    [],
+  );
+  const composerCustomersWithFallback =
+    composerCustomers.length > 0 ? composerCustomers : fallbackCustomers;
 
   function handleApplyFilters(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +148,13 @@ export function OrderListPage() {
     }
   }
 
+  function handleFinalizeBudget(payload: QuoteFinalizePayload) {
+    toast.success(
+      `Orçamento finalizado para ${payload.customerName} (#${payload.customerId}) com total ${formatCurrencyCode(payload.totalCents, "BRL")}.`,
+    );
+    setShowComposer(false);
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -116,7 +169,7 @@ export function OrderListPage() {
         </div>
         <button
           type="button"
-          onClick={() => void navigate("/orders/new")}
+          onClick={() => setShowComposer(true)}
           className="flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
         >
           <Plus size={15} />
@@ -389,6 +442,16 @@ export function OrderListPage() {
           isDeleting={deleteMutation.isPending}
         />
       )}
+
+      <QuoteComposerOverlay
+        open={showComposer}
+        onClose={() => setShowComposer(false)}
+        title="Novo Orçamento"
+        catalogItems={composerCatalogItems}
+        isCatalogLoading={isCatalogLoading}
+        customers={composerCustomersWithFallback}
+        onFinalize={handleFinalizeBudget}
+      />
     </div>
   );
 }

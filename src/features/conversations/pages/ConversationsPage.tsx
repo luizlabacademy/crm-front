@@ -47,7 +47,10 @@ import conversationOrdersResponse from "@/mocks/conversations/get-recent-orders.
 import channelsResponse from "@/mocks/conversations/get-channels.json";
 import profileResponse from "@/mocks/account/get-profile.json";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
-import { OrderBudgetComposer } from "@/features/orders/components/OrderBudgetComposer";
+import {
+  QuoteComposerOverlay,
+  type QuoteFinalizePayload,
+} from "@/features/orders/components/QuoteComposerOverlay";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -303,133 +306,6 @@ function EmptyChatState() {
         <p className="text-sm text-muted-foreground mt-1">
           Escolha um contato na lista ao lado para iniciar a conversa
         </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── PDV Modal (fullscreen) ───────────────────────────────────────────────────
-
-interface CartItem {
-  item: CatalogItemResponse;
-  quantity: number;
-  unitPriceCents: number;
-}
-
-function PdvModal({
-  onClose,
-  onConfirm,
-  contactName,
-}: {
-  onClose: () => void;
-  onConfirm: (items: CartItem[], discount: number, notes: string) => void;
-  contactName: string;
-}) {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [discountCents, setDiscountCents] = useState(0);
-  const [notes, setNotes] = useState("");
-
-  const catalogItems = MOCK_CATALOG_ITEMS;
-  const isLoading = false;
-
-  function addToCart(item: CatalogItemResponse) {
-    setCart((prev) => {
-      const existing = prev.find((c) => c.item.id === item.id);
-      if (existing) {
-        return prev.map((c) =>
-          c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c,
-        );
-      }
-      return [...prev, { item, quantity: 1, unitPriceCents: item.priceCents }];
-    });
-  }
-
-  function updateQty(itemId: number, delta: number) {
-    setCart((prev) =>
-      prev
-        .map((c) =>
-          c.item.id === itemId ? { ...c, quantity: c.quantity + delta } : c,
-        )
-        .filter((c) => c.quantity > 0),
-    );
-  }
-
-  function removeFromCart(itemId: number) {
-    setCart((prev) => prev.filter((c) => c.item.id !== itemId));
-  }
-
-  function updateUnitPrice(itemId: number, unitPriceCents: number) {
-    setCart((prev) =>
-      prev.map((c) => (c.item.id === itemId ? { ...c, unitPriceCents } : c)),
-    );
-  }
-
-  const lines = useMemo(
-    () =>
-      cart.map((entry) => ({
-        itemId: entry.item.id,
-        quantity: entry.quantity,
-        unitPriceCents: entry.unitPriceCents,
-      })),
-    [cart],
-  );
-
-  const subtotal = cart.reduce(
-    (sum, c) => sum + c.unitPriceCents * c.quantity,
-    0,
-  );
-  const total = Math.max(0, subtotal - discountCents);
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-card px-6 py-3 shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h2 className="text-base font-semibold">Novo Orçamento</h2>
-            <p className="text-xs text-muted-foreground">
-              Cliente: {contactName}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-foreground">
-            {formatCurrency(total)}
-          </span>
-          <button
-            type="button"
-            onClick={() => onConfirm(cart, discountCents, notes)}
-            disabled={cart.length === 0}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
-            Confirmar Orçamento
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden p-4">
-        <OrderBudgetComposer
-          className="h-full w-full"
-          catalogItems={catalogItems}
-          lines={lines}
-          discountCents={discountCents}
-          notes={notes}
-          isCatalogLoading={isLoading}
-          onAddItem={addToCart}
-          onIncrease={(itemId) => updateQty(itemId, 1)}
-          onDecrease={(itemId) => updateQty(itemId, -1)}
-          onRemove={removeFromCart}
-          onUnitPriceChange={updateUnitPrice}
-          onDiscountChange={setDiscountCents}
-          onNotesChange={setNotes}
-        />
       </div>
     </div>
   );
@@ -780,6 +656,18 @@ export function ConversationsPage() {
   }, [activeContactId, localMessages]);
 
   const activeContact = contacts.find((c) => c.id === activeContactId) ?? null;
+  const budgetCustomers = useMemo(
+    () =>
+      contacts.map((contact, index) => ({ id: index + 1, name: contact.name })),
+    [contacts],
+  );
+  const selectedBudgetCustomerId = useMemo(() => {
+    if (!activeContact) return null;
+    const found = budgetCustomers.find(
+      (customer) => customer.name === activeContact.name,
+    );
+    return found?.id ?? null;
+  }, [activeContact, budgetCustomers]);
 
   // Filter contacts
   const filteredContacts = useMemo(() => {
@@ -886,24 +774,29 @@ export function ConversationsPage() {
     setChatTab("open");
   }
 
-  function handlePdvConfirm(
-    items: CartItem[],
-    discountCents: number,
-    notes: string,
-  ) {
-    if (items.length === 0) return;
-    const subtotal = items.reduce(
-      (s, c) => s + c.unitPriceCents * c.quantity,
-      0,
-    );
-    const total = Math.max(0, subtotal - discountCents);
-    const summary = items
-      .map((c) => `${c.quantity}x ${c.item.name}`)
+  function handlePdvConfirm(payload: QuoteFinalizePayload) {
+    if (payload.lines.length === 0) return;
+    const summary = payload.lines
+      .map((line) => {
+        const item = MOCK_CATALOG_ITEMS.find(
+          (catalog) => catalog.id === line.itemId,
+        );
+        return `${line.quantity}x ${item?.name ?? `Item #${line.itemId}`}`;
+      })
       .join(", ");
+    const paymentLabel: Record<string, string> = {
+      pix: "Pix",
+      cartao: "Cartão",
+      boleto: "Boleto",
+    };
+    const deliveryText =
+      payload.deliveryMode === "confirmar"
+        ? "Entrega: confirmar endereço cadastrado"
+        : `Entrega: novo endereço - ${payload.deliveryAddress ?? "não informado"}`;
     const msg: ChatMessage = {
       id: nextLocalId(),
       contactId: activeContactId!,
-      content: `Orçamento enviado:\n${summary}\nTotal: ${formatCurrency(total)}${notes ? `\nObs: ${notes}` : ""}`,
+      content: `Orçamento finalizado para ${payload.customerName} (#${payload.customerId}):\n${summary}\nTotal: ${formatCurrency(payload.totalCents)}\nPagamento: ${paymentLabel[payload.paymentMethod]}\n${deliveryText}`,
       createdAt: new Date().toISOString(),
       direction: "outbound",
       status: "sent",
@@ -972,10 +865,14 @@ export function ConversationsPage() {
   return (
     <>
       {showPdv && activeContact && (
-        <PdvModal
+        <QuoteComposerOverlay
+          open={showPdv}
           onClose={() => setShowPdv(false)}
-          onConfirm={handlePdvConfirm}
-          contactName={activeContact.name}
+          title="Novo Orçamento"
+          catalogItems={MOCK_CATALOG_ITEMS}
+          customers={budgetCustomers}
+          initialCustomerId={selectedBudgetCustomerId}
+          onFinalize={handlePdvConfirm}
         />
       )}
 
