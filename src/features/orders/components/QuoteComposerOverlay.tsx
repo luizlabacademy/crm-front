@@ -691,7 +691,7 @@ export function QuoteComposerOverlay({
                         </p>
                       </div>
 
-                      <div className="row-span-2 flex min-w-[170px] self-stretch items-center justify-center gap-1.5">
+                      <div className="row-span-2 ml-4 flex min-w-[170px] items-center justify-center gap-1.5 self-center justify-self-end">
                         <button
                           type="button"
                           onClick={() => decrease(line.itemId)}
@@ -701,15 +701,17 @@ export function QuoteComposerOverlay({
                           <Minus size={16} />
                         </button>
                         <input
-                          type="number"
-                          min="1"
-                          step="1"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={line.quantity}
                           onChange={(e) =>
-                            setQuantity(line.itemId, e.target.value)
+                            setQuantity(
+                              line.itemId,
+                              e.target.value.replace(/[^0-9]/g, ""),
+                            )
                           }
                           className="h-9 w-12 rounded-md border border-slate-300 bg-slate-50 text-center text-lg font-semibold tabular-nums text-slate-900 outline-none focus:ring-2 focus:ring-ring"
-                          style={{ textAlign: "center" }}
                         />
                         <button
                           type="button"
@@ -720,22 +722,22 @@ export function QuoteComposerOverlay({
                           <Plus size={16} />
                         </button>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-slate-700">
-                        Unitário R$:
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={(line.unitPriceCents / 100).toFixed(2)}
-                        onChange={(e) =>
-                          updateUnitPrice(line.itemId, e.target.value)
-                        }
-                        className="w-36 rounded-md border border-transparent bg-transparent px-2 py-1 text-left text-base font-medium outline-none transition-colors hover:border-slate-300 hover:bg-slate-50 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-ring"
-                      />
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-slate-700">
+                          Unitário R$:
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={(line.unitPriceCents / 100).toFixed(2)}
+                          onChange={(e) =>
+                            updateUnitPrice(line.itemId, e.target.value)
+                          }
+                          className="w-36 rounded-md border border-transparent bg-transparent px-2 py-1 text-left text-base font-medium outline-none transition-colors hover:border-slate-300 hover:bg-slate-50 focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
                     </div>
                   </article>
                 );
