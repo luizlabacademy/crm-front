@@ -68,16 +68,6 @@ const OrderListPage = lazy(() =>
     default: m.OrderListPage,
   })),
 );
-const OrderFormPage = lazy(() =>
-  import("@/features/orders/pages/OrderFormPage").then((m) => ({
-    default: m.OrderFormPage,
-  })),
-);
-const OrderDetailsPage = lazy(() =>
-  import("@/features/orders/pages/OrderDetailsPage").then((m) => ({
-    default: m.OrderDetailsPage,
-  })),
-);
 
 // Catalog - Items
 const ItemListPage = lazy(() =>
@@ -341,10 +331,24 @@ export function AppRouter() {
             <Route path="/leads/:id" element={<LeadDetailsPage />} />
             <Route path="/leads/:id/edit" element={<LeadFormPage />} />
 
-            <Route path="/orders" element={<OrderListPage />} />
-            <Route path="/orders/new" element={<OrderFormPage />} />
-            <Route path="/orders/:id" element={<OrderDetailsPage />} />
-            <Route path="/orders/:id/edit" element={<OrderFormPage />} />
+            <Route path="/orders" element={<Navigate to="/quotes" replace />} />
+            <Route
+              path="/quotes"
+              element={<OrderListPage viewMode="quotes" />}
+            />
+            <Route path="/sales" element={<OrderListPage viewMode="sales" />} />
+            <Route
+              path="/orders/new"
+              element={<Navigate to="/quotes" replace />}
+            />
+            <Route
+              path="/orders/:id"
+              element={<Navigate to="/quotes" replace />}
+            />
+            <Route
+              path="/orders/:id/edit"
+              element={<Navigate to="/quotes" replace />}
+            />
 
             <Route path="/catalog/items" element={<ItemListPage />} />
             <Route path="/catalog/items/new" element={<ItemFormPage />} />

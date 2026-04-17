@@ -28,8 +28,13 @@
         "icon": "calendar-range"
       },
       {
-        "label": "Pedidos",
-        "to": "/orders",
+        "label": "Orçamentos",
+        "to": "/quotes",
+        "icon": "clipboard-list"
+      },
+      {
+        "label": "Vendas",
+        "to": "/sales",
         "icon": "shopping-cart"
       },
       {

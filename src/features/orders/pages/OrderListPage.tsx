@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
-import { Plus, Pencil, Trash2, Eye, RefreshCw, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, RefreshCw, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import {
@@ -27,9 +26,13 @@ import {
   setDefaultPageSize,
 } from "@/lib/pagination/pageSizePreference";
 
-export function OrderListPage() {
-  const navigate = useNavigate();
+type OrdersViewMode = "quotes" | "sales";
 
+interface OrderListPageProps {
+  viewMode?: OrdersViewMode;
+}
+
+export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [draftFilters, setDraftFilters] = useState({
@@ -55,6 +58,14 @@ export function OrderListPage() {
     label: string;
   } | null>(null);
   const [showComposer, setShowComposer] = useState(false);
+  const [composerCustomerId, setComposerCustomerId] = useState<number | null>(
+    null,
+  );
+  const [composerTitle, setComposerTitle] = useState("Novo Orçamento");
+  const [invoiceOrderId, setInvoiceOrderId] = useState<number | null>(null);
+
+  const isQuotesView = viewMode === "quotes";
+  const fixedStatus = isQuotesView ? "DRAFT" : "CONFIRMED";
 
   const tenantId = filters.tenantId ? Number(filters.tenantId) : null;
   const customerId = filters.customerId ? Number(filters.customerId) : null;
@@ -66,7 +77,7 @@ export function OrderListPage() {
     tenantId,
     customerId,
     userId,
-    status: filters.status || undefined,
+    status: fixedStatus,
     q: filters.q.trim() || undefined,
     dateFrom: filters.dateFrom || undefined,
     dateTo: filters.dateTo || undefined,
@@ -155,25 +166,45 @@ export function OrderListPage() {
     setShowComposer(false);
   }
 
+  function openQuote(orderId?: number, customerId?: number) {
+    if (isQuotesView) {
+      setComposerTitle(orderId ? `Orçamento #${orderId}` : "Novo Orçamento");
+    } else {
+      setComposerTitle(orderId ? `Venda #${orderId}` : "Nova Venda");
+    }
+    setComposerCustomerId(customerId ?? null);
+    setShowComposer(true);
+  }
+
+  function openInvoice(orderId: number) {
+    setInvoiceOrderId(orderId);
+  }
+
+  const pageTitle = isQuotesView ? "Orçamentos" : "Vendas";
+  const singularLabel = isQuotesView ? "orçamento" : "venda";
+  const pluralLabel = isQuotesView ? "orçamentos" : "vendas";
+
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Pedidos</h1>
+          <h1 className="text-2xl font-semibold">{pageTitle}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isLoading
               ? "Carregando..."
-              : `${totalElements} pedido${totalElements !== 1 ? "s" : ""} cadastrado${totalElements !== 1 ? "s" : ""}`}
+              : `${totalElements} ${totalElements !== 1 ? pluralLabel : singularLabel}`}
           </p>
         </div>
         <button
           type="button"
-          onClick={() => setShowComposer(true)}
+          onClick={() => {
+            openQuote();
+          }}
           className="flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
         >
           <Plus size={15} />
-          Novo pedido
+          {isQuotesView ? "Novo Orçamento" : "Nova Venda"}
         </button>
       </div>
 
@@ -196,14 +227,10 @@ export function OrderListPage() {
           onChange={(e) =>
             setDraftFilters((prev) => ({ ...prev, status: e.target.value }))
           }
+          disabled
           className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
         >
-          <option value="">Todos os status</option>
-          <option value="DRAFT">DRAFT</option>
-          <option value="PENDING">PENDING</option>
-          <option value="CONFIRMED">CONFIRMED</option>
-          <option value="DELIVERED">DELIVERED</option>
-          <option value="CANCELLED">CANCELLED</option>
+          <option value={fixedStatus}>{fixedStatus}</option>
         </select>
         <input
           type="number"
@@ -314,13 +341,13 @@ export function OrderListPage() {
                     colSpan={10}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
-                    <p>Nenhum pedido encontrado.</p>
+                    <p>Nenhum {singularLabel} encontrado.</p>
                     <button
                       type="button"
-                      onClick={() => void navigate("/orders/new")}
+                      onClick={() => openQuote()}
                       className="mt-2 text-sm text-primary hover:underline"
                     >
-                      Criar primeiro pedido
+                      Criar primeiro {singularLabel}
                     </button>
                   </td>
                 </tr>
@@ -328,8 +355,16 @@ export function OrderListPage() {
                 orders.map((order) => (
                   <tr
                     key={order.id}
-                    className="hover:bg-accent/30 transition-colors cursor-pointer"
-                    onClick={() => void navigate(`/orders/${order.id}`)}
+                    className={
+                      isQuotesView
+                        ? "hover:bg-accent/30 transition-colors cursor-pointer"
+                        : "hover:bg-accent/30 transition-colors"
+                    }
+                    onClick={() =>
+                      isQuotesView
+                        ? openQuote(order.id, order.customerId)
+                        : undefined
+                    }
                   >
                     <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
                       {order.id}
@@ -374,34 +409,42 @@ export function OrderListPage() {
                         <button
                           type="button"
                           aria-label="Ver detalhes"
-                          onClick={() => void navigate(`/orders/${order.id}`)}
+                          onClick={() =>
+                            isQuotesView
+                              ? openQuote(order.id, order.customerId)
+                              : openInvoice(order.id)
+                          }
                           className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                         >
                           <Eye size={17} />
                         </button>
-                        <button
-                          type="button"
-                          aria-label="Editar"
-                          onClick={() =>
-                            void navigate(`/orders/${order.id}/edit`)
-                          }
-                          className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        >
-                          <Pencil size={17} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Excluir"
-                          onClick={() =>
-                            setDeleteTarget({
-                              id: order.id,
-                              label: `#${order.id}`,
-                            })
-                          }
-                          className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 size={17} />
-                        </button>
+                        {isQuotesView && (
+                          <>
+                            <button
+                              type="button"
+                              aria-label="Editar"
+                              onClick={() =>
+                                openQuote(order.id, order.customerId)
+                              }
+                              className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            >
+                              <Pencil size={17} />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Excluir"
+                              onClick={() =>
+                                setDeleteTarget({
+                                  id: order.id,
+                                  label: `#${order.id}`,
+                                })
+                              }
+                              className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            >
+                              <Trash2 size={17} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -446,12 +489,38 @@ export function OrderListPage() {
       <QuoteComposerOverlay
         open={showComposer}
         onClose={() => setShowComposer(false)}
-        title="Novo Orçamento"
+        title={composerTitle}
         catalogItems={composerCatalogItems}
         isCatalogLoading={isCatalogLoading}
         customers={composerCustomersWithFallback}
+        initialCustomerId={composerCustomerId}
         onFinalize={handleFinalizeBudget}
       />
+
+      {invoiceOrderId !== null && !isQuotesView && (
+        <div className="fixed inset-0 z-[70] flex h-screen w-screen flex-col bg-slate-200">
+          <div className="flex items-center justify-between border-b border-border bg-white px-4 py-3">
+            <h3 className="text-lg font-semibold">
+              Invoice PDF{invoiceOrderId > 0 ? ` #${invoiceOrderId}` : ""}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setInvoiceOrderId(null)}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50"
+            >
+              <X size={16} />
+              Fechar
+            </button>
+          </div>
+          <div className="flex-1 p-3">
+            <iframe
+              title="Invoice PDF Viewer"
+              src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent("https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf")}`}
+              className="h-full w-full rounded-lg border border-slate-300 bg-white"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

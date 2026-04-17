@@ -76,13 +76,6 @@ const REVENUE_KPI_DEFS: KpiDef[] = [
 
 const SECONDARY_KPI_DEFS: KpiDef[] = [
   {
-    label: "Clientes Ativos",
-    key: "closedLeadsMonth",
-    type: "count",
-    icon: UserCheck,
-    storageKey: "leads_closed",
-  },
-  {
     label: "Novos Pedidos",
     key: "newOrdersMonth",
     type: "count",
@@ -109,6 +102,13 @@ const SECONDARY_KPI_DEFS: KpiDef[] = [
     type: "count",
     icon: MessageCircle,
     storageKey: "leads_active",
+  },
+  {
+    label: "Novos Clientes",
+    key: "closedLeadsMonth",
+    type: "count",
+    icon: UserCheck,
+    storageKey: "leads_closed",
   },
 ];
 

@@ -788,15 +788,22 @@ export function ConversationsPage() {
       pix: "Pix",
       cartao: "Cartão",
       boleto: "Boleto",
+      dinheiro: "Dinheiro",
     };
-    const deliveryText =
-      payload.deliveryMode === "confirmar"
-        ? "Entrega: confirmar endereço cadastrado"
-        : `Entrega: novo endereço - ${payload.deliveryAddress ?? "não informado"}`;
+    const paymentText =
+      payload.paymentMethods.length > 0
+        ? payload.paymentMethods
+            .map(
+              (entry) =>
+                `${paymentLabel[entry.method] ?? entry.method} ${formatCurrency(entry.amountCents)}`,
+            )
+            .join(" + ")
+        : paymentLabel[payload.paymentMethod];
+    const deliveryText = `Entrega: ${payload.deliveryAddress ?? "não informado"}`;
     const msg: ChatMessage = {
       id: nextLocalId(),
       contactId: activeContactId!,
-      content: `Orçamento finalizado para ${payload.customerName} (#${payload.customerId}):\n${summary}\nTotal: ${formatCurrency(payload.totalCents)}\nPagamento: ${paymentLabel[payload.paymentMethod]}\n${deliveryText}`,
+      content: `Orçamento finalizado para ${payload.customerName} (#${payload.customerId}):\n${summary}\nTotal: ${formatCurrency(payload.totalCents)}\nPagamento: ${paymentText}\n${deliveryText}`,
       createdAt: new Date().toISOString(),
       direction: "outbound",
       status: "sent",

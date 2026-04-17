@@ -53,7 +53,7 @@ export function RecentOrdersList({
           Ultimos Pedidos
         </h2>
         <Link
-          to="/orders"
+          to="/quotes"
           className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15 transition-colors"
         >
           Ver mais
@@ -87,7 +87,6 @@ export function RecentOrdersList({
             <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-foreground/65">
               <th className="px-4 py-2 font-semibold">Pedido</th>
               <th className="px-4 py-2 font-semibold">Cliente</th>
-              <th className="px-4 py-2 font-semibold">Detalhes</th>
               <th className="px-4 py-2 font-semibold text-right">Valor</th>
               <th className="px-4 py-2 font-semibold">Status</th>
             </tr>
@@ -95,12 +94,12 @@ export function RecentOrdersList({
           <tbody className="divide-y divide-border">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <SkeletonRow key={i} cols={5} />
+                <SkeletonRow key={i} cols={4} />
               ))
             ) : filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={4}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   Nenhum pedido encontrado.
@@ -110,7 +109,7 @@ export function RecentOrdersList({
               visibleOrders.map((order) => (
                 <tr
                   key={order.id}
-                  onClick={() => void navigate(`/orders/${order.id}`)}
+                  onClick={() => void navigate("/quotes")}
                   className="cursor-pointer hover:bg-accent/50 transition-colors"
                 >
                   <td className="px-4 py-3 align-top">
@@ -126,13 +125,11 @@ export function RecentOrdersList({
                       {order.customerName}
                     </p>
                   </td>
-                  <td className="px-4 py-3 align-top">
-                    <p className="text-xs text-foreground/65 tabular-nums">
-                      Itens: {order.itemsCount ?? "-"}
-                    </p>
-                  </td>
                   <td className="px-4 py-3 text-right tabular-nums align-top whitespace-nowrap font-semibold text-foreground">
-                    {formatCurrency(order.totalCents)}
+                    <p>{formatCurrency(order.totalCents)}</p>
+                    <p className="mt-0.5 text-xs font-medium text-foreground/65">
+                      {order.itemsCount ?? "-"} Itens
+                    </p>
                   </td>
                   <td className="px-4 py-3 align-top">
                     <StatusBadge status={order.status} />

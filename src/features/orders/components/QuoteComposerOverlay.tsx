@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Banknote,
   ChevronDown,
+  CreditCard,
+  MapPin,
   Maximize2,
   Minimize2,
   Package,
   Plus,
+  QrCode,
+  ReceiptText,
   Search,
   X,
   Minus,
+  Sparkles,
+  Copy,
 } from "lucide-react";
 import { formatCurrencyCode } from "@/lib/utils/formatCurrency";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
@@ -23,8 +30,24 @@ interface CartLine {
   unitPriceCents: number;
 }
 
-type PaymentMethod = "pix" | "cartao" | "boleto";
-type DeliveryMode = "confirmar" | "novo";
+type PaymentMethod = "pix" | "cartao" | "boleto" | "dinheiro";
+
+interface PaymentSplit {
+  method: PaymentMethod;
+  amountCents: number;
+}
+
+interface DeliveryAddress {
+  id: number;
+  label: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
 
 export interface QuoteFinalizePayload {
   customerId: number;
@@ -34,7 +57,11 @@ export interface QuoteFinalizePayload {
   subtotalCents: number;
   totalCents: number;
   paymentMethod: PaymentMethod;
-  deliveryMode: DeliveryMode;
+  paymentMethods: PaymentSplit[];
+  cardBrand: string | null;
+  installments: number | null;
+  pixKey: string | null;
+  deliveryAddressId: number | null;
   deliveryAddress: string | null;
 }
 
@@ -71,6 +98,10 @@ export function QuoteComposerOverlay({
   );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const deliveryReadyButtonRef = useRef<HTMLButtonElement>(null);
+  const deliveryHomeButtonRef = useRef<HTMLButtonElement>(null);
+  const addAddressButtonRef = useRef<HTMLButtonElement>(null);
+  const wizardConfirmButtonRef = useRef<HTMLButtonElement>(null);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(
     initialCustomerId ?? null,
@@ -82,9 +113,42 @@ export function QuoteComposerOverlay({
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2>(1);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
-  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>("confirmar");
-  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
+    "pix",
+  ]);
+  const [paymentAmounts, setPaymentAmounts] = useState<
+    Record<PaymentMethod, number>
+  >({
+    pix: 0,
+    cartao: 0,
+    boleto: 0,
+    dinheiro: 0,
+  });
+  const [cardBrand, setCardBrand] = useState("visa");
+  const [installments, setInstallments] = useState(1);
+  const [pixKey] = useState(
+    "00020126580014BR.GOV.BCB.PIX0136chave-pix-salao@empresa.com",
+  );
+  const [addressesByCustomer, setAddressesByCustomer] = useState<
+    Record<number, DeliveryAddress[]>
+  >({});
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
+    null,
+  );
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
+  const [deliveryType, setDeliveryType] = useState<"ready" | "home">("ready");
+  const [addressDraft, setAddressDraft] = useState<DeliveryAddress>({
+    id: 0,
+    label: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    zipCode: "",
+  });
   const [isFullscreen, setIsFullscreen] = useState(
     Boolean(document.fullscreenElement),
   );
@@ -110,9 +174,25 @@ export function QuoteComposerOverlay({
     setShowFullscreenPrompt(true);
     setFullscreenPromptChoice("sim");
     setWizardStep(1);
-    setPaymentMethod("pix");
-    setDeliveryMode("confirmar");
-    setDeliveryAddress("");
+    setPaymentMethods(["pix"]);
+    setPaymentAmounts({ pix: totalCents, cartao: 0, boleto: 0, dinheiro: 0 });
+    setCardBrand("visa");
+    setInstallments(1);
+    setSelectedAddressId(null);
+    setShowAddressModal(false);
+    setEditingAddressId(null);
+    setDeliveryType("ready");
+    setAddressDraft({
+      id: 0,
+      label: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+      zipCode: "",
+    });
   }, [customers, initialCustomerId, open]);
 
   useEffect(() => {
@@ -204,6 +284,171 @@ export function QuoteComposerOverlay({
     0,
   );
   const discountCents = Math.max(0, subtotalCents - totalCents);
+  const activeAddresses =
+    selectedCustomerId != null
+      ? (addressesByCustomer[selectedCustomerId] ?? [])
+      : [];
+  const selectedAddress =
+    activeAddresses.find((address) => address.id === selectedAddressId) ?? null;
+  const paymentAllocatedCents = paymentMethods.reduce(
+    (sum, method) => sum + (paymentAmounts[method] ?? 0),
+    0,
+  );
+  const paymentRemainingCents = totalCents - paymentAllocatedCents;
+
+  function buildDefaultAddresses(customer: CustomerOption): DeliveryAddress[] {
+    return [
+      {
+        id: 1,
+        label: "Casa",
+        street: `Rua ${customer.name.split(" ")[0] || "Principal"}`,
+        number: "120",
+        complement: "",
+        neighborhood: "Centro",
+        city: "São Paulo",
+        state: "SP",
+        zipCode: "01000-000",
+      },
+      {
+        id: 2,
+        label: "Trabalho",
+        street: "Avenida Paulista",
+        number: "900",
+        complement: "Sala 42",
+        neighborhood: "Bela Vista",
+        city: "São Paulo",
+        state: "SP",
+        zipCode: "01310-100",
+      },
+    ];
+  }
+
+  function formatAddress(address: DeliveryAddress) {
+    const complement = address.complement.trim();
+    return `${address.street}, ${address.number}${complement ? ` - ${complement}` : ""}, ${address.neighborhood}, ${address.city} - ${address.state}, CEP ${address.zipCode}`;
+  }
+
+  function openAddressModal(address?: DeliveryAddress) {
+    if (address) {
+      setEditingAddressId(address.id);
+      setAddressDraft(address);
+    } else {
+      setEditingAddressId(null);
+      setAddressDraft({
+        id: 0,
+        label: "",
+        street: "",
+        number: "",
+        complement: "",
+        neighborhood: "",
+        city: "",
+        state: "",
+        zipCode: "",
+      });
+    }
+    setShowAddressModal(true);
+  }
+
+  function updatePaymentAmount(method: PaymentMethod, value: string) {
+    const parsed = Number.parseFloat(value || "0");
+    const next = Number.isNaN(parsed)
+      ? 0
+      : Math.max(0, Math.round(parsed * 100));
+    setPaymentAmounts((prev) => ({ ...prev, [method]: next }));
+  }
+
+  function togglePaymentMethod(method: PaymentMethod) {
+    setPaymentMethods((prev) => {
+      if (prev.includes(method)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((item) => item !== method);
+      }
+      return [...prev, method];
+    });
+  }
+
+  async function copyPixKey() {
+    try {
+      await navigator.clipboard.writeText(pixKey);
+    } catch {
+      // noop
+    }
+  }
+
+  function handleDeliveryOptionSelect(option: "ready" | "home") {
+    setDeliveryType(option);
+    requestAnimationFrame(() => {
+      if (option === "ready") {
+        wizardConfirmButtonRef.current?.focus();
+      } else {
+        addAddressButtonRef.current?.focus();
+      }
+    });
+  }
+
+  function handleDeliveryOptionKeyDown(
+    option: "ready" | "home",
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) {
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      setDeliveryType("home");
+      deliveryHomeButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setDeliveryType("ready");
+      deliveryReadyButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleDeliveryOptionSelect(option);
+    }
+  }
+
+  function saveAddressDraft() {
+    if (selectedCustomerId == null) return;
+    if (
+      !addressDraft.label.trim() ||
+      !addressDraft.street.trim() ||
+      !addressDraft.number.trim() ||
+      !addressDraft.neighborhood.trim() ||
+      !addressDraft.city.trim() ||
+      !addressDraft.state.trim() ||
+      !addressDraft.zipCode.trim()
+    ) {
+      return;
+    }
+
+    setAddressesByCustomer((prev) => {
+      const current = prev[selectedCustomerId] ?? [];
+      if (editingAddressId == null) {
+        const nextId =
+          current.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+        const created = { ...addressDraft, id: nextId };
+        setSelectedAddressId(created.id);
+        return { ...prev, [selectedCustomerId]: [...current, created] };
+      }
+
+      const updated = current.map((item) =>
+        item.id === editingAddressId
+          ? { ...addressDraft, id: editingAddressId }
+          : item,
+      );
+      return { ...prev, [selectedCustomerId]: updated };
+    });
+
+    setShowAddressModal(false);
+  }
+
+  const isPaymentValid =
+    paymentMethods.length > 0 &&
+    paymentMethods.every((method) => (paymentAmounts[method] ?? 0) > 0) &&
+    paymentAllocatedCents === totalCents;
 
   useEffect(() => {
     const computed = Math.max(
@@ -212,6 +457,53 @@ export function QuoteComposerOverlay({
     );
     setTotalCents(computed);
   }, [discountPercent, subtotalCents]);
+
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    setAddressesByCustomer((prev) => {
+      if (prev[selectedCustomer.id]?.length) return prev;
+      return {
+        ...prev,
+        [selectedCustomer.id]: buildDefaultAddresses(selectedCustomer),
+      };
+    });
+  }, [selectedCustomer]);
+
+  useEffect(() => {
+    if (activeAddresses.length === 0) {
+      setSelectedAddressId(null);
+      return;
+    }
+    if (selectedAddressId == null) {
+      setSelectedAddressId(activeAddresses[0].id);
+      return;
+    }
+    const exists = activeAddresses.some(
+      (address) => address.id === selectedAddressId,
+    );
+    if (!exists) setSelectedAddressId(activeAddresses[0].id);
+  }, [activeAddresses, selectedAddressId]);
+
+  useEffect(() => {
+    if (paymentMethods.length === 0) return;
+    setPaymentAmounts((prev) => {
+      const next = { ...prev };
+      const activeTotal = paymentMethods.reduce(
+        (sum, method) => sum + (next[method] ?? 0),
+        0,
+      );
+
+      if (paymentMethods.length === 1) {
+        next[paymentMethods[0]] = totalCents;
+        return next;
+      }
+
+      const diff = totalCents - activeTotal;
+      const first = paymentMethods[0];
+      next[first] = Math.max(0, (next[first] ?? 0) + diff);
+      return next;
+    });
+  }, [paymentMethods, totalCents]);
 
   useEffect(() => {
     if (pendingScrollItemId == null) return;
@@ -444,7 +736,12 @@ export function QuoteComposerOverlay({
   }
 
   function handleFinalize() {
-    if (!selectedCustomer) return;
+    if (!selectedCustomer || !isPaymentValid) return;
+    if (deliveryType === "home" && !selectedAddress) return;
+    const splits: PaymentSplit[] = paymentMethods.map((method) => ({
+      method,
+      amountCents: paymentAmounts[method] ?? 0,
+    }));
     onFinalize({
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
@@ -452,10 +749,19 @@ export function QuoteComposerOverlay({
       discountCents,
       subtotalCents,
       totalCents,
-      paymentMethod,
-      deliveryMode,
+      paymentMethod: splits[0]?.method ?? "pix",
+      paymentMethods: splits,
+      cardBrand: paymentMethods.includes("cartao") ? cardBrand : null,
+      installments: paymentMethods.includes("cartao") ? installments : null,
+      pixKey: paymentMethods.includes("pix") ? pixKey : null,
+      deliveryAddressId:
+        deliveryType === "home" ? (selectedAddress?.id ?? null) : null,
       deliveryAddress:
-        deliveryMode === "novo" ? deliveryAddress.trim() || null : null,
+        deliveryType === "home"
+          ? selectedAddress
+            ? formatAddress(selectedAddress)
+            : null
+          : "Pronta entrega",
     });
     setShowWizard(false);
   }
@@ -480,6 +786,17 @@ export function QuoteComposerOverlay({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showWizard]);
+
+  useEffect(() => {
+    if (!showWizard || wizardStep !== 2) return;
+    requestAnimationFrame(() => {
+      if (deliveryType === "ready") {
+        deliveryReadyButtonRef.current?.focus();
+      } else {
+        deliveryHomeButtonRef.current?.focus();
+      }
+    });
+  }, [deliveryType, showWizard, wizardStep]);
 
   useEffect(() => {
     setActiveCustomerIndex(0);
@@ -889,14 +1206,21 @@ export function QuoteComposerOverlay({
       )}
 
       {showWizard && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-lg rounded-xl border border-border bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <div>
-                <h3 className="text-lg font-semibold">Finalizar Orçamento</h3>
-                <p className="text-sm text-muted-foreground">
-                  Etapa {wizardStep} de 2
-                </p>
+        <div className="fixed inset-0 z-[60] bg-black/40">
+          <div className="mx-auto flex h-screen w-full min-w-[320px] max-w-[1400px] flex-col bg-white shadow-2xl">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-200 px-6 py-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Sparkles size={22} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-semibold">
+                    Finalizar Orçamento
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Revise pagamento e entrega
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -907,88 +1231,315 @@ export function QuoteComposerOverlay({
               </button>
             </div>
 
-            <div className="space-y-4 px-5 py-4">
-              {wizardStep === 1 ? (
-                <>
-                  <p className="text-base font-medium">Forma de pagamento</p>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("pix")}
-                      className={`rounded-md border px-3 py-2 text-sm font-medium ${
-                        paymentMethod === "pix"
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border hover:bg-accent"
-                      }`}
-                    >
-                      Pix
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("cartao")}
-                      className={`rounded-md border px-3 py-2 text-sm font-medium ${
-                        paymentMethod === "cartao"
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border hover:bg-accent"
-                      }`}
-                    >
-                      Cartão
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod("boleto")}
-                      className={`rounded-md border px-3 py-2 text-sm font-medium ${
-                        paymentMethod === "boleto"
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border hover:bg-accent"
-                      }`}
-                    >
-                      Boleto
-                    </button>
+            <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-6 py-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm uppercase tracking-wide text-muted-foreground">
+                    Total a receber
+                  </p>
+                  <p className="text-4xl font-bold text-primary">
+                    {formatCurrencyCode(totalCents, currencyCode)}
+                  </p>
+                </div>
+                <div className="w-full max-w-sm">
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase text-muted-foreground">
+                    <span className={wizardStep === 1 ? "text-primary" : ""}>
+                      1. Pagamento
+                    </span>
+                    <span className={wizardStep === 2 ? "text-primary" : ""}>
+                      2. Entrega
+                    </span>
                   </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-base font-medium">Entrega</p>
-                  <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryMode("confirmar")}
-                      className={`w-full rounded-md border px-3 py-2 text-left text-sm font-medium ${
-                        deliveryMode === "confirmar"
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border hover:bg-accent"
-                      }`}
-                    >
-                      Confirmar endereço já cadastrado
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryMode("novo")}
-                      className={`w-full rounded-md border px-3 py-2 text-left text-sm font-medium ${
-                        deliveryMode === "novo"
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border hover:bg-accent"
-                      }`}
-                    >
-                      Inserir novo endereço
-                    </button>
-                  </div>
-
-                  {deliveryMode === "novo" && (
-                    <textarea
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      rows={3}
-                      placeholder="Rua, número, bairro, cidade, estado, CEP"
-                      className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  <div className="h-2 rounded-full bg-slate-200">
+                    <div
+                      className="h-2 rounded-full bg-primary transition-all"
+                      style={{ width: wizardStep === 1 ? "50%" : "100%" }}
                     />
-                  )}
-                </>
-              )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-between border-t border-border px-5 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <div className="space-y-4">
+                {wizardStep === 1 ? (
+                  <>
+                    <p className="text-lg font-semibold">
+                      Formas de pagamento (combine se necessário)
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                      {(
+                        [
+                          { key: "pix", label: "PIX", icon: QrCode },
+                          { key: "cartao", label: "Cartão", icon: CreditCard },
+                          { key: "boleto", label: "Boleto", icon: ReceiptText },
+                          {
+                            key: "dinheiro",
+                            label: "Dinheiro",
+                            icon: Banknote,
+                          },
+                        ] as Array<{
+                          key: PaymentMethod;
+                          label: string;
+                          icon: typeof QrCode;
+                        }>
+                      ).map((option) => {
+                        const Icon = option.icon;
+                        const selected = paymentMethods.includes(option.key);
+                        return (
+                          <button
+                            key={option.key}
+                            type="button"
+                            onClick={() => togglePaymentMethod(option.key)}
+                            className={`flex h-24 flex-col items-center justify-center rounded-lg border px-2 text-center transition-colors ${
+                              selected
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-slate-300 bg-white hover:bg-slate-50"
+                            }`}
+                          >
+                            <Icon size={34} />
+                            <span className="mt-2 text-base font-semibold">
+                              {option.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="mb-3 text-sm font-semibold text-slate-700">
+                        Divisão dos valores
+                      </p>
+                      <div className="space-y-2">
+                        {paymentMethods.map((method) => (
+                          <div
+                            key={method}
+                            className="flex items-center justify-between gap-3"
+                          >
+                            <span className="text-sm font-medium capitalize">
+                              {method}
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={(
+                                (paymentAmounts[method] ?? 0) / 100
+                              ).toFixed(2)}
+                              onChange={(e) =>
+                                updatePaymentAmount(method, e.target.value)
+                              }
+                              className="w-36 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-right text-sm font-semibold outline-none focus:ring-2 focus:ring-ring"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <p
+                        className={`mt-3 text-sm font-semibold ${paymentRemainingCents === 0 ? "text-emerald-600" : "text-amber-600"}`}
+                      >
+                        Restante:{" "}
+                        {formatCurrencyCode(
+                          paymentRemainingCents,
+                          currencyCode,
+                        )}
+                      </p>
+                    </div>
+
+                    {paymentMethods.includes("pix") && (
+                      <div className="rounded-lg border border-slate-200 p-4">
+                        <p className="text-sm font-semibold">Chave PIX</p>
+                        <p className="mt-1 break-all rounded-md bg-slate-50 px-2 py-2 text-sm">
+                          {pixKey}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void copyPixKey()}
+                          className="mt-2 inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                        >
+                          <Copy size={14} />
+                          Copiar chave
+                        </button>
+                      </div>
+                    )}
+
+                    {paymentMethods.includes("cartao") && (
+                      <div className="grid gap-3 rounded-lg border border-slate-200 p-4 md:grid-cols-2">
+                        <div>
+                          <label className="text-sm font-semibold">
+                            Bandeira
+                          </label>
+                          <select
+                            value={cardBrand}
+                            onChange={(e) => setCardBrand(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            <option value="visa">Visa</option>
+                            <option value="mastercard">Mastercard</option>
+                            <option value="elo">Elo</option>
+                            <option value="amex">Amex</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold">
+                            Parcelamento
+                          </label>
+                          <select
+                            value={installments}
+                            onChange={(e) =>
+                              setInstallments(Number(e.target.value))
+                            }
+                            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            {Array.from(
+                              { length: 12 },
+                              (_, index) => index + 1,
+                            ).map((value) => (
+                              <option key={value} value={value}>
+                                {value}x
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    {paymentMethods.includes("boleto") && (
+                      <div className="flex flex-wrap gap-2 rounded-lg border border-slate-200 p-4">
+                        <button
+                          type="button"
+                          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                        >
+                          Imprimir boleto
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                        >
+                          Enviar por e-mail
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-semibold">Entrega</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <button
+                        ref={deliveryReadyButtonRef}
+                        type="button"
+                        onClick={() => handleDeliveryOptionSelect("ready")}
+                        onKeyDown={(event) =>
+                          handleDeliveryOptionKeyDown("ready", event)
+                        }
+                        className={`rounded-lg border px-4 py-3 text-left transition-colors ${
+                          deliveryType === "ready"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-slate-300 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Package size={24} />
+                          <span>
+                            <span className="block text-base font-semibold">
+                              Pronta entrega
+                            </span>
+                            <span className="block text-sm opacity-80">
+                              (Não se aplica)
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                      <button
+                        ref={deliveryHomeButtonRef}
+                        type="button"
+                        onClick={() => handleDeliveryOptionSelect("home")}
+                        onKeyDown={(event) =>
+                          handleDeliveryOptionKeyDown("home", event)
+                        }
+                        className={`rounded-lg border px-4 py-3 text-left transition-colors ${
+                          deliveryType === "home"
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-slate-300 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <MapPin size={24} />
+                          <span>
+                            <span className="block text-base font-semibold">
+                              Entrega a Domicílio
+                            </span>
+                            <span className="block text-sm opacity-80">
+                              Selecionar endereço
+                            </span>
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+
+                    {deliveryType === "home" && (
+                      <>
+                        <div className="flex justify-end">
+                          <button
+                            ref={addAddressButtonRef}
+                            type="button"
+                            onClick={() => openAddressModal()}
+                            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                          >
+                            + Adicionar endereço
+                          </button>
+                        </div>
+
+                        <div className="space-y-2">
+                          {activeAddresses.map((address) => (
+                            <div
+                              key={address.id}
+                              className={`flex items-start justify-between gap-3 rounded-lg border p-3 ${
+                                selectedAddressId === address.id
+                                  ? "border-primary bg-primary/5"
+                                  : "border-slate-300 bg-white"
+                              }`}
+                            >
+                              <label className="flex flex-1 cursor-pointer items-start gap-2">
+                                <input
+                                  type="radio"
+                                  name="delivery-address"
+                                  checked={selectedAddressId === address.id}
+                                  onChange={() =>
+                                    setSelectedAddressId(address.id)
+                                  }
+                                  className="mt-1"
+                                />
+                                <div>
+                                  <p className="text-sm font-semibold">
+                                    {address.label}
+                                  </p>
+                                  <p className="text-sm text-slate-700">
+                                    {formatAddress(address)}
+                                  </p>
+                                </div>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => openAddressModal(address)}
+                                className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-3 py-2 text-xs font-medium hover:bg-slate-50"
+                              >
+                                <MapPin size={14} />
+                                Editar
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="shrink-0 flex justify-between border-t border-slate-200 bg-white px-6 py-4">
               {wizardStep === 2 ? (
                 <button
                   type="button"
@@ -1005,20 +1556,89 @@ export function QuoteComposerOverlay({
                 <button
                   type="button"
                   onClick={() => setWizardStep(2)}
-                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                  disabled={!isPaymentValid}
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   Continuar
                 </button>
               ) : (
                 <button
+                  ref={wizardConfirmButtonRef}
                   type="button"
                   onClick={handleFinalize}
-                  disabled={deliveryMode === "novo" && !deliveryAddress.trim()}
+                  disabled={deliveryType === "home" && !selectedAddress}
                   className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   Confirmar e enviar
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddressModal && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-2xl rounded-xl border border-slate-300 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <h4 className="text-lg font-semibold">
+                {editingAddressId ? "Editar endereço" : "Adicionar endereço"}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowAddressModal(false)}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid gap-3 px-5 py-4 md:grid-cols-2">
+              {(
+                [
+                  ["label", "Apelido"],
+                  ["street", "Rua"],
+                  ["number", "Número"],
+                  ["complement", "Complemento"],
+                  ["neighborhood", "Bairro"],
+                  ["city", "Cidade"],
+                  ["state", "Estado"],
+                  ["zipCode", "CEP"],
+                ] as Array<[keyof DeliveryAddress, string]>
+              ).map(([field, label]) => (
+                <div key={field}>
+                  <label className="text-sm font-medium text-slate-700">
+                    {label}
+                  </label>
+                  <input
+                    value={addressDraft[field]}
+                    onChange={(e) =>
+                      setAddressDraft((prev) => ({
+                        ...prev,
+                        [field]: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setShowAddressModal(false)}
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={saveAddressDraft}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+              >
+                Salvar endereço
+              </button>
             </div>
           </div>
         </div>
