@@ -532,7 +532,7 @@ export function ConversionRateChart() {
   }
 
   return (
-    <div className="h-full rounded-xl border border-border/80 bg-card shadow-sm">
+    <div className="self-start rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-2">
         <div ref={modeMenuRef} className="relative inline-flex items-center">
           <button

@@ -39,14 +39,14 @@ function FunnelStepBar({ step, maxValue, index, total }: FunnelStepBarProps) {
     total > 1 ? 100 - ((100 - minWidthPct) * index) / (total - 1) : 100;
 
   // Height of each bar proportional to value, with a minimum
-  const barHeight = Math.max((step.value / maxValue) * 56, 36);
+  const barHeight = Math.max((step.value / maxValue) * 56, 46);
 
   return (
     <div className="flex items-center gap-2">
       {/* Funnel bar */}
       <div className="flex-1 flex justify-center">
         <div
-          className="relative flex items-center justify-center rounded-md transition-all duration-300"
+          className="relative flex items-center justify-center rounded-md px-4 py-2 transition-all duration-300"
           style={{
             width: `${widthPct}%`,
             height: `${barHeight}px`,
@@ -54,7 +54,7 @@ function FunnelStepBar({ step, maxValue, index, total }: FunnelStepBarProps) {
           }}
         >
           <div className="flex flex-col items-center text-white">
-            <span className="text-xs font-medium leading-none">
+            <span className="text-xs font-medium leading-tight">
               {step.label}
             </span>
             <span className="text-sm font-bold leading-tight">
@@ -89,7 +89,7 @@ function FunnelStepBar({ step, maxValue, index, total }: FunnelStepBarProps) {
 function FunnelSkeleton() {
   return (
     <div className="space-y-3">
-      {Array.from({ length: 7 }).map((_, i) => (
+      {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4">
           <div className="flex-1 flex justify-center">
             <div

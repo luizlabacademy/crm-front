@@ -37,6 +37,7 @@ interface KpiDef {
   type: "currency" | "count";
   icon: LucideIcon;
   storageKey: string;
+  trendPercent?: number;
 }
 
 const REVENUE_KPI_DEFS: KpiDef[] = [
@@ -46,6 +47,7 @@ const REVENUE_KPI_DEFS: KpiDef[] = [
     type: "currency",
     icon: HandCoins,
     storageKey: "rev_today",
+    trendPercent: 7.2,
   },
   {
     label: "Vendas do Mês",
@@ -53,6 +55,7 @@ const REVENUE_KPI_DEFS: KpiDef[] = [
     type: "currency",
     icon: BadgeDollarSign,
     storageKey: "rev_month",
+    trendPercent: 6.4,
   },
   {
     label: "Vendas do Ano",
@@ -60,6 +63,7 @@ const REVENUE_KPI_DEFS: KpiDef[] = [
     type: "currency",
     icon: BanknoteArrowUp,
     storageKey: "rev_year",
+    trendPercent: -4.2,
   },
   {
     label: "Contas Atrasadas",
@@ -197,6 +201,7 @@ export function DashboardPage() {
             isError={isError && !isLoading}
             onRetry={handleRefresh}
             storageKey={def.storageKey}
+            trendPercent={def.trendPercent}
           />
         ))}
       </div>

@@ -6,7 +6,7 @@ interface MetricSummaryCardProps {
 
 export function MetricSummaryCard({ metric }: MetricSummaryCardProps) {
   return (
-    <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm flex flex-col items-center justify-center gap-1 text-center">
+    <div className="rounded-xl bg-muted/60 px-4 py-[0.72rem] flex flex-col items-center justify-center gap-1 text-center">
       <span className="text-xs font-medium text-muted-foreground">
         {metric.label}
       </span>

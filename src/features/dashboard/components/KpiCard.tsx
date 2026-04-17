@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, HIDDEN_VALUE } from "@/lib/utils/formatCurrency";
 import type { LucideIcon } from "lucide-react";
@@ -14,6 +14,7 @@ interface KpiCardProps {
   isError?: boolean;
   onRetry?: () => void;
   storageKey: string;
+  trendPercent?: number;
 }
 
 function getInitialVisibility(storageKey: string): boolean {
@@ -46,6 +47,7 @@ export function KpiCard({
   isError = false,
   onRetry,
   storageKey,
+  trendPercent,
 }: KpiCardProps) {
   const [visible, setVisible] = useState(() =>
     getInitialVisibility(storageKey),
@@ -65,6 +67,10 @@ export function KpiCard({
       : new Intl.NumberFormat("pt-BR").format(value);
 
   const visibleValueLength = (visible ? displayValue : HIDDEN_VALUE).length;
+  const hasTrend = typeof trendPercent === "number";
+  const isTrendUp = (trendPercent ?? 0) >= 0;
+  const trendText = `${isTrendUp ? "" : "-"}${Math.abs(trendPercent ?? 0).toFixed(1)}%`;
+  const trendToneClass = isTrendUp ? "text-emerald-600" : "text-red-500";
   const largeValueSizeClass =
     visibleValueLength >= 14
       ? "text-base sm:text-lg xl:text-xl"
@@ -74,25 +80,25 @@ export function KpiCard({
 
   if (variant === "compact") {
     return (
-      <div className="relative rounded-xl border border-border/80 bg-card p-5 shadow-sm flex flex-col gap-3">
+      <div className="relative rounded-lg border border-border/80 bg-card p-4 shadow-sm flex flex-col gap-2.5">
         {!isError && !isLoading && (
           <button
             type="button"
             onClick={toggleVisibility}
             aria-label={visible ? "Ocultar valor" : "Mostrar valor"}
-            className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute right-3.5 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
           >
             {visible ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         )}
 
-        <div className="flex min-w-0 items-center gap-2 pr-7">
+        <div className="flex min-w-0 items-center gap-2 pr-6">
           {Icon && (
-            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
-              <Icon size={14} strokeWidth={1.8} />
+            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+              <Icon size={12} strokeWidth={1.7} />
             </span>
           )}
-          <span className="truncate text-sm font-medium text-muted-foreground">
+          <span className="truncate text-sm font-normal text-muted-foreground">
             {label}
           </span>
         </div>
@@ -114,21 +120,34 @@ export function KpiCard({
             )}
           </div>
         ) : (
-          <p
-            className={cn(
-              "text-4xl font-semibold leading-none tracking-tight tabular-nums",
-              !visible && "select-none",
+          <>
+            <p
+              className={cn(
+                "text-4xl font-medium leading-none tracking-tight tabular-nums",
+                !visible && "select-none",
+              )}
+            >
+              {visible ? displayValue : HIDDEN_VALUE}
+            </p>
+            {hasTrend && (
+              <p
+                className={cn(
+                  "flex items-center gap-1 text-xs font-medium",
+                  trendToneClass,
+                )}
+              >
+                {isTrendUp ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                {trendText}
+              </p>
             )}
-          >
-            {visible ? displayValue : HIDDEN_VALUE}
-          </p>
+          </>
         )}
       </div>
     );
   }
 
   return (
-    <div className="relative rounded-xl border border-border/80 bg-card p-5 shadow-sm">
+    <div className="relative rounded-lg border border-border/80 bg-card p-4 shadow-sm">
       {!isError && !isLoading && (
         <button
           type="button"
@@ -163,29 +182,42 @@ export function KpiCard({
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {Icon && (
-            <span className="inline-flex h-12 w-12 xl:h-16 xl:w-16 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
+            <span className="inline-flex h-11 w-11 xl:h-14 xl:w-14 shrink-0 items-center justify-center rounded-xl bg-muted/70 text-muted-foreground">
               <Icon
-                size={24}
+                size={22}
                 strokeWidth={1.8}
-                className="xl:h-[30px] xl:w-[30px]"
+                className="xl:h-[28px] xl:w-[28px]"
               />
             </span>
           )}
           <div className="min-w-0 flex-1">
             <p
               className={cn(
-                "whitespace-nowrap font-semibold leading-none tracking-tight",
+                "whitespace-nowrap font-medium leading-none tracking-tight",
                 largeValueSizeClass,
                 !visible && "select-none",
               )}
             >
               {visible ? displayValue : HIDDEN_VALUE}
             </p>
-            <p className="mt-2 truncate text-sm font-medium text-muted-foreground">
-              {label}
-            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <p className="truncate text-sm font-normal text-muted-foreground">
+                {label}
+              </p>
+              {hasTrend && (
+                <p
+                  className={cn(
+                    "shrink-0 flex items-center gap-1 text-xs font-semibold",
+                    trendToneClass,
+                  )}
+                >
+                  {isTrendUp ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                  {trendText}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,15 +1,15 @@
 {
   "steps": [
     {
-      "id": "enviado",
-      "label": "Enviado",
+      "id": "mensagens_disparadas",
+      "label": "Mensagens Disparadas",
       "value": 520000,
       "percentage": 100,
       "color": "#4FC3F7"
     },
     {
-      "id": "lido",
-      "label": "Lido",
+      "id": "lidas",
+      "label": "Lidas",
       "value": 395200,
       "percentage": 76,
       "color": "#66BB6A"
@@ -22,32 +22,25 @@
       "color": "#42A5F5"
     },
     {
-      "id": "pedido",
-      "label": "Pedido",
+      "id": "agendou",
+      "label": "Agendou",
       "value": 150800,
       "percentage": 29,
       "color": "#AB47BC"
     },
     {
-      "id": "pago",
-      "label": "Pago",
+      "id": "compareceu",
+      "label": "Compareceu",
       "value": 93600,
       "percentage": 18,
       "color": "#FFA726"
     },
     {
-      "id": "entregue",
-      "label": "Entregue",
+      "id": "recomprou",
+      "label": "Recomprou",
       "value": 80600,
       "percentage": 16,
       "color": "#EF5350"
-    },
-    {
-      "id": "retencao",
-      "label": "Retenção",
-      "value": 57200,
-      "percentage": 11,
-      "color": "#78909C"
     }
   ],
   "summary": [
