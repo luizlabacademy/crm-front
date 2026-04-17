@@ -123,6 +123,23 @@
     "section": "Configuracoes",
     "items": [
       {
+        "label": "Configurações",
+        "to": "/settings/configuracoes",
+        "icon": "settings",
+        "children": [
+          {
+            "label": "Formas de Pagamento",
+            "to": "/settings/configuracoes/payment-methods",
+            "icon": "credit-card"
+          },
+          {
+            "label": "Entrega",
+            "to": "/settings/configuracoes/delivery",
+            "icon": "truck"
+          }
+        ]
+      },
+      {
         "label": "Fluxos de Pipeline",
         "to": "/pipeline-flows",
         "icon": "git-branch"

@@ -1,0 +1,21 @@
+{
+  "payment": {
+    "pix": true,
+    "card": true,
+    "cash": true,
+    "boleto": false,
+    "boletoSendByEmail": true,
+    "maxDiscountPercentPix": 10,
+    "maxDiscountPercentCard": 5,
+    "maxDiscountPercentCash": 12,
+    "maxDiscountPercentBoleto": 8,
+    "minInstallmentAmountCents": 5000,
+    "maxInstallments": 6,
+    "maxCombinedMethods": "all"
+  },
+  "delivery": {
+    "readyDelivery": true,
+    "homeDelivery": true,
+    "homeDeliveryFeeCents": 1200
+  }
+}

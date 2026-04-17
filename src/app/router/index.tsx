@@ -243,6 +243,16 @@ const SettingsPage = lazy(() =>
     default: m.SettingsPage,
   })),
 );
+const PaymentMethodsSettingsPage = lazy(() =>
+  import("@/features/account/pages/PaymentMethodsSettingsPage").then((m) => ({
+    default: m.PaymentMethodsSettingsPage,
+  })),
+);
+const DeliverySettingsPage = lazy(() =>
+  import("@/features/account/pages/DeliverySettingsPage").then((m) => ({
+    default: m.DeliverySettingsPage,
+  })),
+);
 
 // Admin - Roles
 const RoleListPage = lazy(() =>
@@ -426,6 +436,23 @@ export function AppRouter() {
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/me/profile" element={<MyProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route
+              path="/settings/configuracoes"
+              element={
+                <Navigate
+                  to="/settings/configuracoes/payment-methods"
+                  replace
+                />
+              }
+            />
+            <Route
+              path="/settings/configuracoes/payment-methods"
+              element={<PaymentMethodsSettingsPage />}
+            />
+            <Route
+              path="/settings/configuracoes/delivery"
+              element={<DeliverySettingsPage />}
+            />
           </Route>
 
           <Route element={<AuthenticatedFullscreenLayout />}>

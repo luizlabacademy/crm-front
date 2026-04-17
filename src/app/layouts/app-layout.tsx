@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ClipboardList,
   Command,
+  CreditCard,
   Expand,
   GitBranch,
   Globe,
@@ -30,6 +31,7 @@ import {
   Settings,
   Tag,
   Ticket,
+  Truck,
   User,
   UserCog,
   UserPlus,
@@ -105,6 +107,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "git-branch": GitBranch,
   "shield-check": ShieldCheck,
   lock: Lock,
+  settings: Settings,
+  "credit-card": CreditCard,
+  truck: Truck,
 };
 
 function iconNode(iconName: string, size = 16) {
@@ -153,28 +158,94 @@ function SidebarLink({ item, onClick }: SidebarLinkProps) {
   );
 }
 
+function itemMatchesPath(item: NavItem, pathname: string): boolean {
+  if (item.to === pathname) return true;
+  if (pathname.startsWith(`${item.to}/`)) return true;
+  if (!item.children?.length) return false;
+  return item.children.some((child) => itemMatchesPath(child, pathname));
+}
+
+function SidebarTreeItem({
+  item,
+  onClose,
+  depth,
+  pathname,
+}: {
+  item: NavItem;
+  onClose: () => void;
+  depth: number;
+  pathname: string;
+}) {
+  const hasChildren = Boolean(item.children?.length);
+  const isActiveBranch = itemMatchesPath(item, pathname);
+  const [expanded, setExpanded] = useState(isActiveBranch);
+
+  if (!hasChildren) {
+    return (
+      <li key={`${item.to}-${item.label}`}>
+        <SidebarLink item={item} onClick={onClose} />
+      </li>
+    );
+  }
+
+  return (
+    <li key={`${item.to}-${item.label}`}>
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-[14px] font-medium transition-all",
+          isActiveBranch
+            ? "bg-sidebar-accent text-sidebar-foreground shadow-sm ring-1 ring-sidebar-border"
+            : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground",
+        )}
+      >
+        <span className="flex items-center gap-2.5 leading-none">
+          {item.icon}
+          <span>{item.label}</span>
+        </span>
+        <ChevronRight
+          size={14}
+          className={cn(
+            "text-sidebar-foreground/70 transition-transform",
+            expanded && "rotate-90",
+          )}
+        />
+      </button>
+
+      {expanded ? (
+        <SidebarItems
+          items={item.children ?? []}
+          onClose={onClose}
+          depth={depth + 1}
+          pathname={pathname}
+        />
+      ) : null}
+    </li>
+  );
+}
+
 function SidebarItems({
   items,
   onClose,
+  pathname,
   depth = 0,
 }: {
   items: NavItem[];
   onClose: () => void;
+  pathname: string;
   depth?: number;
 }) {
   return (
     <ul className={cn("space-y-1", depth > 0 && "mt-1.5 pl-4")}>
       {items.map((item) => (
-        <li key={`${item.to}-${item.label}`}>
-          <SidebarLink item={item} onClick={onClose} />
-          {item.children && item.children.length > 0 ? (
-            <SidebarItems
-              items={item.children}
-              onClose={onClose}
-              depth={depth + 1}
-            />
-          ) : null}
-        </li>
+        <SidebarTreeItem
+          key={`${item.to}-${item.label}`}
+          item={item}
+          onClose={onClose}
+          depth={depth}
+          pathname={pathname}
+        />
       ))}
     </ul>
   );
@@ -188,6 +259,7 @@ interface SidebarProps {
 function Sidebar({ open, onClose }: SidebarProps) {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const location = useLocation();
 
   function handleLogout() {
     logout();
@@ -227,7 +299,11 @@ function Sidebar({ open, onClose }: SidebarProps) {
               <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/55">
                 {section.section}
               </p>
-              <SidebarItems items={section.items} onClose={onClose} />
+              <SidebarItems
+                items={section.items}
+                onClose={onClose}
+                pathname={location.pathname}
+              />
             </div>
           ))}
         </nav>
@@ -774,7 +850,7 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent"
                 >
                   <Settings size={15} />
-                  Configuracoes
+                  Preferencias
                 </button>
                 <div className="my-1 h-px bg-border" />
                 <button
@@ -822,6 +898,11 @@ export function AppLayout({ children }: AppLayoutProps) {
     media.addEventListener("change", handleSystemThemeChange);
     return () => media.removeEventListener("change", handleSystemThemeChange);
   }, []);
+
+  useEffect(() => {
+    if (window.scrollY <= 0) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [location.pathname]);
 
   const sections = useMemo(
     () => ["Todos", ...NAV.map((section) => section.section)],
@@ -877,7 +958,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const directMap: Record<string, BreadcrumbItem[]> = {
       "/notifications": [{ label: "Notificacoes", current: true }],
       "/me/profile": [{ label: "Meu perfil", current: true }],
-      "/settings": [{ label: "Configuracoes", current: true }],
+      "/settings": [{ label: "Preferencias", current: true }],
     };
 
     if (directMap[location.pathname]) {

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { formatCurrencyCode } from "@/lib/utils/formatCurrency";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
+import { getCommerceSettings } from "@/features/account/lib/commerceSettings";
 
 interface CustomerOption {
   id: number;
@@ -88,6 +89,18 @@ export function QuoteComposerOverlay({
   title = "Novo Orçamento",
   onFinalize,
 }: QuoteComposerOverlayProps) {
+  const commerceSettings = useMemo(() => getCommerceSettings(), [open]);
+  const availablePaymentMethods: PaymentMethod[] = useMemo(() => {
+    const list: PaymentMethod[] = [];
+    if (commerceSettings.payment.pix) list.push("pix");
+    if (commerceSettings.payment.card) list.push("cartao");
+    if (commerceSettings.payment.cash) list.push("dinheiro");
+    if (commerceSettings.payment.boleto) list.push("boleto");
+    return list.length > 0 ? list : ["pix"];
+  }, [commerceSettings]);
+  const canReadyDelivery = commerceSettings.delivery.readyDelivery;
+  const canHomeDelivery = commerceSettings.delivery.homeDelivery;
+
   const [searchItem, setSearchItem] = useState("");
   const [activeCatalogIndex, setActiveCatalogIndex] = useState(0);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -174,14 +187,16 @@ export function QuoteComposerOverlay({
     setShowFullscreenPrompt(true);
     setFullscreenPromptChoice("sim");
     setWizardStep(1);
-    setPaymentMethods(["pix"]);
-    setPaymentAmounts({ pix: totalCents, cartao: 0, boleto: 0, dinheiro: 0 });
+    setPaymentMethods([availablePaymentMethods[0] ?? "pix"]);
+    setPaymentAmounts({ pix: 0, cartao: 0, boleto: 0, dinheiro: 0 });
     setCardBrand("visa");
     setInstallments(1);
     setSelectedAddressId(null);
     setShowAddressModal(false);
     setEditingAddressId(null);
-    setDeliveryType("ready");
+    setDeliveryType(
+      canReadyDelivery ? "ready" : canHomeDelivery ? "home" : "ready",
+    );
     setAddressDraft({
       id: 0,
       label: "",
@@ -193,7 +208,14 @@ export function QuoteComposerOverlay({
       state: "",
       zipCode: "",
     });
-  }, [customers, initialCustomerId, open]);
+  }, [
+    availablePaymentMethods,
+    canHomeDelivery,
+    canReadyDelivery,
+    customers,
+    initialCustomerId,
+    open,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -358,10 +380,15 @@ export function QuoteComposerOverlay({
   }
 
   function togglePaymentMethod(method: PaymentMethod) {
+    if (!availablePaymentMethods.includes(method)) return;
     setPaymentMethods((prev) => {
       if (prev.includes(method)) {
         if (prev.length === 1) return prev;
         return prev.filter((item) => item !== method);
+      }
+      if (commerceSettings.payment.maxCombinedMethods !== "all") {
+        const limit = commerceSettings.payment.maxCombinedMethods;
+        if (prev.length >= limit) return prev;
       }
       return [...prev, method];
     });
@@ -376,6 +403,8 @@ export function QuoteComposerOverlay({
   }
 
   function handleDeliveryOptionSelect(option: "ready" | "home") {
+    if (option === "ready" && !canReadyDelivery) return;
+    if (option === "home" && !canHomeDelivery) return;
     setDeliveryType(option);
     requestAnimationFrame(() => {
       if (option === "ready") {
@@ -392,15 +421,19 @@ export function QuoteComposerOverlay({
   ) {
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
-      setDeliveryType("home");
-      deliveryHomeButtonRef.current?.focus();
+      if (canHomeDelivery) {
+        setDeliveryType("home");
+        deliveryHomeButtonRef.current?.focus();
+      }
       return;
     }
 
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
-      setDeliveryType("ready");
-      deliveryReadyButtonRef.current?.focus();
+      if (canReadyDelivery) {
+        setDeliveryType("ready");
+        deliveryReadyButtonRef.current?.focus();
+      }
       return;
     }
 
@@ -796,7 +829,7 @@ export function QuoteComposerOverlay({
         deliveryHomeButtonRef.current?.focus();
       }
     });
-  }, [deliveryType, showWizard, wizardStep]);
+  }, [canHomeDelivery, canReadyDelivery, deliveryType, showWizard, wizardStep]);
 
   useEffect(() => {
     setActiveCustomerIndex(0);
@@ -1283,27 +1316,31 @@ export function QuoteComposerOverlay({
                           label: string;
                           icon: typeof QrCode;
                         }>
-                      ).map((option) => {
-                        const Icon = option.icon;
-                        const selected = paymentMethods.includes(option.key);
-                        return (
-                          <button
-                            key={option.key}
-                            type="button"
-                            onClick={() => togglePaymentMethod(option.key)}
-                            className={`flex h-24 flex-col items-center justify-center rounded-lg border px-2 text-center transition-colors ${
-                              selected
-                                ? "border-primary bg-primary/10 text-primary"
-                                : "border-slate-300 bg-white hover:bg-slate-50"
-                            }`}
-                          >
-                            <Icon size={34} />
-                            <span className="mt-2 text-base font-semibold">
-                              {option.label}
-                            </span>
-                          </button>
-                        );
-                      })}
+                      )
+                        .filter((option) =>
+                          availablePaymentMethods.includes(option.key),
+                        )
+                        .map((option) => {
+                          const Icon = option.icon;
+                          const selected = paymentMethods.includes(option.key);
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              onClick={() => togglePaymentMethod(option.key)}
+                              className={`flex h-24 flex-col items-center justify-center rounded-lg border px-2 text-center transition-colors ${
+                                selected
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-slate-300 bg-white hover:bg-slate-50"
+                              }`}
+                            >
+                              <Icon size={34} />
+                              <span className="mt-2 text-base font-semibold">
+                                {option.label}
+                              </span>
+                            </button>
+                          );
+                        })}
                     </div>
 
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -1391,7 +1428,10 @@ export function QuoteComposerOverlay({
                             className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                           >
                             {Array.from(
-                              { length: 12 },
+                              {
+                                length:
+                                  commerceSettings.payment.maxInstallments,
+                              },
                               (_, index) => index + 1,
                             ).map((value) => (
                               <option key={value} value={value}>
@@ -1411,12 +1451,14 @@ export function QuoteComposerOverlay({
                         >
                           Imprimir boleto
                         </button>
-                        <button
-                          type="button"
-                          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
-                        >
-                          Enviar por e-mail
-                        </button>
+                        {commerceSettings.payment.boletoSendByEmail && (
+                          <button
+                            type="button"
+                            className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50"
+                          >
+                            Enviar por e-mail
+                          </button>
+                        )}
                       </div>
                     )}
                   </>
@@ -1427,57 +1469,68 @@ export function QuoteComposerOverlay({
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <button
-                        ref={deliveryReadyButtonRef}
-                        type="button"
-                        onClick={() => handleDeliveryOptionSelect("ready")}
-                        onKeyDown={(event) =>
-                          handleDeliveryOptionKeyDown("ready", event)
-                        }
-                        className={`rounded-lg border px-4 py-3 text-left transition-colors ${
-                          deliveryType === "ready"
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-slate-300 bg-white hover:bg-slate-50"
-                        }`}
-                      >
-                        <span className="flex items-center gap-3">
-                          <Package size={24} />
-                          <span>
-                            <span className="block text-base font-semibold">
-                              Pronta entrega
-                            </span>
-                            <span className="block text-sm opacity-80">
-                              (Não se aplica)
-                            </span>
-                          </span>
-                        </span>
-                      </button>
-                      <button
-                        ref={deliveryHomeButtonRef}
-                        type="button"
-                        onClick={() => handleDeliveryOptionSelect("home")}
-                        onKeyDown={(event) =>
-                          handleDeliveryOptionKeyDown("home", event)
-                        }
-                        className={`rounded-lg border px-4 py-3 text-left transition-colors ${
-                          deliveryType === "home"
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-slate-300 bg-white hover:bg-slate-50"
-                        }`}
-                      >
-                        <span className="flex items-center gap-3">
-                          <MapPin size={24} />
-                          <span>
-                            <span className="block text-base font-semibold">
-                              Entrega a Domicílio
-                            </span>
-                            <span className="block text-sm opacity-80">
-                              Selecionar endereço
+                      {canReadyDelivery && (
+                        <button
+                          ref={deliveryReadyButtonRef}
+                          type="button"
+                          onClick={() => handleDeliveryOptionSelect("ready")}
+                          onKeyDown={(event) =>
+                            handleDeliveryOptionKeyDown("ready", event)
+                          }
+                          className={`rounded-lg border px-4 py-3 text-left transition-colors ${
+                            deliveryType === "ready"
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-slate-300 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Package size={24} />
+                            <span>
+                              <span className="block text-base font-semibold">
+                                Pronta entrega
+                              </span>
+                              <span className="block text-sm opacity-80">
+                                (Não se aplica)
+                              </span>
                             </span>
                           </span>
-                        </span>
-                      </button>
+                        </button>
+                      )}
+                      {canHomeDelivery && (
+                        <button
+                          ref={deliveryHomeButtonRef}
+                          type="button"
+                          onClick={() => handleDeliveryOptionSelect("home")}
+                          onKeyDown={(event) =>
+                            handleDeliveryOptionKeyDown("home", event)
+                          }
+                          className={`rounded-lg border px-4 py-3 text-left transition-colors ${
+                            deliveryType === "home"
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-slate-300 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3">
+                            <MapPin size={24} />
+                            <span>
+                              <span className="block text-base font-semibold">
+                                Entrega a Domicílio
+                              </span>
+                              <span className="block text-sm opacity-80">
+                                Selecionar endereço
+                              </span>
+                            </span>
+                          </span>
+                        </button>
+                      )}
                     </div>
+
+                    {!canReadyDelivery && !canHomeDelivery && (
+                      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                        Nenhuma modalidade de entrega está habilitada nas
+                        Configurações.
+                      </div>
+                    )}
 
                     {deliveryType === "home" && (
                       <>
