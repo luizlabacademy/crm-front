@@ -17,8 +17,8 @@ import type {
   ConversationChannel,
   ConversationContactType,
 } from "@/features/conversations/types/conversationTypes";
-import contactsMock from "@/features/conversations/mocks/contacts.json";
-import messagesMock from "@/features/conversations/mocks/messages.json";
+import contactsResponse from "@/mocks/conversations/get-contacts.json";
+import messagesResponse from "@/mocks/conversations/get-messages.json";
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
@@ -94,10 +94,13 @@ export function useConversations(params: UseConversationsParams = {}) {
         return list.map(mapApiToContact);
       } catch {
         // Graceful fallback to mock data during development
-        return (contactsMock as ConversationContact[]).map((c) => ({
-          ...c,
-          contactType: (c.contactType ?? "customer") as ConversationContactType,
-        }));
+        return (contactsResponse.data as unknown as ConversationContact[]).map(
+          (c) => ({
+            ...c,
+            contactType: (c.contactType ??
+              "customer") as ConversationContactType,
+          }),
+        );
       }
     },
     staleTime: 30 * 1000,
@@ -137,7 +140,7 @@ export function useConversationMessages(
       }
 
       // Fallback to mock
-      const mockRecord = messagesMock as unknown as Record<
+      const mockRecord = messagesResponse.data as unknown as Record<
         string,
         ChatMessage[]
       >;

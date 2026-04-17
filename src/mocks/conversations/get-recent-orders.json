@@ -1,0 +1,35 @@
+{
+  "data": [
+    {
+      "id": 4521,
+      "code": "PED-4521",
+      "totalCents": 245000,
+      "status": "CONFIRMED"
+    },
+    {
+      "id": 4518,
+      "code": "PED-4518",
+      "totalCents": 179900,
+      "status": "PENDING"
+    },
+    {
+      "id": 4509,
+      "code": "PED-4509",
+      "totalCents": 98900,
+      "status": "DELIVERED"
+    },
+    { "id": 4503, "code": "PED-4503", "totalCents": 312500, "status": "DRAFT" },
+    {
+      "id": 4497,
+      "code": "PED-4497",
+      "totalCents": 221000,
+      "status": "CANCELLED"
+    }
+  ],
+  "meta": {
+    "total": 5,
+    "page": 1,
+    "perPage": 10,
+    "timestamp": "2026-04-12T10:00:00.000Z"
+  }
+}

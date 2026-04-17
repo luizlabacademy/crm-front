@@ -1,16 +1,13 @@
+import campaignOptionsResponse from "@/mocks/dashboard/get-campaign-options.json";
+
 export interface CampaignFilterOption {
   id: string;
   label: string;
   weight: number;
 }
 
-export const CAMPAIGN_OPTIONS: CampaignFilterOption[] = [
-  { id: "whatsapp-vip", label: "WhatsApp VIP", weight: 0.25 },
-  { id: "email-news", label: "E-mail Newsletter", weight: 0.2 },
-  { id: "retarget-meta", label: "Retarget Meta", weight: 0.2 },
-  { id: "google-search", label: "Google Search", weight: 0.2 },
-  { id: "indicacoes", label: "Indicacoes", weight: 0.15 },
-];
+export const CAMPAIGN_OPTIONS: CampaignFilterOption[] =
+  campaignOptionsResponse.data as CampaignFilterOption[];
 
 export function getCampaignWeightRatio(selectedIds: string[]): number {
   if (selectedIds.length === 0) {

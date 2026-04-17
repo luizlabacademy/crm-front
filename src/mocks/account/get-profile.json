@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": 1,
+    "fullName": "Atendente CRM",
+    "email": "atendente@crm.local",
+    "phone": "(11) 99999-1234",
+    "role": "Atendente",
+    "code": "ATD-001",
+    "avatarUrl": "https://i.pravatar.cc/240?img=12"
+  },
+  "meta": { "timestamp": "2026-04-12T10:00:00.000Z" }
+}

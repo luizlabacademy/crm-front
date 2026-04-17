@@ -1,0 +1,75 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Promocao de Verao",
+      "channel": "whatsapp",
+      "status": "sent",
+      "listName": "Clientes VIP",
+      "sentCount": 342,
+      "totalCount": 350,
+      "openRate": 78,
+      "sentAt": "2026-04-10T09:00:00Z",
+      "createdAt": "2026-04-08T14:00:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Newsletter Abril",
+      "channel": "email",
+      "status": "sent",
+      "listName": "Lista de E-mails Geral",
+      "sentCount": 1200,
+      "totalCount": 1200,
+      "openRate": 34,
+      "sentAt": "2026-04-01T08:00:00Z",
+      "createdAt": "2026-03-30T10:00:00Z"
+    },
+    {
+      "id": 3,
+      "name": "Lembrete de Agendamento",
+      "channel": "whatsapp",
+      "status": "scheduled",
+      "listName": "Agendamentos da Semana",
+      "sentCount": 0,
+      "totalCount": 87,
+      "scheduledAt": "2026-04-14T07:00:00Z",
+      "createdAt": "2026-04-12T16:00:00Z"
+    },
+    {
+      "id": 4,
+      "name": "Black Friday Preview",
+      "channel": "email",
+      "status": "draft",
+      "listName": "Lista de E-mails Geral",
+      "sentCount": 0,
+      "totalCount": 1200,
+      "createdAt": "2026-04-13T11:00:00Z"
+    },
+    {
+      "id": 5,
+      "name": "Cupom Exclusivo",
+      "channel": "whatsapp",
+      "status": "sending",
+      "listName": "Leads Recentes",
+      "sentCount": 43,
+      "totalCount": 210,
+      "createdAt": "2026-04-13T18:00:00Z"
+    },
+    {
+      "id": 6,
+      "name": "Confirmacao de Pedido",
+      "channel": "whatsapp",
+      "status": "failed",
+      "listName": "Pedidos do Dia",
+      "sentCount": 12,
+      "totalCount": 55,
+      "createdAt": "2026-04-11T13:00:00Z"
+    }
+  ],
+  "meta": {
+    "total": 6,
+    "page": 1,
+    "perPage": 20,
+    "timestamp": "2026-04-12T10:00:00.000Z"
+  }
+}

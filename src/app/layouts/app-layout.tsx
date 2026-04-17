@@ -46,6 +46,8 @@ import navigationConfig from "@/app/config/navigation.json";
 import { useAuthStore } from "@/lib/auth/authStore";
 import { applyTheme, getStoredTheme } from "@/lib/theme/theme";
 import { cn } from "@/lib/utils";
+import notificationsResponse from "@/mocks/account/get-notifications.json";
+import profileResponse from "@/mocks/account/get-profile.json";
 
 interface NavItem {
   label: string;
@@ -550,32 +552,7 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
   const notificationsRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const notifications = useMemo(
-    () => [
-      {
-        id: "n-1",
-        title: "Novo lead recebido",
-        description: "Lead do canal WhatsApp aguardando atendimento.",
-        time: "agora",
-        unread: true,
-      },
-      {
-        id: "n-2",
-        title: "Pedido atualizado",
-        description: "Pedido #1042 alterado para status Em separacao.",
-        time: "ha 12 min",
-        unread: true,
-      },
-      {
-        id: "n-3",
-        title: "Campanha finalizada",
-        description: "Campanha Recovery Abril foi concluida.",
-        time: "ha 1 h",
-        unread: false,
-      },
-    ],
-    [],
-  );
+  const notifications = useMemo(() => notificationsResponse.data, []);
 
   const unreadCount = notifications.filter((item) => item.unread).length;
 
@@ -768,7 +745,7 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
               aria-label="Perfil"
             >
               <img
-                src="https://i.pravatar.cc/96?img=12"
+                src={profileResponse.data.avatarUrl}
                 alt="Avatar"
                 className="h-7 w-7 rounded-full object-cover"
               />

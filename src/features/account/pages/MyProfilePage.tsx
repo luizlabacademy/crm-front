@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Mail, Phone, Save, Shield, User } from "lucide-react";
 import { toast } from "sonner";
+import profileResponse from "@/mocks/account/get-profile.json";
+
+const mockProfile = profileResponse.data;
 
 export function MyProfilePage() {
-  const [fullName, setFullName] = useState("Atendente CRM");
-  const [phone, setPhone] = useState("(11) 99999-1234");
+  const [fullName, setFullName] = useState(mockProfile.fullName);
+  const [phone, setPhone] = useState(mockProfile.phone);
 
   function handleSave(event: React.FormEvent) {
     event.preventDefault();
@@ -23,13 +26,13 @@ export function MyProfilePage() {
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <img
-            src="https://i.pravatar.cc/180?img=12"
+            src={mockProfile.avatarUrl}
             alt="Avatar do usuario"
             className="h-20 w-20 rounded-full border border-border object-cover"
           />
           <div>
             <p className="text-lg font-semibold text-foreground">{fullName}</p>
-            <p className="text-sm text-muted-foreground">atendente@crm.local</p>
+            <p className="text-sm text-muted-foreground">{mockProfile.email}</p>
           </div>
         </div>
       </div>
@@ -70,7 +73,7 @@ export function MyProfilePage() {
             E-mail
           </span>
           <input
-            value="atendente@crm.local"
+            value={mockProfile.email}
             disabled
             className="w-full cursor-not-allowed rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
           />
@@ -82,7 +85,7 @@ export function MyProfilePage() {
             Perfil de acesso
           </span>
           <input
-            value="Atendente"
+            value={mockProfile.role}
             disabled
             className="w-full cursor-not-allowed rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
           />

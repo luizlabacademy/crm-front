@@ -18,148 +18,33 @@ import {
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  getCampaigns,
+  getContactLists,
+  type MockCampaign,
+  type MockContactList,
+} from "@/mocks/mockApi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type CampaignChannel = "whatsapp" | "email";
 type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "failed";
 
-interface Campaign {
-  id: number;
-  name: string;
-  channel: CampaignChannel;
-  status: CampaignStatus;
-  listName: string;
-  sentCount: number;
-  totalCount: number;
-  openRate?: number;
-  scheduledAt?: string;
-  sentAt?: string;
-  createdAt: string;
-}
+type Campaign = MockCampaign;
+type ContactList = MockContactList;
 
-interface ContactList {
-  id: number;
-  name: string;
-  channel: CampaignChannel;
-  contactCount: number;
-  createdAt: string;
-}
+// ─── Mock Data (from centralized mocks — replace with React Query hooks) ────
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+let MOCK_CAMPAIGNS: Campaign[] = [];
+let MOCK_LISTS: ContactList[] = [];
 
-const MOCK_CAMPAIGNS: Campaign[] = [
-  {
-    id: 1,
-    name: "Promocao de Verao",
-    channel: "whatsapp",
-    status: "sent",
-    listName: "Clientes VIP",
-    sentCount: 342,
-    totalCount: 350,
-    openRate: 78,
-    sentAt: "2026-04-10T09:00:00Z",
-    createdAt: "2026-04-08T14:00:00Z",
-  },
-  {
-    id: 2,
-    name: "Newsletter Abril",
-    channel: "email",
-    status: "sent",
-    listName: "Lista de E-mails Geral",
-    sentCount: 1200,
-    totalCount: 1200,
-    openRate: 34,
-    sentAt: "2026-04-01T08:00:00Z",
-    createdAt: "2026-03-30T10:00:00Z",
-  },
-  {
-    id: 3,
-    name: "Lembrete de Agendamento",
-    channel: "whatsapp",
-    status: "scheduled",
-    listName: "Agendamentos da Semana",
-    sentCount: 0,
-    totalCount: 87,
-    scheduledAt: "2026-04-14T07:00:00Z",
-    createdAt: "2026-04-12T16:00:00Z",
-  },
-  {
-    id: 4,
-    name: "Black Friday Preview",
-    channel: "email",
-    status: "draft",
-    listName: "Lista de E-mails Geral",
-    sentCount: 0,
-    totalCount: 1200,
-    createdAt: "2026-04-13T11:00:00Z",
-  },
-  {
-    id: 5,
-    name: "Cupom Exclusivo",
-    channel: "whatsapp",
-    status: "sending",
-    listName: "Leads Recentes",
-    sentCount: 43,
-    totalCount: 210,
-    createdAt: "2026-04-13T18:00:00Z",
-  },
-  {
-    id: 6,
-    name: "Confirmacao de Pedido",
-    channel: "whatsapp",
-    status: "failed",
-    listName: "Pedidos do Dia",
-    sentCount: 12,
-    totalCount: 55,
-    createdAt: "2026-04-11T13:00:00Z",
-  },
-];
-
-const MOCK_LISTS: ContactList[] = [
-  {
-    id: 1,
-    name: "Clientes VIP",
-    channel: "whatsapp",
-    contactCount: 350,
-    createdAt: "2026-01-10T00:00:00Z",
-  },
-  {
-    id: 2,
-    name: "Leads Recentes",
-    channel: "whatsapp",
-    contactCount: 210,
-    createdAt: "2026-03-01T00:00:00Z",
-  },
-  {
-    id: 3,
-    name: "Agendamentos da Semana",
-    channel: "whatsapp",
-    contactCount: 87,
-    createdAt: "2026-04-07T00:00:00Z",
-  },
-  {
-    id: 4,
-    name: "Pedidos do Dia",
-    channel: "whatsapp",
-    contactCount: 55,
-    createdAt: "2026-04-13T00:00:00Z",
-  },
-  {
-    id: 5,
-    name: "Lista de E-mails Geral",
-    channel: "email",
-    contactCount: 1200,
-    createdAt: "2025-12-01T00:00:00Z",
-  },
-  {
-    id: 6,
-    name: "Opt-in Newsletter",
-    channel: "email",
-    contactCount: 480,
-    createdAt: "2026-02-15T00:00:00Z",
-  },
-];
+// Eagerly load mock data (will be replaced by useQuery)
+void getCampaigns().then((d) => {
+  MOCK_CAMPAIGNS = d;
+});
+void getContactLists().then((d) => {
+  MOCK_LISTS = d;
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

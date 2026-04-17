@@ -40,8 +40,12 @@ import type {
   ConversationChannel,
   ConversationContactType,
 } from "@/features/conversations/types/conversationTypes";
-import contactsMock from "@/features/conversations/mocks/contacts.json";
-import messagesMock from "@/features/conversations/mocks/messages.json";
+import contactsResponse from "@/mocks/conversations/get-contacts.json";
+import messagesResponse from "@/mocks/conversations/get-messages.json";
+import catalogItemsResponse from "@/mocks/conversations/get-catalog-items.json";
+import conversationOrdersResponse from "@/mocks/conversations/get-recent-orders.json";
+import channelsResponse from "@/mocks/conversations/get-channels.json";
+import profileResponse from "@/mocks/account/get-profile.json";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
 import { OrderBudgetComposer } from "@/features/orders/components/OrderBudgetComposer";
 
@@ -132,7 +136,7 @@ interface MockOrder {
 }
 
 const MOCK_CONTACTS: ConversationContact[] = (
-  contactsMock as Array<
+  contactsResponse.data as Array<
     ConversationContact & { contactType?: ConversationContactType }
   >
 ).map((contact) => ({
@@ -141,58 +145,21 @@ const MOCK_CONTACTS: ConversationContact[] = (
   contactType: (contact.contactType ?? "customer") as ConversationContactType,
 }));
 
-const MOCK_MESSAGES = messagesMock as Record<string, ChatMessage[]>;
+const MOCK_MESSAGES = messagesResponse.data as unknown as Record<
+  string,
+  ChatMessage[]
+>;
 
 const MOCK_PERSONS: PersonResponse[] = MOCK_CONTACTS.map((contact, index) => ({
   id: index + 1,
   fullName: contact.name,
 }));
 
-const MOCK_CATALOG_ITEMS: CatalogItemResponse[] = [
-  {
-    id: 101,
-    tenantId: 1,
-    name: "Plano Starter",
-    description: "Implantacao basica",
-    priceCents: 19900,
-  },
-  {
-    id: 102,
-    tenantId: 1,
-    name: "Plano Pro",
-    description: "Implantacao com automacoes",
-    priceCents: 49900,
-  },
-  {
-    id: 103,
-    tenantId: 1,
-    name: "Treinamento Comercial",
-    description: "Capacitacao para time de vendas",
-    priceCents: 12900,
-  },
-  {
-    id: 104,
-    tenantId: 1,
-    name: "Pacote Follow-up",
-    description: "Sequencias prontas de mensagens",
-    priceCents: 8900,
-  },
-  {
-    id: 105,
-    tenantId: 1,
-    name: "Suporte Prioritario",
-    description: "Fila acelerada de atendimento",
-    priceCents: 15900,
-  },
-];
+const MOCK_CATALOG_ITEMS: CatalogItemResponse[] =
+  catalogItemsResponse.data as CatalogItemResponse[];
 
-const MOCK_RECENT_ORDERS: MockOrder[] = [
-  { id: 4521, code: "PED-4521", totalCents: 245000, status: "CONFIRMED" },
-  { id: 4518, code: "PED-4518", totalCents: 179900, status: "PENDING" },
-  { id: 4509, code: "PED-4509", totalCents: 98900, status: "DELIVERED" },
-  { id: 4503, code: "PED-4503", totalCents: 312500, status: "DRAFT" },
-  { id: 4497, code: "PED-4497", totalCents: 221000, status: "CANCELLED" },
-];
+const MOCK_RECENT_ORDERS: MockOrder[] =
+  conversationOrdersResponse.data as MockOrder[];
 
 function MessageStatus({ status }: { status?: string }) {
   if (status === "read")
@@ -625,37 +592,11 @@ function NewChatModal({
     return name.toLowerCase().includes(personSearch.toLowerCase());
   });
 
-  const channels: {
+  const channels = channelsResponse.data as {
     value: ConversationChannel;
     label: string;
     color: string;
-  }[] = [
-    {
-      value: "WhatsApp",
-      label: "WhatsApp",
-      color: "bg-green-100 text-green-700 border-green-200",
-    },
-    {
-      value: "Instagram",
-      label: "Instagram",
-      color: "bg-pink-100 text-pink-700 border-pink-200",
-    },
-    {
-      value: "Facebook",
-      label: "Facebook",
-      color: "bg-blue-100 text-blue-700 border-blue-200",
-    },
-    {
-      value: "Site",
-      label: "Site",
-      color: "bg-gray-100 text-gray-700 border-gray-200",
-    },
-    {
-      value: "Corporativo",
-      label: "Chat Corporativo",
-      color: "bg-violet-100 text-violet-700 border-violet-200",
-    },
-  ];
+  }[];
 
   return (
     <SearchModal
@@ -791,11 +732,7 @@ function NewChatModal({
 
 const ALL_CHANNELS: { value: string; label: string }[] = [
   { value: "Todos", label: "Todos" },
-  { value: "WhatsApp", label: "WhatsApp" },
-  { value: "Instagram", label: "Instagram" },
-  { value: "Facebook", label: "Facebook" },
-  { value: "Site", label: "Site" },
-  { value: "Corporativo", label: "Corporativo" },
+  ...channelsResponse.data.map((ch) => ({ value: ch.value, label: ch.label })),
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -814,7 +751,7 @@ export function ConversationsPage() {
   const [newMessage, setNewMessage] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
-  const [displayName, setDisplayName] = useState("Atendente CRM");
+  const [displayName, setDisplayName] = useState(profileResponse.data.fullName);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
   const [showPdv, setShowPdv] = useState(false);
   const [showOrdersPanel, setShowOrdersPanel] = useState(false);
@@ -822,10 +759,10 @@ export function ConversationsPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const agentProfile = {
-    fullName: "Atendente CRM",
-    email: "atendente@crm.local",
-    code: "ATD-001",
-    photoUrl: "https://i.pravatar.cc/240?img=12",
+    fullName: profileResponse.data.fullName,
+    email: profileResponse.data.email,
+    code: profileResponse.data.code,
+    photoUrl: profileResponse.data.avatarUrl,
   };
 
   const isLoadingContacts = false;

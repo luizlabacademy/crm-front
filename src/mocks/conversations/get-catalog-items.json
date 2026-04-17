@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "id": 101,
+      "tenantId": 1,
+      "name": "Plano Starter",
+      "description": "Implantacao basica",
+      "priceCents": 19900
+    },
+    {
+      "id": 102,
+      "tenantId": 1,
+      "name": "Plano Pro",
+      "description": "Implantacao com automacoes",
+      "priceCents": 49900
+    },
+    {
+      "id": 103,
+      "tenantId": 1,
+      "name": "Treinamento Comercial",
+      "description": "Capacitacao para time de vendas",
+      "priceCents": 12900
+    },
+    {
+      "id": 104,
+      "tenantId": 1,
+      "name": "Pacote Follow-up",
+      "description": "Sequencias prontas de mensagens",
+      "priceCents": 8900
+    },
+    {
+      "id": 105,
+      "tenantId": 1,
+      "name": "Suporte Prioritario",
+      "description": "Fila acelerada de atendimento",
+      "priceCents": 15900
+    }
+  ],
+  "meta": { "total": 5, "timestamp": "2026-04-12T10:00:00.000Z" }
+}
