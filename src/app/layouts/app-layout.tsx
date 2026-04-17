@@ -138,10 +138,10 @@ function SidebarLink({ item, onClick }: SidebarLinkProps) {
       onClick={onClick}
       className={({ isActive }) =>
         cn(
-          "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium leading-none transition-all [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:transition-colors",
           isActive
-            ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium"
-            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            ? "bg-sidebar-accent text-sidebar-foreground shadow-sm ring-1 ring-sidebar-border [&_svg]:text-sidebar-foreground"
+            : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground [&_svg]:text-sidebar-foreground/70 hover:[&_svg]:text-sidebar-foreground",
         )
       }
     >
@@ -161,7 +161,7 @@ function SidebarItems({
   depth?: number;
 }) {
   return (
-    <ul className={cn("space-y-0.5", depth > 0 && "mt-1 pl-4")}>
+    <ul className={cn("space-y-1", depth > 0 && "mt-1.5 pl-4")}>
       {items.map((item) => (
         <li key={`${item.to}-${item.label}`}>
           <SidebarLink item={item} onClick={onClose} />
@@ -203,7 +203,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-sidebar-border bg-white dark:bg-sidebar",
+          "fixed inset-y-0 left-0 z-30 flex w-64 flex-col border-r border-sidebar-border bg-white dark:bg-sidebar shadow-sm",
           "transition-transform duration-200",
           open ? "translate-x-0" : "-translate-x-full",
           "lg:static lg:translate-x-0 lg:z-auto",
@@ -222,7 +222,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="px-3 py-4 space-y-6 max-lg:overflow-y-auto max-lg:flex-1">
           {NAV.map((section) => (
             <div key={section.section}>
-              <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/55">
                 {section.section}
               </p>
               <SidebarItems items={section.items} onClose={onClose} />
@@ -233,7 +233,7 @@ function Sidebar({ open, onClose }: SidebarProps) {
         <div className="border-t border-sidebar-border p-3">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/85 transition-all hover:bg-sidebar-accent/80 hover:text-sidebar-foreground"
           >
             <LogOut size={16} />
             <span>Sair</span>
