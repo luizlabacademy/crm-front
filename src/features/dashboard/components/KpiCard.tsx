@@ -73,14 +73,14 @@ export function KpiCard({
   const trendToneClass = isTrendUp ? "text-emerald-600" : "text-red-500";
   const largeValueSizeClass =
     visibleValueLength >= 14
-      ? "text-base sm:text-lg xl:text-xl"
+      ? "md:text-base lg:text-lg xl:text-xl"
       : visibleValueLength >= 12
-        ? "text-lg sm:text-xl xl:text-2xl"
-        : "text-xl md:text-2xl xl:text-[1.65rem]";
+        ? "md:text-lg lg:text-xl xl:text-2xl"
+        : "md:text-xl lg:text-2xl xl:text-[1.65rem]";
 
   if (variant === "compact") {
     return (
-      <div className="relative rounded-lg border border-border/80 bg-card p-4 shadow-sm flex flex-col gap-2.5">
+      <div className="relative flex flex-col gap-3 rounded-md border border-border/80 bg-card p-5 shadow-sm md:p-4">
         {!isError && !isLoading && (
           <button
             type="button"
@@ -94,11 +94,11 @@ export function KpiCard({
 
         <div className="flex min-w-0 items-center gap-2 pr-6">
           {Icon && (
-            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/70 text-foreground/70">
-              <Icon size={12} strokeWidth={1.7} />
+            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/70 text-foreground/70 md:h-6 md:w-6">
+              <Icon size={14} strokeWidth={1.7} className="md:h-3 md:w-3" />
             </span>
           )}
-          <span className="truncate text-sm font-medium text-foreground/75">
+          <span className="truncate text-base font-medium text-foreground/75 md:text-sm">
             {label}
           </span>
         </div>
@@ -121,25 +121,27 @@ export function KpiCard({
           </div>
         ) : (
           <>
-            <p
-              className={cn(
-                "text-4xl font-semibold leading-none tracking-tight tabular-nums text-foreground",
-                !visible && "select-none",
-              )}
-            >
-              {visible ? displayValue : HIDDEN_VALUE}
-            </p>
-            {hasTrend && (
+            <div className="flex items-end justify-between gap-2">
               <p
                 className={cn(
-                  "flex items-center gap-1 text-xs font-semibold",
-                  trendToneClass,
+                  "text-4xl font-semibold leading-none tracking-tight tabular-nums text-foreground",
+                  !visible && "select-none",
                 )}
               >
-                {isTrendUp ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                {trendText}
+                {visible ? displayValue : HIDDEN_VALUE}
               </p>
-            )}
+              {hasTrend && (
+                <p
+                  className={cn(
+                    "mb-1 flex shrink-0 items-center gap-1 text-xs font-semibold",
+                    trendToneClass,
+                  )}
+                >
+                  {isTrendUp ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                  {trendText}
+                </p>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -147,7 +149,7 @@ export function KpiCard({
   }
 
   return (
-    <div className="relative rounded-lg border border-border/80 bg-card p-4 shadow-sm">
+    <div className="relative rounded-md border border-border/80 bg-card p-5 shadow-sm md:p-4">
       {!isError && !isLoading && (
         <button
           type="button"
@@ -184,18 +186,18 @@ export function KpiCard({
       ) : (
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <span className="inline-flex h-11 w-11 xl:h-14 xl:w-14 shrink-0 items-center justify-center rounded-xl bg-muted/75 text-foreground/75">
+            <span className="inline-flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl bg-muted/75 text-foreground/75 md:h-11 md:w-11 xl:h-14 xl:w-14">
               <Icon
-                size={22}
+                size={30}
                 strokeWidth={1.8}
-                className="xl:h-[28px] xl:w-[28px]"
+                className="md:h-[22px] md:w-[22px] xl:h-[28px] xl:w-[28px]"
               />
             </span>
           )}
           <div className="min-w-0 flex-1">
             <p
               className={cn(
-                "whitespace-nowrap font-semibold leading-none tracking-tight text-foreground",
+                "whitespace-nowrap text-4xl font-semibold leading-none tracking-tight text-foreground",
                 largeValueSizeClass,
                 !visible && "select-none",
               )}
@@ -203,7 +205,7 @@ export function KpiCard({
               {visible ? displayValue : HIDDEN_VALUE}
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <p className="truncate text-sm font-medium text-foreground/75">
+              <p className="truncate text-base font-medium text-foreground/75 md:text-sm">
                 {label}
               </p>
               {hasTrend && (

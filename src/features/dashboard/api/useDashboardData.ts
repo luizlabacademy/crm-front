@@ -72,6 +72,7 @@ async function buildDashboardData(): Promise<DashboardData> {
   let newOrdersMonth = 0;
   let pendingOrders = 0;
   let closedOrdersMonth = 0;
+  const activeCustomers = new Set<string>();
 
   for (const order of orders) {
     const date = parseISO(order.createdAt);
@@ -85,6 +86,13 @@ async function buildDashboardData(): Promise<DashboardData> {
     if (isToday(date) && closed) revenueToday += order.totalCents;
     if (isThisMonth(date)) {
       newOrdersMonth++;
+      const customerId = order.customer?.id?.trim();
+      const customerName = order.customer?.name?.trim();
+      if (customerId) {
+        activeCustomers.add(`id:${customerId}`);
+      } else if (customerName) {
+        activeCustomers.add(`name:${customerName.toLowerCase()}`);
+      }
       if (closed) {
         revenueMonth += order.totalCents;
         closedOrdersMonth++;
@@ -163,6 +171,7 @@ async function buildDashboardData(): Promise<DashboardData> {
       newMessagesMonth,
       activeLeads,
       closedLeadsMonth,
+      activeCustomers: activeCustomers.size,
     },
     recentMessages: allMessages,
     recentOrders,

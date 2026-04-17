@@ -110,6 +110,14 @@ const SECONDARY_KPI_DEFS: KpiDef[] = [
     icon: UserCheck,
     storageKey: "leads_closed",
   },
+  {
+    label: "Clientes Ativos",
+    key: "activeCustomers",
+    type: "count",
+    icon: UserCheck,
+    storageKey: "customers_active",
+    trendPercent: 4.8,
+  },
 ];
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -187,6 +195,25 @@ export function DashboardPage() {
         </div>
       )}
 
+      {/* Secondary KPIs */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
+        {SECONDARY_KPI_DEFS.map((def) => (
+          <KpiCard
+            key={def.storageKey}
+            label={def.label}
+            value={kpis?.[def.key] ?? 0}
+            type={def.type}
+            icon={def.icon}
+            variant="compact"
+            isLoading={isLoading}
+            isError={isError && !isLoading}
+            onRetry={handleRefresh}
+            storageKey={def.storageKey}
+            trendPercent={def.trendPercent}
+          />
+        ))}
+      </div>
+
       {/* Revenue KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {REVENUE_KPI_DEFS.map((def) => (
@@ -202,24 +229,6 @@ export function DashboardPage() {
             onRetry={handleRefresh}
             storageKey={def.storageKey}
             trendPercent={def.trendPercent}
-          />
-        ))}
-      </div>
-
-      {/* Secondary KPIs */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {SECONDARY_KPI_DEFS.map((def) => (
-          <KpiCard
-            key={def.storageKey}
-            label={def.label}
-            value={kpis?.[def.key] ?? 0}
-            type={def.type}
-            icon={def.icon}
-            variant="compact"
-            isLoading={isLoading}
-            isError={isError && !isLoading}
-            onRetry={handleRefresh}
-            storageKey={def.storageKey}
           />
         ))}
       </div>

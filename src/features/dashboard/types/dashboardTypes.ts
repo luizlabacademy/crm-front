@@ -48,6 +48,7 @@ export interface DashboardKpi {
   newMessagesMonth: number;
   activeLeads: number;
   closedLeadsMonth: number;
+  activeCustomers: number;
 }
 
 export interface RecentMessage {
