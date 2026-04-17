@@ -23,14 +23,14 @@
         "icon": "clipboard-list"
       },
       {
-        "label": "Buscar Pedidos",
-        "to": "/orders",
-        "icon": "shopping-cart"
-      },
-      {
         "label": "Agendamentos",
         "to": "/schedules/board",
         "icon": "calendar-range"
+      },
+      {
+        "label": "Pedidos",
+        "to": "/orders",
+        "icon": "shopping-cart"
       },
       {
         "label": "Despesas",

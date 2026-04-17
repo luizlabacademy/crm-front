@@ -87,8 +87,10 @@ export function RecentMessagesList({
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Últimas Mensagens</h2>
-          <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+          <h2 className="text-[15px] font-semibold tracking-tight">
+            Últimas Mensagens
+          </h2>
+          <span className="inline-flex items-center rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-foreground/70">
             {unreadTotal} não lidas
           </span>
         </div>
@@ -108,10 +110,10 @@ export function RecentMessagesList({
             type="button"
             onClick={() => setActiveFilter(channel)}
             className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
               activeFilter === channel
                 ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background border-border text-muted-foreground hover:bg-accent",
+                : "bg-background border-border text-foreground/70 hover:bg-accent",
             )}
           >
             {channel}
@@ -136,7 +138,7 @@ export function RecentMessagesList({
               key={msg.id}
               type="button"
               onClick={() => void navigate(`/leads/${msg.leadId}`)}
-              className="flex w-full cursor-pointer items-center gap-3 px-5 py-3 text-left hover:bg-accent/50 transition-colors"
+              className="flex w-full cursor-pointer items-center gap-3 px-5 py-3 text-left hover:bg-accent/60 transition-colors"
             >
               <span
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor(msg.customerName)}`}
@@ -148,21 +150,21 @@ export function RecentMessagesList({
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${sentimentClass(msg.sentiment)}`}
                   />
-                  <p className="truncate text-sm font-medium">
+                  <p className="truncate text-sm font-semibold text-foreground">
                     {msg.customerName}
                   </p>
                   {msg.channel && (
-                    <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-foreground/65">
                       {msg.channel}
                     </span>
                   )}
                 </div>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="truncate text-xs text-foreground/70">
                   {msg.preview}
                 </p>
               </div>
               <div className="shrink-0 flex flex-col items-end gap-1">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <span className="text-xs text-foreground/65 whitespace-nowrap">
                   {formatRelative(msg.createdAt)}
                 </span>
                 {(msg.unreadCount ?? 0) > 0 && (

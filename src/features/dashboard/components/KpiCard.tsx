@@ -86,7 +86,7 @@ export function KpiCard({
             type="button"
             onClick={toggleVisibility}
             aria-label={visible ? "Ocultar valor" : "Mostrar valor"}
-            className="absolute right-3.5 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
+            className="absolute right-3.5 top-3.5 text-foreground/55 hover:text-foreground transition-colors"
           >
             {visible ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
@@ -94,11 +94,11 @@ export function KpiCard({
 
         <div className="flex min-w-0 items-center gap-2 pr-6">
           {Icon && (
-            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted/70 text-foreground/70">
               <Icon size={12} strokeWidth={1.7} />
             </span>
           )}
-          <span className="truncate text-sm font-normal text-muted-foreground">
+          <span className="truncate text-sm font-medium text-foreground/75">
             {label}
           </span>
         </div>
@@ -123,7 +123,7 @@ export function KpiCard({
           <>
             <p
               className={cn(
-                "text-4xl font-medium leading-none tracking-tight tabular-nums",
+                "text-4xl font-semibold leading-none tracking-tight tabular-nums text-foreground",
                 !visible && "select-none",
               )}
             >
@@ -132,7 +132,7 @@ export function KpiCard({
             {hasTrend && (
               <p
                 className={cn(
-                  "flex items-center gap-1 text-xs font-medium",
+                  "flex items-center gap-1 text-xs font-semibold",
                   trendToneClass,
                 )}
               >
@@ -153,7 +153,7 @@ export function KpiCard({
           type="button"
           onClick={toggleVisibility}
           aria-label={visible ? "Ocultar valor" : "Mostrar valor"}
-          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute right-4 top-4 text-foreground/55 hover:text-foreground transition-colors"
         >
           {visible ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
@@ -184,7 +184,7 @@ export function KpiCard({
       ) : (
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <span className="inline-flex h-11 w-11 xl:h-14 xl:w-14 shrink-0 items-center justify-center rounded-xl bg-muted/70 text-muted-foreground">
+            <span className="inline-flex h-11 w-11 xl:h-14 xl:w-14 shrink-0 items-center justify-center rounded-xl bg-muted/75 text-foreground/75">
               <Icon
                 size={22}
                 strokeWidth={1.8}
@@ -195,7 +195,7 @@ export function KpiCard({
           <div className="min-w-0 flex-1">
             <p
               className={cn(
-                "whitespace-nowrap font-medium leading-none tracking-tight",
+                "whitespace-nowrap font-semibold leading-none tracking-tight text-foreground",
                 largeValueSizeClass,
                 !visible && "select-none",
               )}
@@ -203,7 +203,7 @@ export function KpiCard({
               {visible ? displayValue : HIDDEN_VALUE}
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <p className="truncate text-sm font-normal text-muted-foreground">
+              <p className="truncate text-sm font-medium text-foreground/75">
                 {label}
               </p>
               {hasTrend && (

@@ -54,10 +54,10 @@ function FunnelStepBar({ step, maxValue, index, total }: FunnelStepBarProps) {
           }}
         >
           <div className="flex flex-col items-center text-white">
-            <span className="text-xs font-medium leading-tight">
+            <span className="text-xs font-semibold leading-tight tracking-tight">
               {step.label}
             </span>
-            <span className="text-sm font-bold leading-tight">
+            <span className="text-base font-bold leading-tight tracking-tight">
               {new Intl.NumberFormat("pt-BR").format(step.value)}
             </span>
           </div>
@@ -76,7 +76,7 @@ function FunnelStepBar({ step, maxValue, index, total }: FunnelStepBarProps) {
           className="h-2 w-2 rounded-full shrink-0"
           style={{ backgroundColor: step.color }}
         />
-        <span className="text-sm font-semibold text-muted-foreground">
+        <span className="text-sm font-semibold text-foreground/80">
           {step.percentage}%
         </span>
       </div>
@@ -154,7 +154,9 @@ export function FunnelPanel() {
   return (
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">Funil de Conversão</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight">
+          Funil de Conversão
+        </h2>
         <div className="flex items-center gap-2">
           <CampaignFilterDropdown
             options={CAMPAIGN_OPTIONS}
@@ -165,7 +167,7 @@ export function FunnelPanel() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value as FunnelPeriod)}
-            className="rounded-md border border-border bg-background px-2.5 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring transition-colors"
+            className="rounded-md border border-border bg-background px-2.5 py-1 text-sm font-medium text-foreground outline-none focus:ring-1 focus:ring-ring transition-colors"
           >
             {FUNNEL_PERIOD_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>

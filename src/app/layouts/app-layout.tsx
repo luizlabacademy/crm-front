@@ -138,7 +138,7 @@ function SidebarLink({ item, onClick }: SidebarLinkProps) {
       onClick={onClick}
       className={({ isActive }) =>
         cn(
-          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium leading-none transition-all [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:transition-colors",
+          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[14px] font-medium leading-none transition-all [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:shrink-0 [&_svg]:transition-colors",
           isActive
             ? "bg-sidebar-accent text-sidebar-foreground shadow-sm ring-1 ring-sidebar-border [&_svg]:text-sidebar-foreground"
             : "text-sidebar-foreground/85 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground [&_svg]:text-sidebar-foreground/70 hover:[&_svg]:text-sidebar-foreground",
@@ -233,9 +233,9 @@ function Sidebar({ open, onClose }: SidebarProps) {
         <div className="border-t border-sidebar-border p-3">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-sidebar-foreground/85 transition-all hover:bg-sidebar-accent/80 hover:text-sidebar-foreground"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[14px] font-medium text-sidebar-foreground/85 transition-all hover:bg-sidebar-accent/80 hover:text-sidebar-foreground"
           >
-            <LogOut size={16} />
+            <LogOut size={18} />
             <span>Sair</span>
           </button>
         </div>

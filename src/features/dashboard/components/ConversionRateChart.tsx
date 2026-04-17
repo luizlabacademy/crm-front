@@ -538,7 +538,7 @@ export function ConversionRateChart() {
           <button
             type="button"
             onClick={() => setModeMenuOpen((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 bg-transparent py-0 text-sm font-semibold text-foreground"
+            className="inline-flex items-center gap-1.5 bg-transparent py-0 text-[15px] font-semibold tracking-tight text-foreground"
           >
             {activeMode?.label ?? "Desempenho de Vendas"}
             <ChevronDown
@@ -591,7 +591,7 @@ export function ConversionRateChart() {
             onChange={(event) =>
               handleChartViewChange(event.target.value as DashboardChartType)
             }
-            className="rounded-md border border-input bg-background px-2.5 py-1 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-md border border-input bg-background px-2.5 py-1 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-ring"
             aria-label="Tipo de gráfico"
           >
             {CHART_VIEW_OPTIONS.map((option) => (
@@ -618,7 +618,7 @@ export function ConversionRateChart() {
                     "rounded-full px-5 py-1.5 text-sm font-semibold transition-colors",
                     isActive
                       ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
+                      : "text-foreground/65 hover:text-foreground",
                   ].join(" ")}
                 >
                   {opt.label}
@@ -638,7 +638,7 @@ export function ConversionRateChart() {
                 <ChevronLeft size={16} />
               </button>
 
-              <span className="min-w-28 text-center text-sm font-medium text-foreground">
+              <span className="min-w-28 text-center text-sm font-semibold text-foreground">
                 {navigationTitle}
               </span>
 
@@ -679,12 +679,20 @@ export function ConversionRateChart() {
               />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tick={{
+                  fontSize: 12,
+                  fill: "var(--muted-foreground)",
+                  fontWeight: 500,
+                }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tick={{
+                  fontSize: 12,
+                  fill: "var(--muted-foreground)",
+                  fontWeight: 500,
+                }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxisValue}
@@ -719,12 +727,20 @@ export function ConversionRateChart() {
               />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tick={{
+                  fontSize: 12,
+                  fill: "var(--muted-foreground)",
+                  fontWeight: 500,
+                }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tick={{
+                  fontSize: 12,
+                  fill: "var(--muted-foreground)",
+                  fontWeight: 500,
+                }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxisValue}
@@ -760,12 +776,20 @@ export function ConversionRateChart() {
               />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tick={{
+                  fontSize: 12,
+                  fill: "var(--muted-foreground)",
+                  fontWeight: 500,
+                }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                tick={{
+                  fontSize: 12,
+                  fill: "var(--muted-foreground)",
+                  fontWeight: 500,
+                }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxisValue}

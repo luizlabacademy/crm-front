@@ -24,7 +24,7 @@ function StatusBadge({ status }: { status: string }) {
   const colorClass = ORDER_STATUS_COLOR[status] ?? "bg-gray-100 text-gray-700";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${colorClass}`}
     >
       {label}
     </span>
@@ -49,7 +49,9 @@ export function RecentOrdersList({
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       {/* Header */}
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">Ultimos Pedidos</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight">
+          Ultimos Pedidos
+        </h2>
         <Link
           to="/orders"
           className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15 transition-colors"
@@ -67,10 +69,10 @@ export function RecentOrdersList({
             type="button"
             onClick={() => setActiveFilter(col.key)}
             className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+              "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
               activeFilter === col.key
                 ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background border-border text-muted-foreground hover:bg-accent",
+                : "bg-background border-border text-foreground/70 hover:bg-accent",
             )}
           >
             {col.label}
@@ -80,14 +82,14 @@ export function RecentOrdersList({
 
       {/* Table */}
       <div className="max-h-[34rem] overflow-y-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[13px]">
           <thead>
-            <tr className="border-b border-border text-left text-xs text-muted-foreground">
-              <th className="px-4 py-2 font-medium">Pedido</th>
-              <th className="px-4 py-2 font-medium">Cliente</th>
-              <th className="px-4 py-2 font-medium">Detalhes</th>
-              <th className="px-4 py-2 font-medium text-right">Valor</th>
-              <th className="px-4 py-2 font-medium">Status</th>
+            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-foreground/65">
+              <th className="px-4 py-2 font-semibold">Pedido</th>
+              <th className="px-4 py-2 font-semibold">Cliente</th>
+              <th className="px-4 py-2 font-semibold">Detalhes</th>
+              <th className="px-4 py-2 font-semibold text-right">Valor</th>
+              <th className="px-4 py-2 font-semibold">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -112,24 +114,24 @@ export function RecentOrdersList({
                   className="cursor-pointer hover:bg-accent/50 transition-colors"
                 >
                   <td className="px-4 py-3 align-top">
-                    <p className="font-mono text-xs text-muted-foreground">
+                    <p className="font-mono text-xs text-foreground/70">
                       {order.code}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-xs text-foreground/60">
                       {formatShortDate(order.createdAt)}
                     </p>
                   </td>
                   <td className="px-4 py-3 align-top">
-                    <p className="max-w-[180px] truncate">
+                    <p className="max-w-[180px] truncate font-medium text-foreground">
                       {order.customerName}
                     </p>
                   </td>
                   <td className="px-4 py-3 align-top">
-                    <p className="text-xs text-muted-foreground tabular-nums">
+                    <p className="text-xs text-foreground/65 tabular-nums">
                       Itens: {order.itemsCount ?? "-"}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums align-top whitespace-nowrap">
+                  <td className="px-4 py-3 text-right tabular-nums align-top whitespace-nowrap font-semibold text-foreground">
                     {formatCurrency(order.totalCents)}
                   </td>
                   <td className="px-4 py-3 align-top">
