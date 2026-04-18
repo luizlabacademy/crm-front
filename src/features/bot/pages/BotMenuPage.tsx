@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Plus,
   Edit2,
@@ -8,26 +8,13 @@ import {
   Bold,
   Italic,
   List,
-  Minimize2,
+  ArrowLeft,
+  X,
 } from "lucide-react";
-import {
-  ReactFlow,
-  type Node,
-  type Edge,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-  type Connection,
-  addEdge,
-  MiniMap,
-  Handle,
-  Position,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/PageHeader";
-import type { BotFlowState, Menu, BotTemplate } from "../types";
+import { FlowCanvas } from "../components";
+import type { BotFlowState, BotTemplate } from "../types";
 
 // ─── Initial Data ───────────────────────────────────────────────────────
 
@@ -130,168 +117,6 @@ const INITIAL_TEMPLATES: BotTemplate[] = [
   },
 ];
 
-// ─── Custom Message Node ────────────────────────────────────────────────
-
-interface MenuNodeData {
-  menu: Menu;
-  onUpdate: (menu: Menu) => void;
-  onDelete: () => void;
-}
-
-function MenuNode({
-  data,
-  selected,
-}: {
-  data: MenuNodeData;
-  selected: boolean;
-}) {
-  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
-  const [questionValue, setQuestionValue] = useState(data.menu.question);
-  const [editingOptionIdx, setEditingOptionIdx] = useState<number | null>(null);
-  const [editingOptionLabel, setEditingOptionLabel] = useState("");
-
-  const handleQuestionBlur = () => {
-    if (questionValue.trim() !== data.menu.question) {
-      data.onUpdate({ ...data.menu, question: questionValue.trim() });
-    } else {
-      setQuestionValue(data.menu.question);
-    }
-    setIsEditingQuestion(false);
-  };
-
-  const handleAddOption = () => {
-    data.onUpdate({
-      ...data.menu,
-      options: [
-        ...data.menu.options,
-        { label: "Nova opção", nextMenuRef: null },
-      ],
-    });
-  };
-
-  const handleUpdateOptionLabel = (idx: number, newLabel: string) => {
-    const updatedOptions = [...data.menu.options];
-    updatedOptions[idx].label = newLabel;
-    data.onUpdate({ ...data.menu, options: updatedOptions });
-  };
-
-  const handleDeleteOption = (idx: number) => {
-    const updatedOptions = data.menu.options.filter((_, i) => i !== idx);
-    data.onUpdate({ ...data.menu, options: updatedOptions });
-  };
-
-  return (
-    <div
-      className={cn(
-        "rounded-lg border-2 bg-card p-4 shadow-md min-w-80 max-w-md",
-        selected ? "border-primary" : "border-border"
-      )}
-    >
-      {/* Ref badge */}
-      <div className="mb-2">
-        <span className="inline-block px-2 py-1 rounded text-xs font-mono bg-muted text-muted-foreground">
-          {data.menu.ref}
-        </span>
-      </div>
-
-      {/* Question */}
-      <div className="mb-3">
-        {isEditingQuestion ? (
-          <textarea
-            value={questionValue}
-            onChange={(e) => setQuestionValue(e.target.value)}
-            onBlur={handleQuestionBlur}
-            autoFocus
-            rows={3}
-            className="w-full rounded border border-input bg-background p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-        ) : (
-          <div
-            onClick={() => setIsEditingQuestion(true)}
-            className="cursor-pointer rounded border border-border p-2 text-sm leading-relaxed hover:bg-muted/30"
-          >
-            {data.menu.question}
-          </div>
-        )}
-      </div>
-
-      {/* Options */}
-      <div className="space-y-2 mb-3">
-        {data.menu.options.map((option, idx) => (
-          <div key={idx} className="flex items-start gap-2">
-            <Handle
-              type="source"
-              position={Position.Right}
-              id={`opt-${idx}`}
-              className="!bg-primary !w-3 !h-3"
-            />
-            <div className="flex-1 space-y-1">
-              {editingOptionIdx === idx ? (
-                <input
-                  type="text"
-                  value={editingOptionLabel}
-                  onChange={(e) => setEditingOptionLabel(e.target.value)}
-                  onBlur={() => {
-                    if (editingOptionLabel.trim()) {
-                      handleUpdateOptionLabel(idx, editingOptionLabel);
-                    }
-                    setEditingOptionIdx(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      if (editingOptionLabel.trim()) {
-                        handleUpdateOptionLabel(idx, editingOptionLabel);
-                      }
-                      setEditingOptionIdx(null);
-                    }
-                  }}
-                  autoFocus
-                  className="w-full rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
-                />
-              ) : (
-                <button
-                  onClick={() => {
-                    setEditingOptionIdx(idx);
-                    setEditingOptionLabel(option.label);
-                  }}
-                  className="w-full rounded border border-border px-2 py-1 text-xs text-left hover:bg-muted/30"
-                >
-                  {option.label}
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => handleDeleteOption(idx)}
-              className="rounded p-0.5 text-muted-foreground hover:text-destructive"
-              title="Excluir opção"
-            >
-              <Trash2 size={12} />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Add option button */}
-      <button
-        onClick={handleAddOption}
-        className="w-full rounded border border-dashed border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 flex items-center justify-center gap-1 mb-3"
-      >
-        <Plus size={12} />
-        Adicionar opção
-      </button>
-
-      {/* Delete menu button */}
-      <button
-        onClick={data.onDelete}
-        className="w-full rounded bg-destructive/10 px-2 py-1 text-xs text-destructive hover:bg-destructive/20"
-      >
-        Excluir diálogo
-      </button>
-
-      <Handle type="target" position={Position.Left} />
-    </div>
-  );
-}
 
 // ─── Template Modal ─────────────────────────────────────────────────────
 
@@ -453,6 +278,7 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
     flowState.initialMenuRef
   );
   const [conversation, setConversation] = useState<ConversationTurn[]>([]);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleInitialize = () => {
     const startMenu = flowState.menus.find(
@@ -486,214 +312,127 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
 
   const currentMenu = flowState.menus.find((m) => m.ref === currentMenuRef);
 
+  useEffect(() => {
+    const chatContainer = chatScrollRef.current;
+    if (!chatContainer) {
+      return;
+    }
+
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [conversation, currentMenuRef]);
+
   return (
-    <div className="flex flex-col h-full bg-white border-r border-border rounded-lg overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
-        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-sm font-bold">
-          CS
-        </div>
-        <div>
-          <div className="text-sm font-semibold">CS Diagnostics</div>
-          <div className="text-xs opacity-90">Online</div>
-        </div>
-      </div>
+    <div className="flex h-full items-center justify-start bg-transparent">
+      <div className="relative h-full w-full max-w-[390px] rounded-[42px] bg-neutral-900 p-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
+        <div className="absolute left-[-3px] top-28 h-10 w-1 rounded-l-full bg-neutral-700/70" />
+        <div className="absolute left-[-3px] top-44 h-16 w-1 rounded-l-full bg-neutral-700/70" />
+        <div className="absolute right-[-3px] top-36 h-20 w-1 rounded-r-full bg-neutral-700/70" />
 
-      {/* Chat area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {conversation.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            <button
-              onClick={handleInitialize}
-              className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
-            >
-              Iniciar conversa
-            </button>
+        <div className="relative flex h-full flex-col overflow-hidden rounded-[34px] border border-black/30 bg-[#0b141a]">
+          <div className="pointer-events-none absolute left-1/2 top-2 h-6 w-28 -translate-x-1/2 rounded-full bg-black/85" />
+
+          <div className="mt-6 flex items-center gap-3 border-b border-white/10 bg-[#111b21] px-4 py-3 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold uppercase tracking-wide text-white">
+              sb
+            </div>
+            <div>
+              <div className="text-sm font-semibold">Studio Belle</div>
+              <div className="text-xs text-emerald-300">Online</div>
+            </div>
           </div>
-        ) : (
-          <>
-            {conversation.map((turn, idx) => (
-              <div
-                key={idx}
-                className={cn(
-                  "flex",
-                  turn.type === "bot" ? "justify-start" : "justify-end"
-                )}
-              >
-                <div
-                  className={cn(
-                    "max-w-xs rounded-2xl px-4 py-2 text-sm",
-                    turn.type === "bot"
-                      ? "bg-gray-200 text-gray-900"
-                      : "bg-emerald-600 text-white"
-                  )}
-                >
-                  {turn.text || turn.label}
-                </div>
-              </div>
-            ))}
 
-            {/* Options */}
-            {currentMenu && currentMenu.options.length > 0 && (
-              <div className="mt-4 space-y-2">
-                {currentMenu.options.map((option, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleOptionClick(option.label, option.nextMenuRef)}
-                    className="w-full rounded-full border-2 border-emerald-600 px-4 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-600 hover:text-white transition-colors"
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* End message */}
-            {currentMenu === undefined && conversation.length > 0 && (
-              <div className="flex justify-start mt-4">
-                <div className="bg-gray-200 text-gray-900 rounded-2xl px-4 py-2 text-sm">
-                  Fim da conversa. Clique abaixo para reiniciar.
-                </div>
-              </div>
-            )}
-
-            {currentMenu === undefined && (
-              <div className="flex justify-center mt-4">
+          <div
+            ref={chatScrollRef}
+            className="flex-1 overflow-y-auto space-y-3 bg-[#0b141a] bg-[radial-gradient(circle_at_top_left,rgba(22,50,58,0.6),transparent_45%)] p-4 [scrollbar-width:thin] [scrollbar-color:rgba(134,150,160,0.6)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#8696a0]/60 hover:[&::-webkit-scrollbar-thumb]:bg-[#8696a0]/80"
+          >
+            {conversation.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-center">
                 <button
-                  onClick={() => {
-                    setConversation([]);
-                    setCurrentMenuRef(null);
-                    handleInitialize();
-                  }}
-                  className="text-xs text-emerald-600 hover:underline"
+                  onClick={handleInitialize}
+                  className="rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-400"
                 >
-                  Reiniciar
+                  Iniciar conversa
                 </button>
               </div>
+            ) : (
+              <>
+                {conversation.map((turn, idx) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "flex",
+                      turn.type === "bot" ? "justify-start" : "justify-end"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
+                        turn.type === "bot"
+                          ? "rounded-tl-sm bg-[#202c33] text-[#e9edef]"
+                          : "rounded-tr-sm bg-[#005c4b] text-white"
+                      )}
+                    >
+                      {turn.text || turn.label}
+                    </div>
+                  </div>
+                ))}
+
+                {currentMenu && currentMenu.options.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {currentMenu.options.map((option, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() =>
+                          handleOptionClick(option.label, option.nextMenuRef)
+                        }
+                        className="w-full rounded-xl border border-emerald-400/60 bg-[#111b21] px-4 py-2.5 text-left text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-emerald-200"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {currentMenu === undefined && conversation.length > 0 && (
+                  <div className="mt-3 flex justify-start">
+                    <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-[#202c33] px-3.5 py-2.5 text-sm text-[#e9edef]">
+                      Fim da conversa. Clique abaixo para reiniciar.
+                    </div>
+                  </div>
+                )}
+
+                {currentMenu === undefined && (
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={() => {
+                        setConversation([]);
+                        setCurrentMenuRef(null);
+                        handleInitialize();
+                      }}
+                      className="text-xs font-medium text-emerald-300 hover:text-emerald-200"
+                    >
+                      Reiniciar
+                    </button>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+
+          <div className="border-t border-white/10 bg-[#111b21] px-4 py-3">
+            <div className="rounded-full bg-[#202c33] px-4 py-2 text-xs text-[#8696a0]">
+              Digite uma mensagem...
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Flow Builder Canvas ────────────────────────────────────────────────
-
-interface FlowCanvasProps {
-  flowState: BotFlowState;
-  onUpdate: (flowState: BotFlowState) => void;
-}
-
-function FlowCanvas({ flowState, onUpdate }: FlowCanvasProps) {
-  const initialRfNodes: Node[] = flowState.menus.map((menu, idx) => ({
-    id: menu.ref,
-    data: {
-      menu,
-      onUpdate: (updatedMenu: Menu) => {
-        onUpdate({
-          ...flowState,
-          menus: flowState.menus.map((m) =>
-            m.ref === updatedMenu.ref ? updatedMenu : m
-          ),
-        });
-      },
-      onDelete: () => {
-        onUpdate({
-          ...flowState,
-          menus: flowState.menus.filter((m) => m.ref !== menu.ref),
-        });
-      },
-    },
-    position: { x: idx * 400, y: idx * 150 },
-    type: "menuNode",
-  }));
-
-  const initialRfEdges: Edge[] = [];
-  flowState.menus.forEach((menu) => {
-    menu.options.forEach((option, optIdx) => {
-      if (option.nextMenuRef) {
-        initialRfEdges.push({
-          id: `edge-${menu.ref}-${optIdx}`,
-          source: menu.ref,
-          sourceHandle: `opt-${optIdx}`,
-          target: option.nextMenuRef,
-          animated: true,
-        });
-      }
-    });
-  });
-
-  const [nodes, , onNodesChange] = useNodesState(initialRfNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialRfEdges);
-
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      const edge = addEdge(connection, edges);
-      setEdges(edge);
-
-      if (connection.sourceHandle) {
-        const sourceMenu = flowState.menus.find((m) => m.ref === connection.source);
-        if (sourceMenu && connection.sourceHandle.startsWith("opt-")) {
-          const optIdx = parseInt(connection.sourceHandle.replace("opt-", ""));
-          const updatedOptions = [...sourceMenu.options];
-          updatedOptions[optIdx].nextMenuRef = connection.target || null;
-          const updatedMenu = { ...sourceMenu, options: updatedOptions };
-          onUpdate({
-            ...flowState,
-            menus: flowState.menus.map((m) =>
-              m.ref === sourceMenu.ref ? updatedMenu : m
-            ),
-          });
-        }
-      }
-    },
-    [edges, flowState, onUpdate, setEdges]
-  );
-
-  const handleAddMenu = () => {
-    const newRef = `NOVO_MENU_${Date.now()}`;
-    const newMenu: Menu = {
-      ref: newRef,
-      question: "Nova pergunta?",
-      options: [],
-    };
-    onUpdate({
-      ...flowState,
-      menus: [...flowState.menus, newMenu],
-    });
-  };
-
-  return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden border border-border">
-      {/* Toolbar */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-card border border-border rounded-lg p-2 shadow-md">
-        <button
-          onClick={handleAddMenu}
-          className="flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-          title="Adicionar novo diálogo"
-        >
-          <Plus size={14} />
-          Novo diálogo
-        </button>
-      </div>
-
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        nodeTypes={{ menuNode: MenuNode }}
-        fitView
-      >
-        <Background />
-        <Controls />
-        <MiniMap />
-      </ReactFlow>
-    </div>
-  );
-}
 
 // ─── Main Page ─────────────────────────────────────────────────────────
 
@@ -708,47 +447,47 @@ export function BotMenuPage() {
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [selectedTemplateForEdit, setSelectedTemplateForEdit] =
     useState<BotTemplate | null>(null);
+  const dialogsOverlayRef = useRef<HTMLDivElement | null>(null);
 
-  const enterFullscreen = useCallback(async () => {
-    try {
-      await document.documentElement.requestFullscreen();
-    } catch (err) {
-      console.error("Failed to enter fullscreen:", err);
+  const closeDialogsOverlay = useCallback(async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => undefined);
     }
-  }, []);
-
-  const exitFullscreen = useCallback(async () => {
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      }
-      setActiveTab("templates");
-    } catch (err) {
-      console.error("Failed to exit fullscreen:", err);
-    }
+    setActiveTab("templates");
   }, []);
 
   // Handle tab change - enter fullscreen if switching to dialogs
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
-    if (tab === "dialogs") {
-      enterFullscreen();
-    }
   };
 
-  // Handle fullscreen change
+  // Enter browser fullscreen (F11-like) when opening dialogs
+  useEffect(() => {
+    if (activeTab !== "dialogs") {
+      return;
+    }
+
+    const overlayElement = dialogsOverlayRef.current;
+    if (!overlayElement || document.fullscreenElement === overlayElement) {
+      return;
+    }
+
+    void overlayElement.requestFullscreen().catch(() => undefined);
+  }, [activeTab]);
+
+  // If user exits fullscreen via ESC/browser controls, go back to templates tab
   useEffect(() => {
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && activeTab === "dialogs") {
-        // User exited fullscreen, switch back to templates
+      if (activeTab === "dialogs" && !document.fullscreenElement) {
         setActiveTab("templates");
       }
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () =>
+    return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [activeTab]);
+    };
+  }, [activeTab, closeDialogsOverlay]);
 
   const handleSaveTemplate = (template: BotTemplate) => {
     if (selectedTemplateForEdit) {
@@ -771,99 +510,112 @@ export function BotMenuPage() {
     setTemplateModalOpen(true);
   };
 
-  if (activeTab === "dialogs" && document.fullscreenElement) {
-    return (
-      <div className="w-screen h-screen flex flex-col bg-background">
-        {/* Fullscreen Close Button - Floating */}
-        <button
-          onClick={exitFullscreen}
-          className="absolute top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-sm shadow-lg"
-          title="Sair de tela cheia (ESC)"
-        >
-          <Minimize2 size={18} />
-          Sair (ESC)
-        </button>
+  const dialogsOverlay =
+    activeTab === "dialogs" ? (
+      <div
+        ref={dialogsOverlayRef}
+        className="fixed inset-0 z-[120] flex h-screen w-screen flex-col bg-muted/30"
+      >
+        <div className="flex h-16 items-center border-b border-border/70 bg-gradient-to-r from-card via-card to-muted/40 px-5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/90">
+          <button
+            onClick={() => void closeDialogsOverlay()}
+            className="inline-flex items-center rounded-lg p-2 text-foreground transition-colors hover:bg-muted"
+            title="Voltar para templates"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={16} />
+          </button>
 
-        {/* Fullscreen Content - Full Height */}
-        <div className="w-full h-full overflow-hidden p-6">
-          <div className="flex gap-6 h-full">
-            <div className="w-[25%]">
-              <WhatsAppEmulator flowState={flowState} />
+          <div className="mx-3 h-8 w-px bg-border" />
+
+          <div className="inline-flex items-center gap-3">
+            <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/12 text-primary">
+              <GitBranch size={20} />
             </div>
-            <div className="flex-1">
-              <FlowCanvas flowState={flowState} onUpdate={setFlowState} />
+            <div className="flex flex-col leading-tight text-left">
+              <span className="text-lg font-semibold text-foreground">Menus do Bot</span>
+              <span className="text-sm text-muted-foreground">Editor em tela cheia</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => void closeDialogsOverlay()}
+            className="ml-auto inline-flex items-center rounded-lg border border-transparent p-2 text-muted-foreground transition-colors hover:border-border hover:bg-background hover:text-foreground"
+            aria-label="Fechar"
+            title="Fechar"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="w-full flex-1 overflow-hidden p-5">
+          <div className="flex h-full gap-5">
+            <div className="flex w-auto min-w-[320px] flex-col">
+              <div className="flex-1 overflow-hidden">
+                <WhatsAppEmulator flowState={flowState} />
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col rounded-xl border border-border bg-card shadow-sm">
+              <div className="border-b border-border px-4 py-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Configuração do Menu
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Edite menus, opções e transições do bot
+                </p>
+              </div>
+              <div className="flex-1 overflow-hidden p-4">
+                <FlowCanvas flowState={flowState} onUpdate={setFlowState} />
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Template Modal */}
-        <TemplateModal
-          open={templateModalOpen}
-          onClose={() => {
-            setTemplateModalOpen(false);
-            setSelectedTemplateForEdit(null);
-          }}
-          onSave={handleSaveTemplate}
-          initialTemplate={selectedTemplateForEdit}
-        />
       </div>
-    );
-  }
+    ) : null;
 
   return (
-    <div className="h-screen flex flex-col">
-      <PageHeader
-        title="Bot"
-        description="Configure menus de atendimento automático e templates de resposta."
-      />
+    <>
+      <div className="h-screen flex flex-col">
+        <PageHeader
+          title="Bot"
+          description="Configure menus de atendimento automático e templates de resposta."
+        />
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-border px-6">
-        {(
-          [
-            {
-              key: "dialogs" as const,
-              label: "Diálogos do Bot",
-              icon: <GitBranch size={14} />,
-            },
-            {
-              key: "templates" as const,
-              label: "Templates",
-              icon: <FileText size={14} />,
-            },
-          ] as { key: Tab; label: string; icon: React.ReactNode }[]
-        ).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => handleTabChange(tab.key)}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-              activeTab === tab.key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* Tabs */}
+        <div className="flex items-center gap-1 border-b border-border px-6">
+          {(
+            [
+              {
+                key: "templates" as const,
+                label: "Templates",
+                icon: <FileText size={14} />,
+              },
+              {
+                key: "dialogs" as const,
+                label: "Menus do Bot",
+                icon: <GitBranch size={14} />,
+              },
+            ] as { key: Tab; label: string; icon: React.ReactNode }[]
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+                activeTab === tab.key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden p-6">
-        {activeTab === "dialogs" ? (
-          <div className="flex gap-6 h-full">
-            {/* Left: WhatsApp Emulator */}
-            <div className="w-[25%]">
-              <WhatsAppEmulator flowState={flowState} />
-            </div>
-
-            {/* Right: Flow Builder */}
-            <div className="flex-1">
-              <FlowCanvas flowState={flowState} onUpdate={setFlowState} />
-            </div>
-          </div>
-        ) : (
+        {/* Content */}
+        <div className="flex-1 overflow-hidden p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Templates de Mensagens</h3>
@@ -944,19 +696,21 @@ export function BotMenuPage() {
               </table>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Modals */}
+        <TemplateModal
+          open={templateModalOpen}
+          onClose={() => {
+            setTemplateModalOpen(false);
+            setSelectedTemplateForEdit(null);
+          }}
+          onSave={handleSaveTemplate}
+          initialTemplate={selectedTemplateForEdit}
+        />
       </div>
 
-      {/* Modals */}
-      <TemplateModal
-        open={templateModalOpen}
-        onClose={() => {
-          setTemplateModalOpen(false);
-          setSelectedTemplateForEdit(null);
-        }}
-        onSave={handleSaveTemplate}
-        initialTemplate={selectedTemplateForEdit}
-      />
-    </div>
+      {dialogsOverlay}
+    </>
   );
 }
