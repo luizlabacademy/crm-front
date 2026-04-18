@@ -342,8 +342,15 @@ function DayView({
     scrollRef.current.scrollTop = target;
   }, [isCurrentDay, nowLineTop, scrollToNowSignal]);
 
-  const minWidth = `${DAY_TIME_COL_WIDTH + workers.length * columnWidth}px`;
-  const columnsTemplate = `${DAY_TIME_COL_WIDTH}px repeat(${workers.length}, ${columnWidth}px)`;
+  // On mobile with a single worker, let the worker column be flexible (1fr)
+  // and don't force a large minWidth which creates a white area to the right.
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  const minWidth = isMobile && workers.length === 1
+    ? "100%"
+    : `${DAY_TIME_COL_WIDTH + workers.length * columnWidth}px`;
+  const columnsTemplate = isMobile && workers.length === 1
+    ? `${DAY_TIME_COL_WIDTH}px 1fr`
+    : `${DAY_TIME_COL_WIDTH}px repeat(${workers.length}, ${columnWidth}px)`;
 
   return (
     <div className="h-full overflow-x-auto overflow-y-hidden">
@@ -352,7 +359,7 @@ function DayView({
           className="grid sticky top-0 z-30"
           style={{ gridTemplateColumns: columnsTemplate }}
         >
-          <div className="border-b border-r border-border h-11 bg-muted flex items-center justify-center px-2 sticky left-0 z-30">
+          <div className="hidden sm:flex border-b border-r border-border h-11 bg-muted items-center justify-center px-2 sticky left-0 z-30">
             <div className="flex items-center gap-2 rounded-md bg-background/70 px-1.5 py-0.5">
               <button
                 type="button"
@@ -377,7 +384,7 @@ function DayView({
           {workers.map((w) => (
             <div
               key={w.id}
-              className="border-b border-r border-border h-11 flex items-center justify-center gap-2 px-2 bg-muted"
+              className="hidden sm:flex border-b border-r border-border h-11 flex items-center justify-center gap-2 px-2 bg-muted"
             >
               <span className="flex flex-col items-center leading-tight">
                 <span className="flex items-center gap-1.5">
@@ -795,8 +802,8 @@ function NewAppointmentModal({
   onSubmit: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center">
-      <div className="w-full max-w-2xl rounded-xl border border-border bg-card shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-black/40 p-0 sm:p-4 flex items-center justify-center">
+      <div className="w-full h-full sm:h-auto max-w-none sm:max-w-2xl rounded-none sm:rounded-xl border border-border bg-card shadow-2xl overflow-auto">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold">{title}</h2>
           <button
@@ -1217,6 +1224,7 @@ export function SchedulesBoardPage() {
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between gap-2 border-b border-border px-3 sm:px-4 shrink-0">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Mobile: simple Home icon on the left */}
           <button
             onClick={() => {
               if (document.fullscreenElement) {
@@ -1224,13 +1232,27 @@ export function SchedulesBoardPage() {
               }
               void navigate("/dashboard");
             }}
-            className="flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] leading-none text-muted-foreground transition-colors hover:text-foreground shrink-0"
+            className="sm:hidden rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            title="Home"
+          >
+            <Home size={16} />
+          </button>
+
+          {/* Desktop: Home with label */}
+          <button
+            onClick={() => {
+              if (document.fullscreenElement) {
+                void document.exitFullscreen().catch(() => undefined);
+              }
+              void navigate("/dashboard");
+            }}
+            className="hidden sm:flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] leading-none text-muted-foreground transition-colors hover:text-foreground shrink-0"
           >
             <Home size={16} />
             <span>Home</span>
           </button>
           <span className="h-7 w-px bg-border/60 shrink-0" aria-hidden="true" />
-          <CalendarCheck size={20} className="text-primary shrink-0 hidden sm:block" />
+          <CalendarCheck size={20} className="text-primary shrink-0" />
           <span className="font-semibold text-base truncate">
             <span className="sm:hidden">Agendamentos</span>
             <span className="hidden sm:inline">Board de Agendamentos</span>
@@ -1269,39 +1291,89 @@ export function SchedulesBoardPage() {
 
       {/* Calendar nav bar */}
       <div className="flex items-center gap-2 sm:gap-3 border-b border-border bg-card px-3 sm:px-4 py-2 shrink-0">
-        <button
-          onClick={prev}
-          className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <button
-          onClick={next}
-          className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground"
-        >
-          <ChevronRight size={16} />
-        </button>
-        <button
-          onClick={goToday}
-          className="rounded-md border border-border px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium hover:bg-accent transition-colors"
-        >
-          Hoje
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileDatePickerOpen(true)}
-          className="sm:pointer-events-none rounded-md bg-muted px-2 sm:px-2.5 py-1 text-xs sm:text-sm font-medium capitalize truncate"
-        >
-          {headerLabel()}
-        </button>
+        {/* Mobile: Home on the left */}
+        <div className="sm:hidden flex items-center">
+          <button
+            onClick={goToday}
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+            title="Hoje"
+          >
+            Hoje
+          </button>
+        </div>
+
+        {/* Center: arrows and centered header label on mobile */}
+        <div className="flex-1 flex items-center justify-center sm:hidden">
+          <button
+            onClick={prev}
+            className="rounded-md p-1.5 text-primary hover:bg-primary/10 transition-colors sm:hidden"
+            title="Anterior"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          
+
+          <button
+            type="button"
+            onClick={() => setMobileDatePickerOpen(true)}
+            className="mx-2 rounded-md px-3 py-1.5 text-base sm:text-sm font-semibold capitalize truncate bg-transparent sm:bg-muted"
+          >
+            {headerLabel()}
+          </button>
+
+          <button
+            onClick={next}
+            className="rounded-md p-1.5 text-primary hover:bg-primary/10 transition-colors sm:hidden"
+            title="Próximo"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* Left controls for desktop: Hoje + prev/next + label */}
+        <div className="hidden sm:flex items-center gap-2">
+          <button
+            onClick={goToday}
+            className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+            title="Hoje"
+          >
+            Hoje
+          </button>
+
+          <button
+            onClick={prev}
+            className="rounded-md p-1.5 text-primary hover:bg-primary/10 transition-colors"
+            title="Anterior"
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMobileDatePickerOpen(true)}
+            className="mx-2 pointer-events-none rounded-md bg-muted px-3 py-1.5 text-sm font-semibold capitalize truncate"
+          >
+            {headerLabel()}
+          </button>
+
+          <button
+            onClick={next}
+            className="rounded-md p-1.5 text-primary hover:bg-primary/10 transition-colors"
+            title="Próximo"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
 
         <div className="ml-auto hidden sm:block">
           <Legend />
         </div>
       </div>
 
-      {/* Mobile: worker navigation bar */}
-      <div className="sm:hidden flex items-center justify-between border-b border-border bg-card px-3 py-2 shrink-0">
+      {/* Mobile: worker navigation bar (hidden on mobile as requested) */}
+      {!isAppointmentModalOpen && (
+        <div className="sm:hidden flex items-center justify-between border-b border-border bg-card px-3 py-2 shrink-0">
         <button
           type="button"
           onClick={() => setMobileWorkerIndex((i) => Math.max(0, i - 1))}
@@ -1326,10 +1398,11 @@ export function SchedulesBoardPage() {
         >
           <ChevronRight size={18} />
         </button>
-      </div>
+        </div>
+      )}
 
       {/* Calendar body */}
-      <div className="flex-1 overflow-hidden bg-white p-2 sm:p-4 dark:bg-background">
+      <div className="flex-1 overflow-hidden bg-white p-0 sm:p-4 dark:bg-background">
         <div className="flex h-full gap-4">
           {/* Desktop sidebar */}
           <aside
@@ -1446,8 +1519,8 @@ export function SchedulesBoardPage() {
           </aside>
 
           <div
-            ref={dayGridRef}
-            className="min-w-0 flex-1 rounded-xl border border-border bg-card overflow-hidden"
+          ref={dayGridRef}
+            className="min-w-0 flex-1 rounded-none sm:rounded-xl border border-border bg-card overflow-hidden"
           >
             {/* Desktop: normal views */}
             <div className="hidden sm:block h-full">
