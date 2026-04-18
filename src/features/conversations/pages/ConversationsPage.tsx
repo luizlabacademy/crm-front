@@ -1155,13 +1155,8 @@ export function ConversationsPage() {
 
             {/* Messages area */}
             <div
-              className="flex-1 min-h-0 overflow-y-scroll px-4 py-4 space-y-2"
-              style={{
-                scrollbarGutter: "stable",
-                backgroundImage:
-                  "linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.55)), radial-gradient(circle at 1px 1px, rgba(148,163,184,0.25) 0.5px, transparent 0)",
-                backgroundSize: "100% 100%, 24px 24px",
-              }}
+              className="flex-1 min-h-0 overflow-y-scroll px-4 py-4 space-y-2 bg-background"
+              style={{ scrollbarGutter: "stable", backgroundColor: "var(--background)" }}
             >
               {!activeContact ? (
                 <EmptyChatState />
