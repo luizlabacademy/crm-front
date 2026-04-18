@@ -284,6 +284,23 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
     }
   }
 
+  // Handle order reversal (extorno) for sales
+  async function handleReverseOrder(orderId: number) {
+    const ok = window.confirm("Deseja estornar este pedido? Esta ação pode ser irreversível.");
+    if (!ok) return;
+    try {
+      await axios.post(`/api/v1/orders/${orderId}/reverse`);
+      toast.success("Pedido estornado com sucesso.");
+      void refetch();
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        toast.error("Pedido não encontrado.");
+      } else {
+        toast.error("Erro ao estornar. Tente novamente.");
+      }
+    }
+  }
+
   function handleFinalizeBudget(payload: QuoteFinalizePayload) {
     toast.success(
       `Orçamento finalizado para ${payload.customerName} (#${payload.customerId}) com total ${formatCurrencyCode(payload.totalCents, "BRL")}.`,
@@ -503,7 +520,11 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
                   >
                     <td className="px-4 py-3">
                       <div className="text-sm font-medium">
-                        {order.code ?? `#${order.id}`}
+                        {(() => {
+                          const code = order.code ?? `#${order.id}`;
+                          const parts = String(code).split("-");
+                          return parts.length > 1 ? parts[parts.length - 1] : code;
+                        })()}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {formatShortDate(order.createdAt)}
@@ -544,6 +565,16 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
                         >
                           <Eye size={17} />
                         </button>
+                        {!isQuotesView && (
+                          <button
+                            type="button"
+                            aria-label="Estornar"
+                            onClick={() => void handleReverseOrder(order.id)}
+                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                          >
+                            Extorno
+                          </button>
+                        )}
                         {isQuotesView && (
                           <>
                             <button
