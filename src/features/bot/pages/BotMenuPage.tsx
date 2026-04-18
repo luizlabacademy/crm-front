@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Plus,
   Edit2,
@@ -8,7 +8,6 @@ import {
   Bold,
   Italic,
   List,
-  Maximize2,
   Minimize2,
 } from "lucide-react";
 import {
@@ -701,7 +700,7 @@ function FlowCanvas({ flowState, onUpdate }: FlowCanvasProps) {
 type Tab = "dialogs" | "templates";
 
 export function BotMenuPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("dialogs");
+  const [activeTab, setActiveTab] = useState<Tab>("templates");
   const [flowState, setFlowState] = useState<BotFlowState>(
     INITIAL_BOT_FLOW_STATE
   );
@@ -709,7 +708,46 @@ export function BotMenuPage() {
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [selectedTemplateForEdit, setSelectedTemplateForEdit] =
     useState<BotTemplate | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const enterFullscreen = useCallback(async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (err) {
+      console.error("Failed to enter fullscreen:", err);
+    }
+  }, []);
+
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error("Failed to exit fullscreen:", err);
+    }
+  }, []);
+
+  // Handle tab change - enter fullscreen if switching to dialogs
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    if (tab === "dialogs") {
+      enterFullscreen();
+    }
+  };
+
+  // Handle fullscreen change
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && activeTab === "dialogs") {
+        // User exited fullscreen, switch back to templates
+        setActiveTab("templates");
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [activeTab]);
 
   const handleSaveTemplate = (template: BotTemplate) => {
     if (selectedTemplateForEdit) {
@@ -732,26 +770,26 @@ export function BotMenuPage() {
     setTemplateModalOpen(true);
   };
 
-  if (isFullscreen && activeTab === "dialogs") {
+  if (activeTab === "dialogs" && document.fullscreenElement) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col bg-background">
+      <div className="w-screen h-screen flex flex-col bg-background">
         {/* Titlebar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card shadow-sm">
           <h1 className="text-xl font-semibold">Diálogos do Bot</h1>
           <button
-            onClick={() => setIsFullscreen(false)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors"
-            title="Fechar tela cheia"
+            onClick={exitFullscreen}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors text-sm"
+            title="Sair de tela cheia (ESC)"
           >
             <Minimize2 size={18} />
-            Fechar
+            Sair (ESC)
           </button>
         </div>
 
         {/* Fullscreen Content */}
         <div className="flex-1 overflow-hidden p-6">
           <div className="flex gap-6 h-full">
-            <div className="w-[35%]">
+            <div className="w-[25%]">
               <WhatsAppEmulator flowState={flowState} />
             </div>
             <div className="flex-1">
@@ -799,7 +837,7 @@ export function BotMenuPage() {
         ).map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleTabChange(tab.key)}
             className={cn(
               "flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
               activeTab === tab.key
@@ -816,19 +854,9 @@ export function BotMenuPage() {
       {/* Content */}
       <div className="flex-1 overflow-hidden p-6">
         {activeTab === "dialogs" ? (
-          <div className="relative flex gap-6 h-full">
-            {/* Fullscreen button */}
-            <button
-              onClick={() => setIsFullscreen(true)}
-              className="absolute top-2 right-2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity text-xs"
-              title="Tela cheia"
-            >
-              <Maximize2 size={16} />
-              Tela cheia
-            </button>
-
+          <div className="flex gap-6 h-full">
             {/* Left: WhatsApp Emulator */}
-            <div className="w-[35%]">
+            <div className="w-[25%]">
               <WhatsAppEmulator flowState={flowState} />
             </div>
 
