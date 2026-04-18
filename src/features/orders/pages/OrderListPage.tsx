@@ -9,12 +9,12 @@ import {
 } from "@/features/orders/api/useOrders";
 import { useCustomers } from "@/features/customers/api/useCustomers";
 import { ORDER_STATUS_COLORS } from "@/features/orders/types/orderTypes";
-import { formatDateTime } from "@/lib/utils/formatDate";
+import { formatShortDate } from "@/lib/utils/formatDate";
 import { formatCurrencyCode } from "@/lib/utils/formatCurrency";
 import { SkeletonRow } from "@/components/shared/SkeletonRow";
 import { FilterBar } from "@/features/expenses/components/FilterBar";
 import { useTenantsSelector } from "@/lib/api/useTenants";
-import { formatShortDate } from "@/lib/utils/formatDate";
+// (import deduplicated above)
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
