@@ -1,20 +1,18 @@
 // Flow Builder Types
-export interface FlowOption {
-  id: string;
+export interface MenuOption {
   label: string;
-  next: string | null; // target node id
+  nextMenuRef: string | null;
 }
 
-export interface FlowNode {
-  id: string;
-  type: "message";
-  text: string; // supports {{variable}} syntax
-  options: FlowOption[];
+export interface Menu {
+  ref: string;
+  question: string;
+  options: MenuOption[];
 }
 
-export interface FlowState {
-  nodes: FlowNode[];
-  startNodeId: string;
+export interface BotFlowState {
+  initialMenuRef: string;
+  menus: Menu[];
 }
 
 // Template Types

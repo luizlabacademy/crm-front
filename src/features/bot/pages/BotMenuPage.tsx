@@ -8,6 +8,8 @@ import {
   Bold,
   Italic,
   List,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import {
   ReactFlow,
@@ -26,37 +28,146 @@ import {
 import "@xyflow/react/dist/style.css";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/PageHeader";
-import type { FlowState, FlowNode, BotTemplate } from "../types";
+import type { BotFlowState, Menu, BotTemplate } from "../types";
 
 // ─── Initial Data ───────────────────────────────────────────────────────
 
-const INITIAL_FLOW_STATE: FlowState = {
-  startNodeId: "start",
-  nodes: [
+const INITIAL_BOT_FLOW_STATE: BotFlowState = {
+  initialMenuRef: "PRINCIPAL",
+  menus: [
     {
-      id: "start",
-      type: "message",
-      text: "Olá! Como posso te ajudar?",
+      ref: "PRINCIPAL",
+      question: "Olá! O que você deseja?",
       options: [
-        { id: "opt-1", label: "Agendar Atendimento", next: "schedule" },
-        { id: "opt-2", label: "Coletar Relatório", next: "report" },
+        { label: "Agendar atendimento", nextMenuRef: "AGENDAR" },
+        { label: "Meus agendamentos", nextMenuRef: "MEUS_AGENDAMENTOS" },
+        { label: "Serviços e preços", nextMenuRef: "SERVICOS" },
+        { label: "Promoções", nextMenuRef: "PROMOCOES" },
+        { label: "Horário e localização", nextMenuRef: "LOCALIZACAO" },
+        { label: "Falar com atendente", nextMenuRef: "ATENDENTE" },
       ],
     },
     {
-      id: "schedule",
-      type: "message",
-      text: "Qual serviço você deseja agendar?",
+      ref: "AGENDAR",
+      question: "Qual serviço você quer agendar?",
       options: [
-        { id: "opt-3", label: "Cuidados com Diabetes", next: null },
-        { id: "opt-4", label: "Check-up Básico", next: null },
-        { id: "opt-5", label: "Check-up Completo", next: null },
+        { label: "Cabelo", nextMenuRef: "AGENDAR_CABELO" },
+        { label: "Unhas", nextMenuRef: "AGENDAR_UNHAS" },
+        { label: "Sobrancelhas", nextMenuRef: "AGENDAR_SOBRANCELHAS" },
+        { label: "Estética", nextMenuRef: "AGENDAR_ESTETICA" },
+        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
       ],
     },
     {
-      id: "report",
-      type: "message",
-      text: "Por favor, informe o ID do relatório.",
-      options: [],
+      ref: "AGENDAR_CABELO",
+      question: "Qual serviço de cabelo?",
+      options: [
+        { label: "Corte", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Escova", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Coloração", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Voltar", nextMenuRef: "AGENDAR" },
+      ],
+    },
+    {
+      ref: "AGENDAR_UNHAS",
+      question: "Qual serviço de unhas?",
+      options: [
+        { label: "Manicure", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Pedicure", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Combo mãos e pés", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Voltar", nextMenuRef: "AGENDAR" },
+      ],
+    },
+    {
+      ref: "AGENDAR_SOBRANCELHAS",
+      question: "Qual serviço de sobrancelhas?",
+      options: [
+        { label: "Design", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Henna", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Voltar", nextMenuRef: "AGENDAR" },
+      ],
+    },
+    {
+      ref: "AGENDAR_ESTETICA",
+      question: "Qual serviço de estética?",
+      options: [
+        { label: "Limpeza de pele", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Massagem", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Depilação", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Voltar", nextMenuRef: "AGENDAR" },
+      ],
+    },
+    {
+      ref: "CONFIRMAR_SERVICO",
+      question: "Deseja confirmar o serviço selecionado?",
+      options: [
+        { label: "Sim, confirmar", nextMenuRef: "AGENDAMENTO_CONFIRMADO" },
+        { label: "Escolher outro serviço", nextMenuRef: "AGENDAR" },
+        { label: "Voltar ao início", nextMenuRef: "PRINCIPAL" },
+      ],
+    },
+    {
+      ref: "AGENDAMENTO_CONFIRMADO",
+      question: "Agendamento realizado com sucesso. Deseja algo mais?",
+      options: [
+        { label: "Novo agendamento", nextMenuRef: "AGENDAR" },
+        { label: "Voltar ao menu principal", nextMenuRef: "PRINCIPAL" },
+      ],
+    },
+    {
+      ref: "SERVICOS",
+      question: "O que deseja ver?",
+      options: [
+        { label: "Serviços de cabelo", nextMenuRef: "AGENDAR_CABELO" },
+        { label: "Serviços de unhas", nextMenuRef: "AGENDAR_UNHAS" },
+        { label: "Serviços de estética", nextMenuRef: "AGENDAR_ESTETICA" },
+        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
+      ],
+    },
+    {
+      ref: "MEUS_AGENDAMENTOS",
+      question: "O que deseja fazer?",
+      options: [
+        { label: "Consultar", nextMenuRef: "CONSULTAR_AGENDAMENTO" },
+        { label: "Remarcar", nextMenuRef: "AGENDAR" },
+        { label: "Cancelar", nextMenuRef: "CANCELAR_AGENDAMENTO" },
+        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
+      ],
+    },
+    {
+      ref: "CONSULTAR_AGENDAMENTO",
+      question: "Consultando seu agendamento...",
+      options: [{ label: "Voltar", nextMenuRef: "MEUS_AGENDAMENTOS" }],
+    },
+    {
+      ref: "CANCELAR_AGENDAMENTO",
+      question: "Tem certeza que deseja cancelar?",
+      options: [
+        { label: "Sim, cancelar", nextMenuRef: "PRINCIPAL" },
+        { label: "Voltar", nextMenuRef: "MEUS_AGENDAMENTOS" },
+      ],
+    },
+    {
+      ref: "PROMOCOES",
+      question: "Deseja ver promoções atuais?",
+      options: [
+        { label: "Ver promoções", nextMenuRef: "AGENDAR" },
+        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
+      ],
+    },
+    {
+      ref: "LOCALIZACAO",
+      question: "O que deseja consultar?",
+      options: [
+        { label: "Endereço", nextMenuRef: "PRINCIPAL" },
+        { label: "Horário de funcionamento", nextMenuRef: "PRINCIPAL" },
+        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
+      ],
+    },
+    {
+      ref: "ATENDENTE",
+      question: "Estamos te transferindo para um atendente.",
+      options: [{ label: "Voltar", nextMenuRef: "PRINCIPAL" }],
     },
   ],
 };
@@ -84,135 +195,136 @@ const INITIAL_TEMPLATES: BotTemplate[] = [
 
 // ─── Custom Message Node ────────────────────────────────────────────────
 
-interface MessageNodeData {
-  label: string;
-  node: FlowNode;
-  onUpdate: (node: FlowNode) => void;
+interface MenuNodeData {
+  menu: Menu;
+  onUpdate: (menu: Menu) => void;
   onDelete: () => void;
 }
 
-function MessageNode({
+function MenuNode({
   data,
   selected,
 }: {
-  data: MessageNodeData;
+  data: MenuNodeData;
   selected: boolean;
 }) {
-  const [isEditingText, setIsEditingText] = useState(false);
-  const [textValue, setTextValue] = useState(data.node.text);
-  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
+  const [questionValue, setQuestionValue] = useState(data.menu.question);
+  const [editingOptionIdx, setEditingOptionIdx] = useState<number | null>(null);
   const [editingOptionLabel, setEditingOptionLabel] = useState("");
 
-  const handleTextBlur = () => {
-    if (textValue.trim() !== data.node.text) {
-      data.onUpdate({ ...data.node, text: textValue.trim() });
+  const handleQuestionBlur = () => {
+    if (questionValue.trim() !== data.menu.question) {
+      data.onUpdate({ ...data.menu, question: questionValue.trim() });
     } else {
-      setTextValue(data.node.text);
+      setQuestionValue(data.menu.question);
     }
-    setIsEditingText(false);
+    setIsEditingQuestion(false);
   };
 
   const handleAddOption = () => {
-    const newOption = {
-      id: `opt-${Date.now()}`,
-      label: "Nova opção",
-      next: null,
-    };
     data.onUpdate({
-      ...data.node,
-      options: [...data.node.options, newOption],
+      ...data.menu,
+      options: [
+        ...data.menu.options,
+        { label: "Nova opção", nextMenuRef: null },
+      ],
     });
   };
 
-  const handleUpdateOptionLabel = (optionId: string, newLabel: string) => {
-    data.onUpdate({
-      ...data.node,
-      options: data.node.options.map((opt) =>
-        opt.id === optionId ? { ...opt, label: newLabel } : opt
-      ),
-    });
+  const handleUpdateOptionLabel = (idx: number, newLabel: string) => {
+    const updatedOptions = [...data.menu.options];
+    updatedOptions[idx].label = newLabel;
+    data.onUpdate({ ...data.menu, options: updatedOptions });
   };
 
-  const handleDeleteOption = (optionId: string) => {
-    data.onUpdate({
-      ...data.node,
-      options: data.node.options.filter((opt) => opt.id !== optionId),
-    });
+  const handleDeleteOption = (idx: number) => {
+    const updatedOptions = data.menu.options.filter((_, i) => i !== idx);
+    data.onUpdate({ ...data.menu, options: updatedOptions });
   };
 
   return (
     <div
       className={cn(
-        "rounded-lg border-2 bg-card p-4 shadow-md min-w-72 max-w-sm",
+        "rounded-lg border-2 bg-card p-4 shadow-md min-w-80 max-w-md",
         selected ? "border-primary" : "border-border"
       )}
     >
-      {/* Text */}
+      {/* Ref badge */}
+      <div className="mb-2">
+        <span className="inline-block px-2 py-1 rounded text-xs font-mono bg-muted text-muted-foreground">
+          {data.menu.ref}
+        </span>
+      </div>
+
+      {/* Question */}
       <div className="mb-3">
-        {isEditingText ? (
+        {isEditingQuestion ? (
           <textarea
-            value={textValue}
-            onChange={(e) => setTextValue(e.target.value)}
-            onBlur={handleTextBlur}
+            value={questionValue}
+            onChange={(e) => setQuestionValue(e.target.value)}
+            onBlur={handleQuestionBlur}
             autoFocus
             rows={3}
             className="w-full rounded border border-input bg-background p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         ) : (
           <div
-            onClick={() => setIsEditingText(true)}
+            onClick={() => setIsEditingQuestion(true)}
             className="cursor-pointer rounded border border-border p-2 text-sm leading-relaxed hover:bg-muted/30"
           >
-            {data.node.text}
+            {data.menu.question}
           </div>
         )}
       </div>
 
       {/* Options */}
       <div className="space-y-2 mb-3">
-        {data.node.options.map((option) => (
-          <div key={option.id} className="flex items-center gap-2">
+        {data.menu.options.map((option, idx) => (
+          <div key={idx} className="flex items-start gap-2">
             <Handle
               type="source"
               position={Position.Right}
-              id={option.id}
+              id={`opt-${idx}`}
               className="!bg-primary !w-3 !h-3"
             />
-            {editingOptionId === option.id ? (
-              <input
-                type="text"
-                value={editingOptionLabel}
-                onChange={(e) => setEditingOptionLabel(e.target.value)}
-                onBlur={() => {
-                  if (editingOptionLabel.trim()) {
-                    handleUpdateOptionLabel(option.id, editingOptionLabel);
-                  }
-                  setEditingOptionId(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+            <div className="flex-1 space-y-1">
+              {editingOptionIdx === idx ? (
+                <input
+                  type="text"
+                  value={editingOptionLabel}
+                  onChange={(e) => setEditingOptionLabel(e.target.value)}
+                  onBlur={() => {
                     if (editingOptionLabel.trim()) {
-                      handleUpdateOptionLabel(option.id, editingOptionLabel);
+                      handleUpdateOptionLabel(idx, editingOptionLabel);
                     }
-                    setEditingOptionId(null);
-                  }
-                }}
-                autoFocus
-                className="flex-1 rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
-              />
-            ) : (
-              <button
-                onClick={() => {
-                  setEditingOptionId(option.id);
-                  setEditingOptionLabel(option.label);
-                }}
-                className="flex-1 rounded border border-border px-2 py-1 text-xs text-left hover:bg-muted/30"
-              >
-                {option.label}
-              </button>
-            )}
+                    setEditingOptionIdx(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (editingOptionLabel.trim()) {
+                        handleUpdateOptionLabel(idx, editingOptionLabel);
+                      }
+                      setEditingOptionIdx(null);
+                    }
+                  }}
+                  autoFocus
+                  className="w-full rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingOptionIdx(idx);
+                    setEditingOptionLabel(option.label);
+                  }}
+                  className="w-full rounded border border-border px-2 py-1 text-xs text-left hover:bg-muted/30"
+                >
+                  {option.label}
+                </button>
+              )}
+            </div>
             <button
-              onClick={() => handleDeleteOption(option.id)}
+              onClick={() => handleDeleteOption(idx)}
               className="rounded p-0.5 text-muted-foreground hover:text-destructive"
               title="Excluir opção"
             >
@@ -231,12 +343,12 @@ function MessageNode({
         Adicionar opção
       </button>
 
-      {/* Delete node button */}
+      {/* Delete menu button */}
       <button
         onClick={data.onDelete}
         className="w-full rounded bg-destructive/10 px-2 py-1 text-xs text-destructive hover:bg-destructive/20"
       >
-        Excluir nó
+        Excluir diálogo
       </button>
 
       <Handle type="target" position={Position.Left} />
@@ -399,48 +511,43 @@ interface ConversationTurn {
   label?: string;
 }
 
-function WhatsAppEmulator({
-  flowState,
-}: {
-  flowState: FlowState;
-}) {
-  const [currentNodeId, setCurrentNodeId] = useState<string | null>(
-    flowState.startNodeId
+function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
+  const [currentMenuRef, setCurrentMenuRef] = useState<string | null>(
+    flowState.initialMenuRef
   );
   const [conversation, setConversation] = useState<ConversationTurn[]>([]);
 
-  // Initialize: show first bot message
   const handleInitialize = () => {
-    const startNode = flowState.nodes.find((n) => n.id === flowState.startNodeId);
-    if (startNode) {
-      setCurrentNodeId(startNode.id);
-      setConversation([{ type: "bot", text: startNode.text }]);
+    const startMenu = flowState.menus.find(
+      (m) => m.ref === flowState.initialMenuRef
+    );
+    if (startMenu) {
+      setCurrentMenuRef(startMenu.ref);
+      setConversation([{ type: "bot", text: startMenu.question }]);
     }
   };
 
-  const handleOptionClick = (label: string, nextNodeId: string | null) => {
-    // Add user message
+  const handleOptionClick = (label: string, nextMenuRef: string | null) => {
     const newConversation: ConversationTurn[] = [
       ...conversation,
       { type: "user", label },
     ];
 
-    if (nextNodeId) {
-      const nextNode = flowState.nodes.find((n) => n.id === nextNodeId);
-      if (nextNode) {
-        newConversation.push({ type: "bot", text: nextNode.text });
+    if (nextMenuRef) {
+      const nextMenu = flowState.menus.find((m) => m.ref === nextMenuRef);
+      if (nextMenu) {
+        newConversation.push({ type: "bot", text: nextMenu.question });
         setConversation(newConversation);
-        setCurrentNodeId(nextNodeId);
+        setCurrentMenuRef(nextMenuRef);
         return;
       }
     }
 
-    // End of flow
     setConversation(newConversation);
-    setCurrentNodeId(null);
+    setCurrentMenuRef(null);
   };
 
-  const currentNode = flowState.nodes.find((n) => n.id === currentNodeId);
+  const currentMenu = flowState.menus.find((m) => m.ref === currentMenuRef);
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-border rounded-lg overflow-hidden">
@@ -490,12 +597,12 @@ function WhatsAppEmulator({
             ))}
 
             {/* Options */}
-            {currentNode && currentNode.options.length > 0 && (
+            {currentMenu && currentMenu.options.length > 0 && (
               <div className="mt-4 space-y-2">
-                {currentNode.options.map((option) => (
+                {currentMenu.options.map((option, idx) => (
                   <button
-                    key={option.id}
-                    onClick={() => handleOptionClick(option.label, option.next)}
+                    key={idx}
+                    onClick={() => handleOptionClick(option.label, option.nextMenuRef)}
                     className="w-full rounded-full border-2 border-emerald-600 px-4 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-600 hover:text-white transition-colors"
                   >
                     {option.label}
@@ -505,7 +612,7 @@ function WhatsAppEmulator({
             )}
 
             {/* End message */}
-            {currentNode === undefined && conversation.length > 0 && (
+            {currentMenu === undefined && conversation.length > 0 && (
               <div className="flex justify-start mt-4">
                 <div className="bg-gray-200 text-gray-900 rounded-2xl px-4 py-2 text-sm">
                   Fim da conversa. Clique abaixo para reiniciar.
@@ -513,12 +620,12 @@ function WhatsAppEmulator({
               </div>
             )}
 
-            {currentNode === undefined && (
+            {currentMenu === undefined && (
               <div className="flex justify-center mt-4">
                 <button
                   onClick={() => {
                     setConversation([]);
-                    setCurrentNodeId(null);
+                    setCurrentMenuRef(null);
                     handleInitialize();
                   }}
                   className="text-xs text-emerald-600 hover:underline"
@@ -536,48 +643,44 @@ function WhatsAppEmulator({
 
 // ─── Flow Builder Canvas ────────────────────────────────────────────────
 
-interface FlowBuilderProps {
-  flowState: FlowState;
-  onUpdate: (flowState: FlowState) => void;
+interface FlowCanvasProps {
+  flowState: BotFlowState;
+  onUpdate: (flowState: BotFlowState) => void;
 }
 
-function FlowBuilder({ flowState, onUpdate }: FlowBuilderProps) {
-  // Convert FlowNodes to ReactFlow nodes with positions
-  const initialRfNodes: Node[] = flowState.nodes.map((node, idx) => ({
-    id: node.id,
+function FlowCanvas({ flowState, onUpdate }: FlowCanvasProps) {
+  const initialRfNodes: Node[] = flowState.menus.map((menu, idx) => ({
+    id: menu.ref,
     data: {
-      label: node.text,
-      node,
-      onUpdate: (updatedNode: FlowNode) => {
+      menu,
+      onUpdate: (updatedMenu: Menu) => {
         onUpdate({
           ...flowState,
-          nodes: flowState.nodes.map((n) =>
-            n.id === updatedNode.id ? updatedNode : n
+          menus: flowState.menus.map((m) =>
+            m.ref === updatedMenu.ref ? updatedMenu : m
           ),
         });
       },
       onDelete: () => {
-        // Remove node and its edges
         onUpdate({
           ...flowState,
-          nodes: flowState.nodes.filter((n) => n.id !== node.id),
+          menus: flowState.menus.filter((m) => m.ref !== menu.ref),
         });
       },
     },
-    position: { x: idx * 350, y: idx * 100 },
-    type: "messageNode",
+    position: { x: idx * 400, y: idx * 150 },
+    type: "menuNode",
   }));
 
-  // Convert options to edges
   const initialRfEdges: Edge[] = [];
-  flowState.nodes.forEach((node) => {
-    node.options.forEach((option) => {
-      if (option.next) {
+  flowState.menus.forEach((menu) => {
+    menu.options.forEach((option, optIdx) => {
+      if (option.nextMenuRef) {
         initialRfEdges.push({
-          id: `edge-${option.id}`,
-          source: node.id,
-          sourceHandle: option.id,
-          target: option.next,
+          id: `edge-${menu.ref}-${optIdx}`,
+          source: menu.ref,
+          sourceHandle: `opt-${optIdx}`,
+          target: option.nextMenuRef,
           animated: true,
         });
       }
@@ -592,24 +695,17 @@ function FlowBuilder({ flowState, onUpdate }: FlowBuilderProps) {
       const edge = addEdge(connection, edges);
       setEdges(edge);
 
-      // Update flow state: find source option and set its next target
       if (connection.sourceHandle) {
-        const sourceNode = flowState.nodes.find(
-          (n) => n.id === connection.source
-        );
-        if (sourceNode) {
-          const updatedNode = {
-            ...sourceNode,
-            options: sourceNode.options.map((opt) =>
-              opt.id === connection.sourceHandle
-                ? { ...opt, next: connection.target || null }
-                : opt
-            ),
-          };
+        const sourceMenu = flowState.menus.find((m) => m.ref === connection.source);
+        if (sourceMenu && connection.sourceHandle.startsWith("opt-")) {
+          const optIdx = parseInt(connection.sourceHandle.replace("opt-", ""));
+          const updatedOptions = [...sourceMenu.options];
+          updatedOptions[optIdx].nextMenuRef = connection.target || null;
+          const updatedMenu = { ...sourceMenu, options: updatedOptions };
           onUpdate({
             ...flowState,
-            nodes: flowState.nodes.map((n) =>
-              n.id === sourceNode.id ? updatedNode : n
+            menus: flowState.menus.map((m) =>
+              m.ref === sourceMenu.ref ? updatedMenu : m
             ),
           });
         }
@@ -618,16 +714,16 @@ function FlowBuilder({ flowState, onUpdate }: FlowBuilderProps) {
     [edges, flowState, onUpdate, setEdges]
   );
 
-  const handleAddNode = () => {
-    const newNode: FlowNode = {
-      id: `node-${Date.now()}`,
-      type: "message",
-      text: "Nova pergunta?",
+  const handleAddMenu = () => {
+    const newRef = `NOVO_MENU_${Date.now()}`;
+    const newMenu: Menu = {
+      ref: newRef,
+      question: "Nova pergunta?",
       options: [],
     };
     onUpdate({
       ...flowState,
-      nodes: [...flowState.nodes, newNode],
+      menus: [...flowState.menus, newMenu],
     });
   };
 
@@ -636,12 +732,12 @@ function FlowBuilder({ flowState, onUpdate }: FlowBuilderProps) {
       {/* Toolbar */}
       <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-card border border-border rounded-lg p-2 shadow-md">
         <button
-          onClick={handleAddNode}
+          onClick={handleAddMenu}
           className="flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-          title="Adicionar novo nó"
+          title="Adicionar novo diálogo"
         >
           <Plus size={14} />
-          Novo nó
+          Novo diálogo
         </button>
       </div>
 
@@ -651,7 +747,7 @@ function FlowBuilder({ flowState, onUpdate }: FlowBuilderProps) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        nodeTypes={{ messageNode: MessageNode }}
+        nodeTypes={{ menuNode: MenuNode }}
         fitView
       >
         <Background />
@@ -664,15 +760,18 @@ function FlowBuilder({ flowState, onUpdate }: FlowBuilderProps) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────
 
-type Tab = "flow" | "templates";
+type Tab = "dialogs" | "templates";
 
 export function BotMenuPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("flow");
-  const [flowState, setFlowState] = useState<FlowState>(INITIAL_FLOW_STATE);
+  const [activeTab, setActiveTab] = useState<Tab>("dialogs");
+  const [flowState, setFlowState] = useState<BotFlowState>(
+    INITIAL_BOT_FLOW_STATE
+  );
   const [templates, setTemplates] = useState<BotTemplate[]>(INITIAL_TEMPLATES);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [selectedTemplateForEdit, setSelectedTemplateForEdit] =
     useState<BotTemplate | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const handleSaveTemplate = (template: BotTemplate) => {
     if (selectedTemplateForEdit) {
@@ -695,6 +794,48 @@ export function BotMenuPage() {
     setTemplateModalOpen(true);
   };
 
+  if (isFullscreen && activeTab === "dialogs") {
+    return (
+      <div className="h-screen flex flex-col bg-background">
+        {/* Fullscreen Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h1 className="text-2xl font-semibold">Diálogos do Bot</h1>
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors"
+            title="Sair de tela cheia"
+          >
+            <Minimize2 size={18} />
+            Sair
+          </button>
+        </div>
+
+        {/* Fullscreen Content */}
+        <div className="flex-1 overflow-hidden p-6">
+          <div className="flex gap-6 h-full">
+            <div className="w-[35%]">
+              <WhatsAppEmulator flowState={flowState} />
+            </div>
+            <div className="flex-1">
+              <FlowCanvas flowState={flowState} onUpdate={setFlowState} />
+            </div>
+          </div>
+        </div>
+
+        {/* Template Modal */}
+        <TemplateModal
+          open={templateModalOpen}
+          onClose={() => {
+            setTemplateModalOpen(false);
+            setSelectedTemplateForEdit(null);
+          }}
+          onSave={handleSaveTemplate}
+          initialTemplate={selectedTemplateForEdit}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col">
       <PageHeader
@@ -706,8 +847,16 @@ export function BotMenuPage() {
       <div className="flex items-center gap-1 border-b border-border px-6">
         {(
           [
-            { key: "flow" as const, label: "Fluxo de Menu", icon: <GitBranch size={14} /> },
-            { key: "templates" as const, label: "Templates", icon: <FileText size={14} /> },
+            {
+              key: "dialogs" as const,
+              label: "Diálogos do Bot",
+              icon: <GitBranch size={14} />,
+            },
+            {
+              key: "templates" as const,
+              label: "Templates",
+              icon: <FileText size={14} />,
+            },
           ] as { key: Tab; label: string; icon: React.ReactNode }[]
         ).map((tab) => (
           <button
@@ -728,8 +877,18 @@ export function BotMenuPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden p-6">
-        {activeTab === "flow" ? (
-          <div className="flex gap-6 h-full">
+        {activeTab === "dialogs" ? (
+          <div className="relative flex gap-6 h-full">
+            {/* Fullscreen button */}
+            <button
+              onClick={() => setIsFullscreen(true)}
+              className="absolute top-2 right-2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity text-xs"
+              title="Tela cheia"
+            >
+              <Maximize2 size={16} />
+              Tela cheia
+            </button>
+
             {/* Left: WhatsApp Emulator */}
             <div className="w-[35%]">
               <WhatsAppEmulator flowState={flowState} />
@@ -737,7 +896,7 @@ export function BotMenuPage() {
 
             {/* Right: Flow Builder */}
             <div className="flex-1">
-              <FlowBuilder flowState={flowState} onUpdate={setFlowState} />
+              <FlowCanvas flowState={flowState} onUpdate={setFlowState} />
             </div>
           </div>
         ) : (
