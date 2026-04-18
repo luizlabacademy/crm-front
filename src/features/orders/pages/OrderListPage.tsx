@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Eye, RefreshCw, Search, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, RefreshCw, Search, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import {
@@ -12,6 +12,9 @@ import { ORDER_STATUS_COLORS } from "@/features/orders/types/orderTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { formatCurrencyCode } from "@/lib/utils/formatCurrency";
 import { SkeletonRow } from "@/components/shared/SkeletonRow";
+import { FilterBar } from "@/features/expenses/components/FilterBar";
+import { useTenantsSelector } from "@/lib/api/useTenants";
+import { formatShortDate } from "@/lib/utils/formatDate";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
@@ -122,6 +125,128 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
   const composerCustomersWithFallback =
     composerCustomers.length > 0 ? composerCustomers : fallbackCustomers;
 
+  // Map customers by id for display in the table
+  const customersMap = new Map<number, { name: string; phone?: string }>();
+  (customersData?.content ?? []).forEach((c) => {
+    customersMap.set(c.id, { name: c.fullName ?? `Customer #${c.id}`, phone: c.phone ?? "" });
+  });
+
+  // Tenant filter/autocomplete component used in the filters accordion
+  function TenantFilter({
+    value,
+    onChange,
+  }: {
+    value: number | null | undefined;
+    onChange: (id: number | null) => void;
+  }) {
+    const tenants = useTenantsSelector().data?.content ?? [];
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const selected = value ? tenants.find((t) => t.id === value) : null;
+    const filtered = search
+      ? tenants.filter((t) => (t.name ?? "").toLowerCase().includes(search.toLowerCase()))
+      : tenants;
+
+    return (
+      <div className="relative">
+        <input
+          type="text"
+          value={open ? search : selected?.name ?? (value ? `ID ${value}` : "")}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Buscar tenant..."
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        {open && (
+          <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+            <button
+              type="button"
+              className="w-full px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent transition-colors"
+              onMouseDown={() => {
+                onChange(null);
+                setSearch("");
+                setOpen(false);
+              }}
+            >
+              Todos os tenants
+            </button>
+            {filtered.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                onMouseDown={() => {
+                  onChange(t.id);
+                  setSearch("");
+                  setOpen(false);
+                }}
+              >
+                {t.name ?? `Tenant #${t.id}`}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Customer filter/autocomplete used in the filters accordion
+  function CustomerFilter({
+    tenantId,
+    value,
+    onChange,
+  }: {
+    tenantId: number | null;
+    value: number | null | undefined;
+    onChange: (id: number | null) => void;
+  }) {
+    const { data } = useCustomers({ page: 0, size: 100, tenantId: tenantId ?? undefined });
+    const customers = data?.content ?? [];
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState("");
+    const selected = value ? customers.find((c) => c.id === value) : null;
+    const filtered = search
+      ? customers.filter((c) => (c.fullName ?? "").toLowerCase().includes(search.toLowerCase()))
+      : customers;
+
+    return (
+      <div className="relative">
+        <input
+          type="text"
+          value={open ? search : selected?.fullName ?? (value ? `ID ${value}` : "")}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Buscar cliente..."
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        {open && filtered.length > 0 && (
+          <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-border bg-card shadow-md text-sm">
+            {filtered.map((c) => (
+              <li
+                key={c.id}
+                className="cursor-pointer px-3 py-2 hover:bg-accent transition-colors"
+                onMouseDown={() => {
+                  onChange(c.id);
+                  setOpen(false);
+                }}
+              >
+                {c.fullName ?? `Cliente #${c.id}`} <span className="text-xs text-muted-foreground">#{c.id}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   function handleApplyFilters(e: React.FormEvent) {
     e.preventDefault();
     setFilters(draftFilters);
@@ -209,93 +334,108 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
       </div>
 
       {/* Filters */}
-      <form
-        onSubmit={handleApplyFilters}
-        className="grid gap-2 rounded-xl border border-border bg-card p-3 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        <input
-          type="text"
-          value={draftFilters.q}
-          onChange={(e) =>
-            setDraftFilters((prev) => ({ ...prev, q: e.target.value }))
-          }
-          placeholder="Buscar por ID/código"
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        />
-        <select
-          value={draftFilters.status}
-          onChange={(e) =>
-            setDraftFilters((prev) => ({ ...prev, status: e.target.value }))
-          }
-          disabled
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        >
-          <option value={fixedStatus}>{fixedStatus}</option>
-        </select>
-        <input
-          type="number"
-          min="1"
-          value={draftFilters.tenantId}
-          onChange={(e) =>
-            setDraftFilters((prev) => ({ ...prev, tenantId: e.target.value }))
-          }
-          placeholder="Tenant ID"
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        />
-        <input
-          type="number"
-          min="1"
-          value={draftFilters.customerId}
-          onChange={(e) =>
-            setDraftFilters((prev) => ({ ...prev, customerId: e.target.value }))
-          }
-          placeholder="Cliente ID"
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        />
-        <input
-          type="number"
-          min="1"
-          value={draftFilters.userId}
-          onChange={(e) =>
-            setDraftFilters((prev) => ({ ...prev, userId: e.target.value }))
-          }
-          placeholder="Responsável ID"
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        />
-        <input
-          type="date"
-          value={draftFilters.dateFrom}
-          onChange={(e) =>
-            setDraftFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
-          }
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        />
-        <input
-          type="date"
-          value={draftFilters.dateTo}
-          onChange={(e) =>
-            setDraftFilters((prev) => ({ ...prev, dateTo: e.target.value }))
-          }
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        />
-
-        <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-4">
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-sm hover:bg-accent transition-colors"
-          >
-            <Search size={16} />
-            Buscar
-          </button>
-          <button
-            type="button"
-            onClick={handleClearFilter}
-            className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Limpar
-          </button>
+      <FilterBar onClear={handleClearFilter} activeCount={0}>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Buscar por ID/código</label>
+            <input
+              type="text"
+              value={draftFilters.q}
+              onChange={(e) => setDraftFilters((prev) => ({ ...prev, q: e.target.value }))}
+              placeholder="Buscar por ID/código"
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            />
+          </div>
         </div>
-      </form>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Status</label>
+            <select
+              value={draftFilters.status}
+              onChange={(e) => setDraftFilters((prev) => ({ ...prev, status: e.target.value }))}
+              disabled
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            >
+              <option value={fixedStatus}>{fixedStatus}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          {/* Tenant autocomplete */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Tenant</label>
+            <TenantFilter
+              value={draftFilters.tenantId ? Number(draftFilters.tenantId) : null}
+              onChange={(id) => setDraftFilters((prev) => ({ ...prev, tenantId: id ? String(id) : "" }))}
+            />
+          </div>
+        </div>
+        <div>
+          {/* Customer autocomplete */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Cliente</label>
+            <CustomerFilter
+              tenantId={draftFilters.tenantId ? Number(draftFilters.tenantId) : null}
+              value={draftFilters.customerId ? Number(draftFilters.customerId) : null}
+              onChange={(id) => setDraftFilters((prev) => ({ ...prev, customerId: id ? String(id) : "" }))}
+            />
+          </div>
+        </div>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Responsável</label>
+            <input
+              type="number"
+              min="1"
+              value={draftFilters.userId}
+              onChange={(e) => setDraftFilters((prev) => ({ ...prev, userId: e.target.value }))}
+              placeholder="Responsável ID"
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            />
+          </div>
+        </div>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Data início</label>
+            <input
+              type="date"
+              value={draftFilters.dateFrom}
+              onChange={(e) => setDraftFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            />
+          </div>
+        </div>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Data fim</label>
+            <input
+              type="date"
+              value={draftFilters.dateTo}
+              onChange={(e) => setDraftFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            />
+          </div>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApplyFilters}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-sm hover:bg-accent transition-colors"
+            >
+              <Search size={16} />
+              Buscar
+            </button>
+            <button
+              type="button"
+              onClick={handleClearFilter}
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Limpar
+            </button>
+          </div>
+        </div>
+      </FilterBar>
 
       {/* Error */}
       {isError && (
@@ -318,27 +458,22 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground bg-muted/40">
-                <th className="px-4 py-3 font-medium">ID</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Cliente ID</th>
-                <th className="px-4 py-3 font-medium">Resp. ID</th>
-                <th className="px-4 py-3 font-medium">Subtotal</th>
-                <th className="px-4 py-3 font-medium">Desconto</th>
+                <th className="px-4 py-3 font-medium">Pedido</th>
+                <th className="px-4 py-3 font-medium">Cliente</th>
                 <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 font-medium">Itens</th>
-                <th className="px-4 py-3 font-medium">Criado em</th>
+                <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <SkeletonRow key={i} cols={10} />
+                  <SkeletonRow key={i} cols={5} />
                 ))
               ) : orders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={5}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     <p>Nenhum {singularLabel} encontrado.</p>
@@ -366,40 +501,31 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
                         : undefined
                     }
                   >
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
-                      {order.id}
+                    <td className="px-4 py-3">
+                      <div className="text-sm font-medium">
+                        {order.code ?? `#${order.id}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatShortDate(order.createdAt)}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge
-                        status={order.status}
-                        colorMap={ORDER_STATUS_COLORS}
-                      />
+                      <div className="text-sm font-medium">
+                        {customersMap.get(order.customerId)?.name ?? String(order.customerId)}
+                      </div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Zap size={12} className="text-muted-foreground" />
+                        <span>{customersMap.get(order.customerId)?.phone ?? "—"}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
-                      {order.customerId}
+                    <td className="px-4 py-3">
+                      <div className="text-sm font-medium">
+                        {formatCurrencyCode(order.totalCents, order.currencyCode)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{order.items.length} itens</div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
-                      {order.userId}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs">
-                      {formatCurrencyCode(
-                        order.subtotalCents,
-                        order.currencyCode,
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                      {order.discountCents > 0
-                        ? `- ${formatCurrencyCode(order.discountCents, order.currencyCode)}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs font-medium">
-                      {formatCurrencyCode(order.totalCents, order.currencyCode)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-muted-foreground">
-                      {order.items.length}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {formatDateTime(order.createdAt)}
+                    <td className="px-4 py-3">
+                      <StatusBadge status={order.status} colorMap={ORDER_STATUS_COLORS} />
                     </td>
                     <td className="px-4 py-3">
                       <div
