@@ -1,0 +1,38 @@
+{
+  "method": "GET",
+  "route": "/api/v1/dashboard/conversion-rate",
+  "requestBody": "",
+  "responseBody": {
+    "period": "daily",
+    "series": [
+      {
+        "label": "Seg",
+        "conversionRate": 24
+      },
+      {
+        "label": "Ter",
+        "conversionRate": 27
+      },
+      {
+        "label": "Qua",
+        "conversionRate": 26
+      },
+      {
+        "label": "Qui",
+        "conversionRate": 29
+      },
+      {
+        "label": "Sex",
+        "conversionRate": 33
+      },
+      {
+        "label": "Sab",
+        "conversionRate": 21
+      },
+      {
+        "label": "Dom",
+        "conversionRate": 18
+      }
+    ]
+  }
+}

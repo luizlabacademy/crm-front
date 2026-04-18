@@ -1,0 +1,14 @@
+{
+  "method": "GET",
+  "route": "/api/v1/account/profile",
+  "requestBody": "",
+  "responseBody": {
+    "id": 1,
+    "fullName": "Atendente CRM",
+    "email": "atendente@crm.local",
+    "phone": "(11) 99999-1234",
+    "role": "Atendente",
+    "code": "ATD-001",
+    "avatarUrl": "https://i.pravatar.cc/240?img=12"
+  }
+}

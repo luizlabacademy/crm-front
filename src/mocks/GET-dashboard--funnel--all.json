@@ -1,0 +1,77 @@
+{
+  "method": "GET",
+  "route": "/api/v1/dashboard/funnel",
+  "requestBody": "",
+  "responseBody": {
+    "period": "all",
+    "steps": [
+      {
+        "id": "mensagens_disparadas",
+        "label": "Mensagens Disparadas",
+        "value": 680000,
+        "percentage": 100,
+        "color": "#4FC3F7"
+      },
+      {
+        "id": "lidas",
+        "label": "Lidas",
+        "value": 510000,
+        "percentage": 75,
+        "color": "#66BB6A"
+      },
+      {
+        "id": "interagiu",
+        "label": "Interagiu",
+        "value": 333200,
+        "percentage": 49,
+        "color": "#42A5F5"
+      },
+      {
+        "id": "agendou",
+        "label": "Agendou",
+        "value": 190400,
+        "percentage": 28,
+        "color": "#AB47BC"
+      },
+      {
+        "id": "compareceu",
+        "label": "Compareceu",
+        "value": 115600,
+        "percentage": 17,
+        "color": "#FFA726"
+      },
+      {
+        "id": "recomprou",
+        "label": "Recomprou",
+        "value": 99600,
+        "percentage": 15,
+        "color": "#EF5350"
+      }
+    ],
+    "summary": [
+      {
+        "id": "total_campanhas",
+        "label": "Total Campanhas",
+        "value": "10.240"
+      },
+      {
+        "id": "total_faturado",
+        "label": "Total Faturado",
+        "value": "R$ 3.150.000",
+        "color": "#4FC3F7"
+      },
+      {
+        "id": "taxa_resposta",
+        "label": "Taxa de Resposta",
+        "value": "49%",
+        "color": "#66BB6A"
+      },
+      {
+        "id": "taxa_conversao",
+        "label": "Taxa de Conversão",
+        "value": "17%",
+        "color": "#FFA726"
+      }
+    ]
+  }
+}

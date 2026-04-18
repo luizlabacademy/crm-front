@@ -22,8 +22,8 @@ import {
   QuoteComposerOverlay,
   type QuoteFinalizePayload,
 } from "@/features/orders/components/QuoteComposerOverlay";
-import catalogMock from "@/mocks/conversations/get-catalog-items.json";
-import contactsMock from "@/mocks/conversations/get-contacts.json";
+import catalogMock from "@/mocks/GET-conversations--catalog-items.json";
+import contactsMock from "@/mocks/GET-conversations--contacts.json";
 import {
   getDefaultPageSize,
   setDefaultPageSize,
@@ -95,7 +95,7 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
   const catalogItems = Array.isArray(catalogData) ? catalogData : [];
   const fallbackCatalogItems = useMemo(
     () =>
-      (catalogMock.data ?? []).map((item) => ({
+      (catalogMock.responseBody ?? []).map((item) => ({
         id: item.id,
         tenantId: item.tenantId,
         name: item.name,
@@ -116,7 +116,7 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
   );
   const fallbackCustomers = useMemo(
     () =>
-      (contactsMock.data ?? []).slice(0, 50).map((contact, index) => ({
+      (contactsMock.responseBody ?? []).slice(0, 50).map((contact, index) => ({
         id: index + 1,
         name: contact.name,
       })),

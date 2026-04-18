@@ -1,0 +1,82 @@
+{
+  "method": "GET",
+  "route": "/api/v1/marketing/coupons",
+  "requestBody": "",
+  "responseBody": [
+    {
+      "id": "cup-001",
+      "code": "BEMVINDO10",
+      "description": "10% de desconto para novos clientes",
+      "type": "percentage",
+      "value": 10,
+      "minOrderCents": 5000,
+      "maxUses": 500,
+      "usedCount": 127,
+      "maxUsesPerCustomer": 1,
+      "status": "Ativo",
+      "startsAt": "2025-01-01T00:00:00Z",
+      "expiresAt": "2025-12-31T23:59:59Z",
+      "createdAt": "2025-01-01T10:00:00Z"
+    },
+    {
+      "id": "cup-002",
+      "code": "VERAO25",
+      "description": "R$25 off em pedidos acima de R$100",
+      "type": "fixed",
+      "value": 2500,
+      "minOrderCents": 10000,
+      "maxUses": 200,
+      "usedCount": 200,
+      "maxUsesPerCustomer": 2,
+      "status": "Expirado",
+      "startsAt": "2025-01-15T00:00:00Z",
+      "expiresAt": "2025-03-15T23:59:59Z",
+      "createdAt": "2025-01-15T08:30:00Z"
+    },
+    {
+      "id": "cup-003",
+      "code": "FIDELIDADE15",
+      "description": "15% de desconto para clientes recorrentes",
+      "type": "percentage",
+      "value": 15,
+      "minOrderCents": 8000,
+      "maxUses": null,
+      "usedCount": 89,
+      "maxUsesPerCustomer": 3,
+      "status": "Ativo",
+      "startsAt": "2025-02-01T00:00:00Z",
+      "expiresAt": "2025-08-01T23:59:59Z",
+      "createdAt": "2025-02-01T12:00:00Z"
+    },
+    {
+      "id": "cup-004",
+      "code": "PROMO50",
+      "description": "R$50 off em qualquer pedido",
+      "type": "fixed",
+      "value": 5000,
+      "minOrderCents": 15000,
+      "maxUses": 100,
+      "usedCount": 43,
+      "maxUsesPerCustomer": 1,
+      "status": "Ativo",
+      "startsAt": "2025-03-01T00:00:00Z",
+      "expiresAt": "2025-06-30T23:59:59Z",
+      "createdAt": "2025-03-01T09:00:00Z"
+    },
+    {
+      "id": "cup-005",
+      "code": "INDICACAO20",
+      "description": "20% de desconto por indicacao",
+      "type": "percentage",
+      "value": 20,
+      "minOrderCents": 0,
+      "maxUses": 300,
+      "usedCount": 56,
+      "maxUsesPerCustomer": 1,
+      "status": "Inativo",
+      "startsAt": "2025-04-01T00:00:00Z",
+      "expiresAt": "2025-09-30T23:59:59Z",
+      "createdAt": "2025-04-01T14:00:00Z"
+    }
+  ]
+}

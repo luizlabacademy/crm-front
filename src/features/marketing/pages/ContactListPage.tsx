@@ -17,7 +17,7 @@ import type {
   MarketingContact,
   ContactChannel,
 } from "@/features/marketing/types/marketingTypes";
-import contactsData from "@/features/marketing/mocks/contacts.json";
+import contactsData from "@/mocks/GET-marketing--contacts.json";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
   getDefaultPageSize,
@@ -28,7 +28,7 @@ import {
 
 function useContacts() {
   const [contacts, setContacts] = useState<MarketingContact[]>(
-    contactsData as MarketingContact[],
+    contactsData.responseBody as unknown as MarketingContact[],
   );
 
   function addContact(

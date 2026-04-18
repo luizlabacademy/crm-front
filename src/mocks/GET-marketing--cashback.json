@@ -1,0 +1,59 @@
+{
+  "method": "GET",
+  "route": "/api/v1/marketing/cashback",
+  "requestBody": "",
+  "responseBody": [
+    {
+      "id": "cb-001",
+      "name": "Cashback Padrao",
+      "percentage": 5,
+      "maxAmountCents": 5000,
+      "minOrderCents": 5000,
+      "expirationDays": 30,
+      "status": "Ativa",
+      "totalDistributedCents": 1250000,
+      "totalRedeemedCents": 890000,
+      "totalCustomers": 342,
+      "createdAt": "2025-01-10T10:00:00Z"
+    },
+    {
+      "id": "cb-002",
+      "name": "Cashback VIP",
+      "percentage": 10,
+      "maxAmountCents": 15000,
+      "minOrderCents": 10000,
+      "expirationDays": 60,
+      "status": "Ativa",
+      "totalDistributedCents": 780000,
+      "totalRedeemedCents": 450000,
+      "totalCustomers": 98,
+      "createdAt": "2025-02-01T08:00:00Z"
+    },
+    {
+      "id": "cb-003",
+      "name": "Cashback Promocional Verao",
+      "percentage": 15,
+      "maxAmountCents": 3000,
+      "minOrderCents": 0,
+      "expirationDays": 15,
+      "status": "Inativa",
+      "totalDistributedCents": 560000,
+      "totalRedeemedCents": 320000,
+      "totalCustomers": 215,
+      "createdAt": "2025-01-15T12:00:00Z"
+    },
+    {
+      "id": "cb-004",
+      "name": "Cashback Primeira Compra",
+      "percentage": 8,
+      "maxAmountCents": 10000,
+      "minOrderCents": 8000,
+      "expirationDays": 45,
+      "status": "Ativa",
+      "totalDistributedCents": 420000,
+      "totalRedeemedCents": 280000,
+      "totalCustomers": 156,
+      "createdAt": "2025-03-01T09:00:00Z"
+    }
+  ]
+}

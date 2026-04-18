@@ -1,0 +1,139 @@
+{
+  "method": "GET",
+  "route": "/api/v1/dashboard/recent-orders",
+  "requestBody": "",
+  "responseBody": [
+    {
+      "id": "ord-2001",
+      "code": "PED-2001",
+      "customerName": "Ana Beatriz",
+      "totalCents": 189900,
+      "status": "NEW",
+      "createdAt": "2026-04-12T10:05:00.000Z",
+      "itemsCount": 5,
+      "paymentMethod": "Pix",
+      "priority": "high"
+    },
+    {
+      "id": "ord-2002",
+      "code": "PED-2002",
+      "customerName": "Carlos Henrique",
+      "totalCents": 124500,
+      "status": "DELIVERED",
+      "createdAt": "2026-04-12T09:17:00.000Z",
+      "itemsCount": 3,
+      "paymentMethod": "Cartao",
+      "priority": "normal"
+    },
+    {
+      "id": "ord-2003",
+      "code": "PED-2003",
+      "customerName": "Juliana Ribeiro",
+      "totalCents": 89900,
+      "status": "AWAITING_PAYMENT",
+      "createdAt": "2026-04-12T08:34:00.000Z",
+      "itemsCount": 2,
+      "paymentMethod": "Boleto",
+      "priority": "high"
+    },
+    {
+      "id": "ord-2004",
+      "code": "PED-2004",
+      "customerName": "Marcos Vinicius",
+      "totalCents": 222000,
+      "status": "PREPARING",
+      "createdAt": "2026-04-11T17:41:00.000Z",
+      "itemsCount": 8,
+      "paymentMethod": "Pix",
+      "priority": "normal"
+    },
+    {
+      "id": "ord-2005",
+      "code": "PED-2005",
+      "customerName": "Renata Costa",
+      "totalCents": 45900,
+      "status": "READY_FOR_DELIVERY",
+      "createdAt": "2026-04-11T15:29:00.000Z",
+      "itemsCount": 1,
+      "paymentMethod": "Cartao",
+      "priority": "normal"
+    },
+    {
+      "id": "ord-2006",
+      "code": "PED-2006",
+      "customerName": "Lucas Ferreira",
+      "totalCents": 310000,
+      "status": "DELIVERED",
+      "createdAt": "2026-04-11T11:02:00.000Z",
+      "itemsCount": 10,
+      "paymentMethod": "Transferencia",
+      "priority": "high"
+    },
+    {
+      "id": "ord-2007",
+      "code": "PED-2007",
+      "customerName": "Fernanda Lima",
+      "totalCents": 67500,
+      "status": "NEW",
+      "createdAt": "2026-04-12T07:15:00.000Z",
+      "itemsCount": 2,
+      "paymentMethod": "Pix",
+      "priority": "normal"
+    },
+    {
+      "id": "ord-2008",
+      "code": "PED-2008",
+      "customerName": "Roberto Almeida",
+      "totalCents": 154000,
+      "status": "AWAITING_PAYMENT",
+      "createdAt": "2026-04-11T14:22:00.000Z",
+      "itemsCount": 4,
+      "paymentMethod": "Boleto",
+      "priority": "normal"
+    },
+    {
+      "id": "ord-2009",
+      "code": "PED-2009",
+      "customerName": "Patricia Santos",
+      "totalCents": 98700,
+      "status": "PREPARING",
+      "createdAt": "2026-04-11T10:45:00.000Z",
+      "itemsCount": 3,
+      "paymentMethod": "Cartao",
+      "priority": "high"
+    },
+    {
+      "id": "ord-2010",
+      "code": "PED-2010",
+      "customerName": "Gustavo Mendes",
+      "totalCents": 275000,
+      "status": "READY_FOR_DELIVERY",
+      "createdAt": "2026-04-10T16:30:00.000Z",
+      "itemsCount": 6,
+      "paymentMethod": "Pix",
+      "priority": "high"
+    },
+    {
+      "id": "ord-2011",
+      "code": "PED-2011",
+      "customerName": "Camila Oliveira",
+      "totalCents": 43200,
+      "status": "NEW",
+      "createdAt": "2026-04-12T06:50:00.000Z",
+      "itemsCount": 1,
+      "paymentMethod": "Cartao",
+      "priority": "normal"
+    },
+    {
+      "id": "ord-2012",
+      "code": "PED-2012",
+      "customerName": "Diego Nascimento",
+      "totalCents": 185000,
+      "status": "PREPARING",
+      "createdAt": "2026-04-10T13:20:00.000Z",
+      "itemsCount": 5,
+      "paymentMethod": "Transferencia",
+      "priority": "normal"
+    }
+  ]
+}

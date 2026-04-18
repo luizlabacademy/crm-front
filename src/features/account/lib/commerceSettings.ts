@@ -1,4 +1,4 @@
-import mockSettings from "@/mocks/settings/commerce-settings.json";
+import mockSettingsFile from "@/mocks/GET-settings--commerce.json";
 
 const STORAGE_KEY = "crm:commerce-settings:v1";
 
@@ -31,7 +31,7 @@ export interface CommerceSettings {
 }
 
 function sanitize(input: unknown): CommerceSettings {
-  const fallback = mockSettings as CommerceSettings;
+  const fallback = mockSettingsFile.responseBody as CommerceSettings;
   if (!input || typeof input !== "object") return fallback;
   const parsed = input as Partial<CommerceSettings>;
 
@@ -78,11 +78,11 @@ function sanitize(input: unknown): CommerceSettings {
 
 export function getCommerceSettings(): CommerceSettings {
   const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return sanitize(mockSettings);
+  if (!raw) return sanitize(mockSettingsFile.responseBody);
   try {
     return sanitize(JSON.parse(raw));
   } catch {
-    return sanitize(mockSettings);
+    return sanitize(mockSettingsFile.responseBody);
   }
 }
 

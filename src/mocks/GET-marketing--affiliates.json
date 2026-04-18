@@ -1,0 +1,77 @@
+{
+  "method": "GET",
+  "route": "/api/v1/marketing/affiliates",
+  "requestBody": "",
+  "responseBody": [
+    {
+      "id": "aff-001",
+      "name": "Maria Silva",
+      "email": "maria.silva@email.com",
+      "phone": "(11) 99999-1234",
+      "referralCode": "MARIA2025",
+      "commissionPercent": 10,
+      "status": "Ativo",
+      "totalSalesCents": 4500000,
+      "totalCommissionCents": 450000,
+      "totalPaidCents": 350000,
+      "referralCount": 45,
+      "createdAt": "2025-01-05T10:00:00Z"
+    },
+    {
+      "id": "aff-002",
+      "name": "Joao Santos",
+      "email": "joao.santos@email.com",
+      "phone": "(21) 98888-5678",
+      "referralCode": "JOAO2025",
+      "commissionPercent": 8,
+      "status": "Ativo",
+      "totalSalesCents": 2800000,
+      "totalCommissionCents": 224000,
+      "totalPaidCents": 224000,
+      "referralCount": 28,
+      "createdAt": "2025-01-20T14:00:00Z"
+    },
+    {
+      "id": "aff-003",
+      "name": "Ana Oliveira",
+      "email": "ana.oliveira@email.com",
+      "phone": "(31) 97777-9012",
+      "referralCode": "ANA2025",
+      "commissionPercent": 12,
+      "status": "Pendente",
+      "totalSalesCents": 0,
+      "totalCommissionCents": 0,
+      "totalPaidCents": 0,
+      "referralCount": 0,
+      "createdAt": "2025-04-01T09:00:00Z"
+    },
+    {
+      "id": "aff-004",
+      "name": "Carlos Pereira",
+      "email": "carlos.pereira@email.com",
+      "phone": "(41) 96666-3456",
+      "referralCode": "CARLOS2025",
+      "commissionPercent": 10,
+      "status": "Ativo",
+      "totalSalesCents": 1500000,
+      "totalCommissionCents": 150000,
+      "totalPaidCents": 100000,
+      "referralCount": 15,
+      "createdAt": "2025-02-15T11:00:00Z"
+    },
+    {
+      "id": "aff-005",
+      "name": "Fernanda Costa",
+      "email": "fernanda.costa@email.com",
+      "phone": "(51) 95555-7890",
+      "referralCode": "FER2025",
+      "commissionPercent": 8,
+      "status": "Inativo",
+      "totalSalesCents": 800000,
+      "totalCommissionCents": 64000,
+      "totalPaidCents": 64000,
+      "referralCount": 8,
+      "createdAt": "2025-01-10T16:00:00Z"
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Mail, Phone, Save, Shield, User } from "lucide-react";
 import { toast } from "sonner";
-import profileResponse from "@/mocks/account/get-profile.json";
+import profileResponse from "@/mocks/GET-account--profile.json";
 
-const mockProfile = profileResponse.data;
+const mockProfile = profileResponse.responseBody;
 
 export function MyProfilePage() {
   const [fullName, setFullName] = useState(mockProfile.fullName);

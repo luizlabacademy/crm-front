@@ -19,16 +19,16 @@ import type {
   CostCenter,
 } from "../types/expenseTypes";
 
-import accountsJson from "../mocks/accounts.json";
-import pendingJson from "../mocks/pending-expenses.json";
-import paidJson from "../mocks/paid-expenses.json";
-import categoriesJson from "../mocks/categories.json";
-import costCentersJson from "../mocks/cost-centers.json";
+import accountsJson from "@/mocks/GET-expenses--accounts.json";
+import pendingJson from "@/mocks/GET-expenses--pending.json";
+import paidJson from "@/mocks/GET-expenses--paid.json";
+import categoriesJson from "@/mocks/GET-expenses--categories.json";
+import costCentersJson from "@/mocks/GET-expenses--cost-centers.json";
 
 // Cast imported JSON to typed arrays
-const allAccounts = accountsJson as unknown as ExpenseAccount[];
-const allPending = pendingJson as unknown as Expense[];
-const allPaid = paidJson as unknown as Expense[];
+const allAccounts = (accountsJson.responseBody as unknown) as ExpenseAccount[];
+const allPending = (pendingJson.responseBody as unknown) as Expense[];
+const allPaid = (paidJson.responseBody as unknown) as Expense[];
 
 // Simulated network delay
 const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
@@ -72,12 +72,12 @@ function amountInRange(cents: number, min: string, max: string): boolean {
 
 export async function fetchCategories(): Promise<ExpenseCategory[]> {
   await delay(100);
-  return categoriesJson as ExpenseCategory[];
+  return categoriesJson.responseBody as ExpenseCategory[];
 }
 
 export async function fetchCostCenters(): Promise<CostCenter[]> {
   await delay(100);
-  return costCentersJson as CostCenter[];
+  return costCentersJson.responseBody as CostCenter[];
 }
 
 // ─── Accounts ───────────────────────────────────────────────────────

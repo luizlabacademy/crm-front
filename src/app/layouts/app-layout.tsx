@@ -48,8 +48,8 @@ import navigationConfig from "@/app/config/navigation.json";
 import { useAuthStore } from "@/lib/auth/authStore";
 import { applyTheme, getStoredTheme } from "@/lib/theme/theme";
 import { cn } from "@/lib/utils";
-import notificationsResponse from "@/mocks/account/get-notifications.json";
-import profileResponse from "@/mocks/account/get-profile.json";
+import notificationsResponse from "@/mocks/GET-account--notifications.json";
+import profileResponse from "@/mocks/GET-account--profile.json";
 
 interface NavItem {
   label: string;
@@ -628,7 +628,7 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
   const notificationsRef = useRef<HTMLDivElement | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const notifications = useMemo(() => notificationsResponse.data, []);
+  const notifications = useMemo(() => notificationsResponse.responseBody, []);
 
   const unreadCount = notifications.filter((item) => item.unread).length;
 
@@ -826,7 +826,7 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
               aria-label="Perfil"
             >
               <img
-                src={profileResponse.data.avatarUrl}
+                src={profileResponse.responseBody.avatarUrl}
                 alt="Avatar"
                 className="h-7 w-7 rounded-full object-cover"
               />

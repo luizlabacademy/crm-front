@@ -1,0 +1,27 @@
+{
+  "method": "GET",
+  "route": "/api/v1/expenses/cost-centers",
+  "requestBody": "",
+  "responseBody": [
+    {
+      "id": "cc-01",
+      "name": "Administrativo"
+    },
+    {
+      "id": "cc-02",
+      "name": "Operacional"
+    },
+    {
+      "id": "cc-03",
+      "name": "Comercial"
+    },
+    {
+      "id": "cc-04",
+      "name": "Financeiro"
+    },
+    {
+      "id": "cc-05",
+      "name": "RH"
+    }
+  ]
+}

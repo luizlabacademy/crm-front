@@ -1,0 +1,390 @@
+{
+  "method": "GET",
+  "route": "/api/v1/conversations/messages",
+  "requestBody": "",
+  "responseBody": {
+    "conv-1": [
+      {
+        "id": "m1-1",
+        "contactId": "conv-1",
+        "content": "Oi, tudo bem? Vi o pacote premium no site de voces e fiquei interessada!",
+        "createdAt": "2026-04-12T08:30:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-2",
+        "contactId": "conv-1",
+        "content": "Ola Ana! Tudo otimo, e com voce? Fico feliz pelo seu interesse! O pacote premium inclui todos os servicos + suporte prioritario. Posso te passar mais detalhes?",
+        "createdAt": "2026-04-12T08:35:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-3",
+        "contactId": "conv-1",
+        "content": "Sim, por favor! Quais sao as formas de pagamento?",
+        "createdAt": "2026-04-12T08:40:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-4",
+        "contactId": "conv-1",
+        "content": "Trabalhamos com PIX, cartao de credito (ate 12x) e boleto. O PIX tem 5% de desconto!",
+        "createdAt": "2026-04-12T08:45:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-5",
+        "contactId": "conv-1",
+        "content": "Perfeito! Vou fazer por PIX entao. Pode me gerar o link?",
+        "createdAt": "2026-04-12T09:10:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-6",
+        "contactId": "conv-1",
+        "content": "Oi, quero fechar o pacote premium ainda hoje. Pode me mandar as formas de pagamento?",
+        "createdAt": "2026-04-12T09:22:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-7",
+        "contactId": "conv-1",
+        "content": "Claro! Seguem os detalhes completos: PIX com 5% de desconto a vista, cartao de credito em ate 12x sem juros ate 6x (acima disso ha taxa da operadora), boleto com compensacao em ate 2 dias uteis e transferencia bancaria. Se quiser, ja te envio o link direto para concluir agora e garantir o valor promocional de hoje.",
+        "createdAt": "2026-04-12T09:24:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-8",
+        "contactId": "conv-1",
+        "content": "Perfeito, vou no PIX mesmo. Tambem queria confirmar se o suporte prioritario funciona aos sabados e qual e o prazo medio de resposta quando aparece alguma urgencia no atendimento.",
+        "createdAt": "2026-04-12T09:26:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-9",
+        "contactId": "conv-1",
+        "content": "Funciona sim! Nosso suporte prioritario atende de segunda a sabado, e para chamados urgentes o tempo medio fica entre 5 e 15 minutos. Nos demais casos, o retorno costuma acontecer em menos de 1 hora no horario comercial.",
+        "createdAt": "2026-04-12T09:29:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m1-10",
+        "contactId": "conv-1",
+        "content": "Excelente! Outra duvida: na implantacao voces ajudam a configurar funil, tags, mensagens de follow-up e distribuicao entre os vendedores? Quero ja subir tudo organizado para a equipe usar na semana que vem.",
+        "createdAt": "2026-04-12T09:31:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-2": [
+      {
+        "id": "m2-1",
+        "contactId": "conv-2",
+        "content": "Boa tarde! Vi seus produtos no Instagram. Tem catalogo?",
+        "createdAt": "2026-04-12T08:20:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Instagram"
+      },
+      {
+        "id": "m2-2",
+        "contactId": "conv-2",
+        "content": "Ola Carlos! Temos sim, vou preparar e enviar para voce.",
+        "createdAt": "2026-04-12T08:30:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "Instagram"
+      },
+      {
+        "id": "m2-3",
+        "contactId": "conv-2",
+        "content": "Consegue me enviar o catalogo atualizado com os itens de pronta entrega?",
+        "createdAt": "2026-04-12T08:48:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "Instagram"
+      },
+      {
+        "id": "m2-4",
+        "contactId": "conv-2",
+        "content": "Conseguimos sim! Estou separando agora por categoria com estoque em tempo real. Vou incluir tambem sugestoes de kits com maior giro, prazos por regiao e a tabela com politicas de frete para facilitar sua decisao.",
+        "createdAt": "2026-04-12T08:55:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "Instagram"
+      },
+      {
+        "id": "m2-5",
+        "contactId": "conv-2",
+        "content": "Otimo. Se puder, manda separado o que sai no mesmo dia e o que precisa de reposicao, porque estou fechando uma campanha e preciso garantir prazo para nao atrasar as entregas dos meus clientes.",
+        "createdAt": "2026-04-12T09:02:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "Instagram"
+      }
+    ],
+    "conv-3": [
+      {
+        "id": "m3-1",
+        "contactId": "conv-3",
+        "content": "Oi Juliana! Seu orcamento esta pronto. Valor total: R$ 2.450,00 com frete incluso para SP.",
+        "createdAt": "2026-04-12T07:50:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m3-2",
+        "contactId": "conv-3",
+        "content": "Perfeito, pode gerar o pedido com frete para Sao Paulo.",
+        "createdAt": "2026-04-12T08:11:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m3-3",
+        "contactId": "conv-3",
+        "content": "Pedido gerado! Numero #4521. Enviei o link de pagamento por email tambem.",
+        "createdAt": "2026-04-12T08:20:00.000Z",
+        "direction": "outbound",
+        "status": "delivered",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-4": [
+      {
+        "id": "m4-1",
+        "contactId": "conv-4",
+        "content": "Ola Marcos! Lembrete: seu desconto de 15% e valido ate sexta-feira.",
+        "createdAt": "2026-04-11T17:00:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "Facebook"
+      },
+      {
+        "id": "m4-2",
+        "contactId": "conv-4",
+        "content": "Ainda estou avaliando. Voces conseguem manter esse desconto ate sexta?",
+        "createdAt": "2026-04-11T18:34:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Facebook"
+      }
+    ],
+    "conv-5": [
+      {
+        "id": "m5-1",
+        "contactId": "conv-5",
+        "content": "Renata, segue a proposta atualizada conforme conversamos.",
+        "createdAt": "2026-04-11T15:00:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m5-2",
+        "contactId": "conv-5",
+        "content": "Recebi aqui, obrigada. Vou alinhar com o financeiro e te retorno.",
+        "createdAt": "2026-04-11T16:26:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m5-3",
+        "contactId": "conv-5",
+        "content": "Perfeito! Fico no aguardo. Qualquer duvida e so chamar.",
+        "createdAt": "2026-04-11T16:30:00.000Z",
+        "direction": "outbound",
+        "status": "delivered",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-6": [
+      {
+        "id": "m6-1",
+        "contactId": "conv-6",
+        "content": "Ola! Gostaria de saber mais sobre os planos disponiveis.",
+        "createdAt": "2026-04-11T14:30:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Site"
+      },
+      {
+        "id": "m6-2",
+        "contactId": "conv-6",
+        "content": "Oi Lucas! Temos plano mensal, trimestral e anual. O anual tem 20% de desconto.",
+        "createdAt": "2026-04-11T14:40:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "Site"
+      },
+      {
+        "id": "m6-3",
+        "contactId": "conv-6",
+        "content": "Pode me explicar a diferenca entre o plano trimestral e anual?",
+        "createdAt": "2026-04-11T14:52:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Site"
+      }
+    ],
+    "conv-7": [
+      {
+        "id": "m7-1",
+        "contactId": "conv-7",
+        "content": "Bom dia! Vi o anuncio no Instagram e gostei muito. Tem disponibilidade?",
+        "createdAt": "2026-04-11T11:05:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-8": [
+      {
+        "id": "m8-1",
+        "contactId": "conv-8",
+        "content": "Roberto, bom dia! Como ficou a decisao sobre o pedido?",
+        "createdAt": "2026-04-10T10:00:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m8-2",
+        "contactId": "conv-8",
+        "content": "Oi! Desculpa a demora. Estou finalizando a aprovacao interna.",
+        "createdAt": "2026-04-10T14:30:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m8-3",
+        "contactId": "conv-8",
+        "content": "Sem problemas! Fico a disposicao.",
+        "createdAt": "2026-04-10T14:35:00.000Z",
+        "direction": "outbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      },
+      {
+        "id": "m8-4",
+        "contactId": "conv-8",
+        "content": "Vou confirmar o pedido hoje a tarde. Obrigado pela paciencia!",
+        "createdAt": "2026-04-10T17:15:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-9": [
+      {
+        "id": "m9-1",
+        "contactId": "conv-9",
+        "content": "Ja consegui validar internamente, pode seguir com a proposta final e prazo para implantacao.",
+        "createdAt": "2026-04-10T16:05:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-10": [
+      {
+        "id": "m10-1",
+        "contactId": "conv-10",
+        "content": "Me envia tambem os valores para plano anual com desconto por volume.",
+        "createdAt": "2026-04-10T15:22:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Instagram"
+      }
+    ],
+    "conv-11": [
+      {
+        "id": "m11-1",
+        "contactId": "conv-11",
+        "content": "Consegue agendar uma demonstracao rapida amanha as 10h?",
+        "createdAt": "2026-04-10T14:40:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "Facebook"
+      }
+    ],
+    "conv-12": [
+      {
+        "id": "m12-1",
+        "contactId": "conv-12",
+        "content": "Queria entender se voces fazem migracao dos dados antigos sem custo adicional.",
+        "createdAt": "2026-04-10T13:18:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Site"
+      }
+    ],
+    "conv-13": [
+      {
+        "id": "m13-1",
+        "contactId": "conv-13",
+        "content": "Recebi o contrato, vou assinar ainda hoje no final do dia.",
+        "createdAt": "2026-04-10T12:47:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-14": [
+      {
+        "id": "m14-1",
+        "contactId": "conv-14",
+        "content": "Pode confirmar se o onboarding inclui treinamento para time comercial e suporte?",
+        "createdAt": "2026-04-10T11:33:00.000Z",
+        "direction": "inbound",
+        "status": "delivered",
+        "channel": "WhatsApp"
+      }
+    ],
+    "conv-15": [
+      {
+        "id": "m15-1",
+        "contactId": "conv-15",
+        "content": "Gostei bastante, so preciso ajustar a forma de pagamento com o financeiro.",
+        "createdAt": "2026-04-10T10:20:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Instagram"
+      }
+    ],
+    "conv-16": [
+      {
+        "id": "m16-1",
+        "contactId": "conv-16",
+        "content": "Enviei os dados da empresa no formulario. Aguardo retorno para proxima etapa.",
+        "createdAt": "2026-04-10T09:55:00.000Z",
+        "direction": "inbound",
+        "status": "read",
+        "channel": "Site"
+      }
+    ]
+  }
+}

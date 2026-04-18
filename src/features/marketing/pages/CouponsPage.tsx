@@ -19,7 +19,7 @@ import type {
   CouponStatus,
   CreateCouponPayload,
 } from "@/features/marketing/types/marketingTypes";
-import couponsData from "@/features/marketing/mocks/coupons.json";
+import couponsData from "@/mocks/GET-marketing--coupons.json";
 import { toast } from "sonner";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
@@ -30,7 +30,7 @@ import {
 // ─── Mock service ─────────────────────────────────────────────────────────────
 
 function useCoupons() {
-  const [coupons, setCoupons] = useState<Coupon[]>(couponsData as Coupon[]);
+  const [coupons, setCoupons] = useState<Coupon[]>(couponsData.responseBody as unknown as Coupon[]);
 
   function addCoupon(payload: CreateCouponPayload): Coupon {
     const newCoupon: Coupon = {

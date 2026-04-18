@@ -20,7 +20,7 @@ import type {
   AffiliateStatus,
   CreateAffiliatePayload,
 } from "@/features/marketing/types/marketingTypes";
-import affiliatesData from "@/features/marketing/mocks/affiliates.json";
+import affiliatesData from "@/mocks/GET-marketing--affiliates.json";
 import { toast } from "sonner";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
@@ -40,7 +40,7 @@ function generateReferralCode(name: string): string {
 
 function useAffiliates() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>(
-    affiliatesData as Affiliate[],
+    affiliatesData.responseBody as unknown as Affiliate[],
   );
 
   function addAffiliate(payload: CreateAffiliatePayload): Affiliate {

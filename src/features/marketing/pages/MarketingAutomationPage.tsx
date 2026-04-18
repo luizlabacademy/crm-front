@@ -10,7 +10,7 @@ import type {
   AutomationStatus,
   AutomationTemplateType,
 } from "@/features/marketing/types/marketingTypes";
-import automationData from "@/features/marketing/mocks/marketing-automation.json";
+import automationData from "@/mocks/GET-marketing--automation.json";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
   getDefaultPageSize,
@@ -21,10 +21,10 @@ import {
 
 function useAutomationData() {
   const [templates, setTemplates] = useState<AutomationTemplate[]>(
-    automationData.templates as AutomationTemplate[],
+    automationData.responseBody.templates as unknown as AutomationTemplate[],
   );
   const [automations, setAutomations] = useState<MarketingAutomation[]>(
-    automationData.automations as MarketingAutomation[],
+    automationData.responseBody.automations as unknown as MarketingAutomation[],
   );
 
   function updateTemplate(id: string, message: string) {

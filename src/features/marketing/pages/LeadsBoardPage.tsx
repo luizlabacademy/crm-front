@@ -35,8 +35,8 @@ import type {
   CampaignType,
   MarketingCampaign,
 } from "@/features/marketing/types/marketingTypes";
-import leadsJson from "@/mocks/marketing/get-leads.json";
-import campaignsJson from "@/mocks/marketing/get-campaigns.json";
+import leadsJson from "@/mocks/GET-marketing--all-leads.json";
+import campaignsJson from "@/mocks/GET-marketing--campaigns.json";
 import type {
   Over,
   DragStartEvent,
@@ -128,7 +128,7 @@ function toLeadStatus(raw: string): LeadBoardStatus {
     : "LEAD";
 }
 
-function buildLeads(raw: typeof leadsJson.data): LeadBoardCard[] {
+function buildLeads(raw: typeof leadsJson.responseBody): LeadBoardCard[] {
   return raw.map((l) => ({
     ...l,
     status: toLeadStatus(l.status),
@@ -438,10 +438,10 @@ export function LeadsBoardPage() {
   const campaignNameParam = searchParams.get("campaignName");
 
   const [leads, setLeads] = useState<LeadBoardCard[]>(() =>
-    buildLeads(leadsJson.data),
+    buildLeads(leadsJson.responseBody),
   );
   const [campaigns] = useState<MarketingCampaign[]>(
-    campaignsJson.data as unknown as MarketingCampaign[],
+    campaignsJson.responseBody as unknown as MarketingCampaign[],
   );
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
     campaignIdParam,

@@ -18,7 +18,7 @@ import type {
   CampaignStatus,
   CreateCampaignPayload,
 } from "@/features/marketing/types/marketingTypes";
-import campaignsData from "@/features/marketing/mocks/campaigns.json";
+import campaignsData from "@/mocks/GET-marketing--all-campaigns.json";
 import { CreateCampaignModal } from "./CreateCampaignModal";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
@@ -30,7 +30,7 @@ import {
 
 function useCampaigns() {
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>(
-    campaignsData as MarketingCampaign[],
+    campaignsData.responseBody as unknown as MarketingCampaign[],
   );
 
   function addCampaign(payload: CreateCampaignPayload): MarketingCampaign {

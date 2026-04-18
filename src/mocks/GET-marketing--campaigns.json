@@ -1,0 +1,187 @@
+{
+  "method": "GET",
+  "route": "/api/v1/marketing/campaigns",
+  "requestBody": "",
+  "responseBody": [
+    {
+      "id": "camp-001",
+      "name": "Remarketing Verão",
+      "type": "Remarketing",
+      "status": "Ativa",
+      "createdAt": "2026-03-15T10:00:00Z",
+      "destination": {
+        "type": "whatsapp",
+        "url": "https://wa.me/5511999990001"
+      },
+      "audience": {
+        "type": "no_purchase_days",
+        "days": 30
+      },
+      "templateId": "tpl-001",
+      "metrics": {
+        "sent": 342,
+        "delivered": 335,
+        "replied": 98,
+        "converted": 45,
+        "clicked": 210
+      }
+    },
+    {
+      "id": "camp-002",
+      "name": "Recovery Clientes Inativos",
+      "type": "Recovery",
+      "status": "Ativa",
+      "createdAt": "2026-03-20T14:00:00Z",
+      "destination": {
+        "type": "whatsapp",
+        "url": "https://wa.me/5511999990002"
+      },
+      "audience": {
+        "type": "no_purchase_days",
+        "days": 60
+      },
+      "templateId": "tpl-002",
+      "metrics": {
+        "sent": 210,
+        "delivered": 205,
+        "replied": 48,
+        "converted": 18,
+        "clicked": 112
+      }
+    },
+    {
+      "id": "camp-003",
+      "name": "Re-engagement Inativos 90d",
+      "type": "Re-engagement",
+      "status": "Pausada",
+      "createdAt": "2026-02-28T09:00:00Z",
+      "destination": {
+        "type": "landing_page",
+        "url": "https://loja.example.com/reativacao"
+      },
+      "audience": {
+        "type": "no_purchase_days",
+        "days": 90
+      },
+      "templateId": "tpl-003",
+      "metrics": {
+        "sent": 500,
+        "delivered": 490,
+        "replied": 65,
+        "converted": 22,
+        "clicked": 310
+      }
+    },
+    {
+      "id": "camp-004",
+      "name": "Resgate Não Compareceu",
+      "type": "Recovery",
+      "status": "Finalizada",
+      "createdAt": "2026-01-10T11:00:00Z",
+      "destination": {
+        "type": "whatsapp",
+        "url": "https://wa.me/5511999990003"
+      },
+      "audience": {
+        "type": "no_show"
+      },
+      "templateId": "tpl-004",
+      "metrics": {
+        "sent": 87,
+        "delivered": 84,
+        "replied": 30,
+        "converted": 12,
+        "clicked": 55
+      }
+    },
+    {
+      "id": "camp-005",
+      "name": "Remarketing Black Friday",
+      "type": "Remarketing",
+      "status": "Finalizada",
+      "createdAt": "2025-11-20T08:00:00Z",
+      "destination": {
+        "type": "landing_page",
+        "url": "https://loja.example.com/black-friday"
+      },
+      "audience": {
+        "type": "full_list"
+      },
+      "templateId": "tpl-001",
+      "metrics": {
+        "sent": 1200,
+        "delivered": 1180,
+        "replied": 340,
+        "converted": 180,
+        "clicked": 720
+      }
+    },
+    {
+      "id": "camp-006",
+      "name": "Promo Dia das Mães",
+      "type": "Remarketing",
+      "status": "Ativa",
+      "createdAt": "2026-04-01T08:00:00Z",
+      "destination": {
+        "type": "whatsapp",
+        "url": "https://wa.me/5511999990006"
+      },
+      "audience": {
+        "type": "full_list"
+      },
+      "templateId": "tpl-001",
+      "metrics": {
+        "sent": 450,
+        "delivered": 440,
+        "replied": 120,
+        "converted": 60,
+        "clicked": 280
+      }
+    },
+    {
+      "id": "camp-007",
+      "name": "Recovery Carrinho Abandonado",
+      "type": "Recovery",
+      "status": "Ativa",
+      "createdAt": "2026-03-25T10:00:00Z",
+      "destination": {
+        "type": "whatsapp",
+        "url": "https://wa.me/5511999990007"
+      },
+      "audience": {
+        "type": "no_purchase_days",
+        "days": 7
+      },
+      "templateId": "tpl-002",
+      "metrics": {
+        "sent": 180,
+        "delivered": 175,
+        "replied": 55,
+        "converted": 30,
+        "clicked": 90
+      }
+    },
+    {
+      "id": "camp-008",
+      "name": "Re-engagement Aniversariantes",
+      "type": "Re-engagement",
+      "status": "Ativa",
+      "createdAt": "2026-04-05T09:00:00Z",
+      "destination": {
+        "type": "whatsapp",
+        "url": "https://wa.me/5511999990008"
+      },
+      "audience": {
+        "type": "full_list"
+      },
+      "templateId": "tpl-003",
+      "metrics": {
+        "sent": 95,
+        "delivered": 93,
+        "replied": 40,
+        "converted": 18,
+        "clicked": 65
+      }
+    }
+  ]
+}

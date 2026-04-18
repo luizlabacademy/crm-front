@@ -7,7 +7,7 @@ import type {
   CampaignAudienceType,
   CampaignDestinationType,
 } from "@/features/marketing/types/marketingTypes";
-import automationData from "@/features/marketing/mocks/marketing-automation.json";
+import automationData from "@/mocks/GET-marketing--automation.json";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -144,7 +144,7 @@ export function CreateCampaignModal({
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [bannerName, setBannerName] = useState<string | null>(null);
 
-  const templates = automationData.templates;
+  const templates = automationData.responseBody.templates;
 
   if (!open) return null;
 

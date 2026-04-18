@@ -1,0 +1,38 @@
+{
+  "method": "GET",
+  "route": "/api/v1/dashboard/conversion-rate",
+  "requestBody": "",
+  "responseBody": {
+    "period": "yearly",
+    "series": [
+      {
+        "label": "2020",
+        "conversionRate": 14
+      },
+      {
+        "label": "2021",
+        "conversionRate": 17
+      },
+      {
+        "label": "2022",
+        "conversionRate": 20
+      },
+      {
+        "label": "2023",
+        "conversionRate": 24
+      },
+      {
+        "label": "2024",
+        "conversionRate": 27
+      },
+      {
+        "label": "2025",
+        "conversionRate": 30
+      },
+      {
+        "label": "2026",
+        "conversionRate": 32
+      }
+    ]
+  }
+}

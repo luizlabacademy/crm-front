@@ -40,12 +40,12 @@ import type {
   ConversationChannel,
   ConversationContactType,
 } from "@/features/conversations/types/conversationTypes";
-import contactsResponse from "@/mocks/conversations/get-contacts.json";
-import messagesResponse from "@/mocks/conversations/get-messages.json";
-import catalogItemsResponse from "@/mocks/conversations/get-catalog-items.json";
-import conversationOrdersResponse from "@/mocks/conversations/get-recent-orders.json";
-import channelsResponse from "@/mocks/conversations/get-channels.json";
-import profileResponse from "@/mocks/account/get-profile.json";
+import contactsResponse from "@/mocks/GET-conversations--contacts.json";
+import messagesResponse from "@/mocks/GET-conversations--messages.json";
+import catalogItemsResponse from "@/mocks/GET-conversations--catalog-items.json";
+import conversationOrdersResponse from "@/mocks/GET-conversations--recent-orders.json";
+import channelsResponse from "@/mocks/GET-conversations--channels.json";
+import profileResponse from "@/mocks/GET-account--profile.json";
 import type { CatalogItemResponse } from "@/features/orders/types/orderTypes";
 import {
   QuoteComposerOverlay,
@@ -139,7 +139,7 @@ interface MockOrder {
 }
 
 const MOCK_CONTACTS: ConversationContact[] = (
-  contactsResponse.data as Array<
+  contactsResponse.responseBody as Array<
     ConversationContact & { contactType?: ConversationContactType }
   >
 ).map((contact) => ({
@@ -148,7 +148,7 @@ const MOCK_CONTACTS: ConversationContact[] = (
   contactType: (contact.contactType ?? "customer") as ConversationContactType,
 }));
 
-const MOCK_MESSAGES = messagesResponse.data as unknown as Record<
+const MOCK_MESSAGES = messagesResponse.responseBody as unknown as Record<
   string,
   ChatMessage[]
 >;
@@ -159,10 +159,10 @@ const MOCK_PERSONS: PersonResponse[] = MOCK_CONTACTS.map((contact, index) => ({
 }));
 
 const MOCK_CATALOG_ITEMS: CatalogItemResponse[] =
-  catalogItemsResponse.data as CatalogItemResponse[];
+  catalogItemsResponse.responseBody as CatalogItemResponse[];
 
 const MOCK_RECENT_ORDERS: MockOrder[] =
-  conversationOrdersResponse.data as MockOrder[];
+  conversationOrdersResponse.responseBody as MockOrder[];
 
 function MessageStatus({ status }: { status?: string }) {
   if (status === "read")
@@ -477,7 +477,7 @@ function NewChatModal({
     return name.toLowerCase().includes(personSearch.toLowerCase());
   });
 
-  const channels = channelsResponse.data as {
+  const channels = channelsResponse.responseBody as {
     value: ConversationChannel;
     label: string;
     color: string;
@@ -617,7 +617,7 @@ function NewChatModal({
 
 const ALL_CHANNELS: { value: string; label: string }[] = [
   { value: "Todos", label: "Todos" },
-  ...channelsResponse.data.map((ch) => ({ value: ch.value, label: ch.label })),
+  ...channelsResponse.responseBody.map((ch) => ({ value: ch.value, label: ch.label })),
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -636,7 +636,7 @@ export function ConversationsPage() {
   const [newMessage, setNewMessage] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
-  const [displayName, setDisplayName] = useState(profileResponse.data.fullName);
+  const [displayName, setDisplayName] = useState(profileResponse.responseBody.fullName);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
   const [showPdv, setShowPdv] = useState(false);
   const [showOrdersPanel, setShowOrdersPanel] = useState(false);
@@ -644,10 +644,10 @@ export function ConversationsPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const agentProfile = {
-    fullName: profileResponse.data.fullName,
-    email: profileResponse.data.email,
-    code: profileResponse.data.code,
-    photoUrl: profileResponse.data.avatarUrl,
+    fullName: profileResponse.responseBody.fullName,
+    email: profileResponse.responseBody.email,
+    code: profileResponse.responseBody.code,
+    photoUrl: profileResponse.responseBody.avatarUrl,
   };
 
   const isLoadingContacts = false;

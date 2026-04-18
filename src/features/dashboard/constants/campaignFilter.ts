@@ -1,4 +1,4 @@
-import campaignOptionsResponse from "@/mocks/dashboard/get-campaign-options.json";
+import campaignOptionsResponse from "@/mocks/GET-dashboard--campaign-options.json";
 
 export interface CampaignFilterOption {
   id: string;
@@ -7,7 +7,7 @@ export interface CampaignFilterOption {
 }
 
 export const CAMPAIGN_OPTIONS: CampaignFilterOption[] =
-  campaignOptionsResponse.data as CampaignFilterOption[];
+  campaignOptionsResponse.responseBody as CampaignFilterOption[];
 
 export function getCampaignWeightRatio(selectedIds: string[]): number {
   if (selectedIds.length === 0) {

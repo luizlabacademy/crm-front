@@ -18,7 +18,7 @@ import type {
   CashbackRuleStatus,
   CreateCashbackRulePayload,
 } from "@/features/marketing/types/marketingTypes";
-import cashbackData from "@/features/marketing/mocks/cashback.json";
+import cashbackData from "@/mocks/GET-marketing--cashback.json";
 import { toast } from "sonner";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
@@ -30,7 +30,7 @@ import {
 
 function useCashbackRules() {
   const [rules, setRules] = useState<CashbackRule[]>(
-    cashbackData as CashbackRule[],
+    cashbackData.responseBody as unknown as CashbackRule[],
   );
 
   function addRule(payload: CreateCashbackRulePayload): CashbackRule {
