@@ -926,7 +926,7 @@ export function ConversationsPage() {
               className={cn(
                 "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
                 chatTab === "open"
-                  ? "border-primary/40 bg-primary/15 text-primary"
+                  ? "border-white/20 bg-white/10 text-white"
                   : "border-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100",
               )}
             >
@@ -939,7 +939,7 @@ export function ConversationsPage() {
               className={cn(
                 "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
                 chatTab === "closed"
-                  ? "border-primary/40 bg-primary/15 text-primary"
+                  ? "border-white/20 bg-white/10 text-white"
                   : "border-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100",
               )}
             >
@@ -954,7 +954,7 @@ export function ConversationsPage() {
               className={cn(
                 "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
                 showNewChatModal
-                  ? "border-primary/40 bg-primary/15 text-primary"
+                  ? "border-white/20 bg-white/10 text-white"
                   : "border-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100",
               )}
             >
