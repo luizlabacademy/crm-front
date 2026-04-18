@@ -722,6 +722,7 @@ export function BotMenuPage() {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
+      setActiveTab("templates");
     } catch (err) {
       console.error("Failed to exit fullscreen:", err);
     }
@@ -773,21 +774,18 @@ export function BotMenuPage() {
   if (activeTab === "dialogs" && document.fullscreenElement) {
     return (
       <div className="w-screen h-screen flex flex-col bg-background">
-        {/* Titlebar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card shadow-sm">
-          <h1 className="text-xl font-semibold">Diálogos do Bot</h1>
-          <button
-            onClick={exitFullscreen}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors text-sm"
-            title="Sair de tela cheia (ESC)"
-          >
-            <Minimize2 size={18} />
-            Sair (ESC)
-          </button>
-        </div>
+        {/* Fullscreen Close Button - Floating */}
+        <button
+          onClick={exitFullscreen}
+          className="absolute top-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border hover:bg-muted transition-colors text-sm shadow-lg"
+          title="Sair de tela cheia (ESC)"
+        >
+          <Minimize2 size={18} />
+          Sair (ESC)
+        </button>
 
-        {/* Fullscreen Content */}
-        <div className="flex-1 overflow-hidden p-6">
+        {/* Fullscreen Content - Full Height */}
+        <div className="w-full h-full overflow-hidden p-6">
           <div className="flex gap-6 h-full">
             <div className="w-[25%]">
               <WhatsAppEmulator flowState={flowState} />
