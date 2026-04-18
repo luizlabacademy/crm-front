@@ -175,6 +175,13 @@ const MarketingAutomationPage = lazy(() =>
   })),
 );
 
+// Bot
+const BotMenuPage = lazy(() =>
+  import("@/features/bot/pages/BotMenuPage").then((m) => ({
+    default: m.BotMenuPage,
+  })),
+);
+
 const ContactListPage = lazy(() =>
   import("@/features/marketing/pages/ContactListPage").then((m) => ({
     default: m.ContactListPage,
@@ -443,6 +450,9 @@ export function AppRouter() {
             <Route path="/marketing/cashback" element={<CashbackPage />} />
             <Route path="/marketing/affiliates" element={<AffiliatesPage />} />
             <Route path="/plans" element={<PlanPage />} />
+
+            {/* Bot */}
+            <Route path="/bot/menu" element={<BotMenuPage />} />
 
             {/* Expenses */}
             <Route path="/expenses" element={<ExpensesPage />} />

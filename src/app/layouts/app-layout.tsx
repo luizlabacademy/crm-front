@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router";
 import {
   Bell,
   BookUser,
+  Bot,
   Building2,
   CalendarRange,
   ChevronDown,
@@ -93,6 +94,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   megaphone: Megaphone,
   zap: Zap,
   "book-user": BookUser,
+  bot: Bot,
   globe: Globe,
   ticket: Ticket,
   wallet: Wallet,
