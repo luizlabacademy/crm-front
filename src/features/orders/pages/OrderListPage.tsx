@@ -570,9 +570,9 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
                             type="button"
                             aria-label="Estornar"
                             onClick={() => void handleReverseOrder(order.id)}
-                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                           >
-                            Extorno
+                            <Trash2 size={16} />
                           </button>
                         )}
                         {isQuotesView && (

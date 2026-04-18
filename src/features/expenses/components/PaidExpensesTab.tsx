@@ -320,26 +320,26 @@ export function PaidExpensesTab() {
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon-xs"
+                          size={"icon-sm"}
                           onClick={(e) => {
                             e.stopPropagation();
                             openView(expense);
                           }}
                           aria-label="Visualizar"
                         >
-                          <Eye size={14} />
+                          <Eye size={16} />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon-xs"
+                          size={"icon-sm"}
                           onClick={(e) => {
                             e.stopPropagation();
                             openEdit(expense);
                           }}
                           aria-label="Editar"
                         >
-                          <Pencil size={14} />
+                          <Pencil size={16} />
                         </Button>
                       </div>
                     </TableCell>

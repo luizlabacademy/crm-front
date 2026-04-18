@@ -67,7 +67,7 @@ const INITIAL_FILTERS: AccountFilters = {
   isRecurring: "",
 };
 
-const COLS = 8;
+const COLS = 5;
 
 export function AccountsTab() {
   // ─── State ──────────────────────────────────────────────────────
@@ -251,10 +251,7 @@ export function AccountsTab() {
               <TableRow className="text-left text-xs text-muted-foreground bg-muted/40">
                 <TableHead>Nome</TableHead>
                 <TableHead>Categoria</TableHead>
-                <TableHead>Fornecedor</TableHead>
-                <TableHead className="text-right">Valor Padrão</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Recorrência</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -276,26 +273,24 @@ export function AccountsTab() {
                     onClick={() => openView(account)}
                   >
                     <TableCell className="font-medium">
-                      {account.name}
+                      <div>{account.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{account.supplier || "—"}</div>
                     </TableCell>
-                    <TableCell>{account.categoryName}</TableCell>
-                    <TableCell>{account.supplier}</TableCell>
+                    <TableCell>
+                      <div>{account.categoryName}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{ACCOUNT_TYPE_LABELS[account.type]}</div>
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {account.defaultAmountCents
-                        ? formatCurrency(account.defaultAmountCents)
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge
-                        status={account.type}
-                        colorMap={ACCOUNT_TYPE_COLORS}
-                        label={ACCOUNT_TYPE_LABELS[account.type]}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {account.recurrence
-                        ? PERIODICITY_LABELS[account.recurrence.periodicity]
-                        : "—"}
+                      <div>
+                        {account.defaultAmountCents
+                          ? formatCurrency(account.defaultAmountCents)
+                          : "—"}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {account.recurrence
+                          ? PERIODICITY_LABELS[account.recurrence.periodicity]
+                          : "—"}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <StatusBadge
@@ -309,26 +304,26 @@ export function AccountsTab() {
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon-xs"
+                          size={"icon-sm"}
                           onClick={(e) => {
                             e.stopPropagation();
                             openView(account);
                           }}
                           aria-label="Visualizar"
                         >
-                          <Eye size={14} />
+                          <Eye size={16} />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon-xs"
+                          size={"icon-sm"}
                           onClick={(e) => {
                             e.stopPropagation();
                             openEdit(account);
                           }}
                           aria-label="Editar"
                         >
-                          <Pencil size={14} />
+                          <Pencil size={16} />
                         </Button>
                       </div>
                     </TableCell>
