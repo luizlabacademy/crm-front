@@ -41,126 +41,64 @@ const INITIAL_BOT_FLOW_STATE: BotFlowState = {
       options: [
         { label: "Agendar atendimento", nextMenuRef: "AGENDAR" },
         { label: "Meus agendamentos", nextMenuRef: "MEUS_AGENDAMENTOS" },
-        { label: "Serviços e preços", nextMenuRef: "SERVICOS" },
-        { label: "Promoções", nextMenuRef: "PROMOCOES" },
-        { label: "Horário e localização", nextMenuRef: "LOCALIZACAO" },
+        { label: "Serviços", nextMenuRef: "SERVICOS" },
         { label: "Falar com atendente", nextMenuRef: "ATENDENTE" },
       ],
     },
     {
       ref: "AGENDAR",
-      question: "Qual serviço você quer agendar?",
+      question: "Qual serviço?",
       options: [
-        { label: "Cabelo", nextMenuRef: "AGENDAR_CABELO" },
-        { label: "Unhas", nextMenuRef: "AGENDAR_UNHAS" },
-        { label: "Sobrancelhas", nextMenuRef: "AGENDAR_SOBRANCELHAS" },
-        { label: "Estética", nextMenuRef: "AGENDAR_ESTETICA" },
+        { label: "Cabelo", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Unhas", nextMenuRef: "CONFIRMAR_SERVICO" },
+        { label: "Sobrancelhas", nextMenuRef: "CONFIRMAR_SERVICO" },
         { label: "Voltar", nextMenuRef: "PRINCIPAL" },
-      ],
-    },
-    {
-      ref: "AGENDAR_CABELO",
-      question: "Qual serviço de cabelo?",
-      options: [
-        { label: "Corte", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Escova", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Coloração", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Voltar", nextMenuRef: "AGENDAR" },
-      ],
-    },
-    {
-      ref: "AGENDAR_UNHAS",
-      question: "Qual serviço de unhas?",
-      options: [
-        { label: "Manicure", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Pedicure", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Combo mãos e pés", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Voltar", nextMenuRef: "AGENDAR" },
-      ],
-    },
-    {
-      ref: "AGENDAR_SOBRANCELHAS",
-      question: "Qual serviço de sobrancelhas?",
-      options: [
-        { label: "Design", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Henna", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Voltar", nextMenuRef: "AGENDAR" },
-      ],
-    },
-    {
-      ref: "AGENDAR_ESTETICA",
-      question: "Qual serviço de estética?",
-      options: [
-        { label: "Limpeza de pele", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Massagem", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Depilação", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Voltar", nextMenuRef: "AGENDAR" },
       ],
     },
     {
       ref: "CONFIRMAR_SERVICO",
-      question: "Deseja confirmar o serviço selecionado?",
+      question: "Deseja confirmar o agendamento?",
       options: [
-        { label: "Sim, confirmar", nextMenuRef: "AGENDAMENTO_CONFIRMADO" },
-        { label: "Escolher outro serviço", nextMenuRef: "AGENDAR" },
-        { label: "Voltar ao início", nextMenuRef: "PRINCIPAL" },
+        { label: "Sim", nextMenuRef: "CONFIRMADO" },
+        { label: "Não", nextMenuRef: "AGENDAR" },
       ],
     },
     {
-      ref: "AGENDAMENTO_CONFIRMADO",
-      question: "Agendamento realizado com sucesso. Deseja algo mais?",
+      ref: "CONFIRMADO",
+      question: "Agendamento confirmado. Deseja algo mais?",
       options: [
         { label: "Novo agendamento", nextMenuRef: "AGENDAR" },
-        { label: "Voltar ao menu principal", nextMenuRef: "PRINCIPAL" },
-      ],
-    },
-    {
-      ref: "SERVICOS",
-      question: "O que deseja ver?",
-      options: [
-        { label: "Serviços de cabelo", nextMenuRef: "AGENDAR_CABELO" },
-        { label: "Serviços de unhas", nextMenuRef: "AGENDAR_UNHAS" },
-        { label: "Serviços de estética", nextMenuRef: "AGENDAR_ESTETICA" },
-        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
+        { label: "Menu principal", nextMenuRef: "PRINCIPAL" },
       ],
     },
     {
       ref: "MEUS_AGENDAMENTOS",
       question: "O que deseja fazer?",
       options: [
-        { label: "Consultar", nextMenuRef: "CONSULTAR_AGENDAMENTO" },
-        { label: "Remarcar", nextMenuRef: "AGENDAR" },
-        { label: "Cancelar", nextMenuRef: "CANCELAR_AGENDAMENTO" },
+        { label: "Consultar", nextMenuRef: "CONSULTAR" },
+        { label: "Cancelar", nextMenuRef: "CANCELAR" },
         { label: "Voltar", nextMenuRef: "PRINCIPAL" },
       ],
     },
     {
-      ref: "CONSULTAR_AGENDAMENTO",
+      ref: "CONSULTAR",
       question: "Consultando seu agendamento...",
       options: [{ label: "Voltar", nextMenuRef: "MEUS_AGENDAMENTOS" }],
     },
     {
-      ref: "CANCELAR_AGENDAMENTO",
-      question: "Tem certeza que deseja cancelar?",
+      ref: "CANCELAR",
+      question: "Deseja cancelar seu agendamento?",
       options: [
-        { label: "Sim, cancelar", nextMenuRef: "PRINCIPAL" },
-        { label: "Voltar", nextMenuRef: "MEUS_AGENDAMENTOS" },
+        { label: "Sim", nextMenuRef: "PRINCIPAL" },
+        { label: "Não", nextMenuRef: "MEUS_AGENDAMENTOS" },
       ],
     },
     {
-      ref: "PROMOCOES",
-      question: "Deseja ver promoções atuais?",
+      ref: "SERVICOS",
+      question: "Quais serviços deseja ver?",
       options: [
-        { label: "Ver promoções", nextMenuRef: "AGENDAR" },
-        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
-      ],
-    },
-    {
-      ref: "LOCALIZACAO",
-      question: "O que deseja consultar?",
-      options: [
-        { label: "Endereço", nextMenuRef: "PRINCIPAL" },
-        { label: "Horário de funcionamento", nextMenuRef: "PRINCIPAL" },
+        { label: "Cabelo", nextMenuRef: "AGENDAR" },
+        { label: "Unhas", nextMenuRef: "AGENDAR" },
         { label: "Voltar", nextMenuRef: "PRINCIPAL" },
       ],
     },
@@ -796,17 +734,17 @@ export function BotMenuPage() {
 
   if (isFullscreen && activeTab === "dialogs") {
     return (
-      <div className="h-screen flex flex-col bg-background">
-        {/* Fullscreen Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h1 className="text-2xl font-semibold">Diálogos do Bot</h1>
+      <div className="fixed inset-0 z-[100] flex flex-col bg-background">
+        {/* Titlebar */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card shadow-sm">
+          <h1 className="text-xl font-semibold">Diálogos do Bot</h1>
           <button
             onClick={() => setIsFullscreen(false)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-input hover:bg-muted transition-colors"
-            title="Sair de tela cheia"
+            title="Fechar tela cheia"
           >
             <Minimize2 size={18} />
-            Sair
+            Fechar
           </button>
         </div>
 
