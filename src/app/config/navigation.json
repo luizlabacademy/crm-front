@@ -44,9 +44,9 @@
       }
     ]
   },
-  {
-    "section": "Marketing",
-    "items": [
+    {
+      "section": "Marketing",
+      "items": [
       {
         "label": "Landing Page",
         "to": "/marketing/landing-page",
@@ -76,6 +76,16 @@
         "label": "Afiliados",
         "to": "/marketing/affiliates",
         "icon": "user-plus"
+      }
+    ]
+  },
+  {
+    "section": "Assinatura",
+    "items": [
+      {
+        "label": "Planos",
+        "to": "/plans",
+        "icon": "credit-card"
       }
     ]
   },

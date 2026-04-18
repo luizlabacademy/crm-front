@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Zap, FileText, Plus, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UpgradeNeededModal, PriceTableModal } from "@/features/billing/components/UpgradeModals";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type {
@@ -370,6 +371,9 @@ export function MarketingAutomationPage() {
   const [showNewForm, setShowNewForm] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [priceTableOpen, setPriceTableOpen] = useState(false);
+  const [pendingToggleId, setPendingToggleId] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(automations.length / pageSize));
   const pagedAutomations = useMemo(() => {
@@ -477,7 +481,16 @@ export function MarketingAutomationPage() {
                     key={auto.id}
                     automation={auto}
                     templateName={getTemplateName(auto.templateId)}
-                    onToggle={toggleAutomationStatus}
+                    onToggle={(id) => {
+                      // If automation is currently not active, attempt to activate -> show upgrade modal
+                      const current = automations.find((a) => a.id === id);
+                      if (current && current.status !== "Ativa") {
+                        setPendingToggleId(id);
+                        setUpgradeModalOpen(true);
+                        return;
+                      }
+                      toggleAutomationStatus(id);
+                    }}
                   />
                 ))
               )}
@@ -501,6 +514,19 @@ export function MarketingAutomationPage() {
           />
         </div>
       </section>
+      <UpgradeNeededModal
+        open={upgradeModalOpen}
+        onClose={() => {
+          setUpgradeModalOpen(false);
+          setPendingToggleId(null);
+        }}
+        onViewPlans={() => {
+          setUpgradeModalOpen(false);
+          setPriceTableOpen(true);
+        }}
+      />
+
+      <PriceTableModal open={priceTableOpen} onClose={() => setPriceTableOpen(false)} />
     </div>
   );
 }

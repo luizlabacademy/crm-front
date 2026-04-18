@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { UpgradeNeededModal, PriceTableModal } from "@/features/billing/components/UpgradeModals";
 import type {
   LandingPageConfig,
   LandingPageSlide,
@@ -223,6 +224,8 @@ export function LandingPageConfigPage() {
   const [activeTab, setActiveTab] = useState<"info" | "slides" | "services">(
     "info",
   );
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [priceTableOpen, setPriceTableOpen] = useState(false);
 
   // Persist on every save action
   function handleSave() {
@@ -576,6 +579,20 @@ export function LandingPageConfigPage() {
               placeholder="contato@seudominio.com.br"
               type="email"
             />
+            <div className="mt-4">
+              <label className="text-xs font-medium text-muted-foreground">
+                Landing Page Pública
+              </label>
+              <div className="mt-2 flex items-center gap-3">
+                <button
+                  onClick={() => setUpgradeModalOpen(true)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-accent"
+                >
+                  Habilitar landing page
+                </button>
+                <span className="text-xs text-muted-foreground">{landingPageUrl}</span>
+              </div>
+            </div>
           </Section>
 
           <Section title="Endereço" icon={<MapPin size={16} />}>
@@ -822,6 +839,17 @@ export function LandingPageConfigPage() {
           Salvar Alterações
         </button>
       </div>
+
+      <UpgradeNeededModal
+        open={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        onViewPlans={() => {
+          setUpgradeModalOpen(false);
+          setPriceTableOpen(true);
+        }}
+      />
+
+      <PriceTableModal open={priceTableOpen} onClose={() => setPriceTableOpen(false)} />
     </div>
   );
 }

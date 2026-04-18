@@ -199,6 +199,12 @@ const LandingPage = lazy(() =>
   })),
 );
 
+const PlanPage = lazy(() =>
+  import("@/features/billing/pages/PlanPage").then((m) => ({
+    default: m.PlanPage,
+  })),
+);
+
 const CouponsPage = lazy(() =>
   import("@/features/marketing/pages/CouponsPage").then((m) => ({
     default: m.CouponsPage,
@@ -436,6 +442,7 @@ export function AppRouter() {
             <Route path="/marketing/coupons" element={<CouponsPage />} />
             <Route path="/marketing/cashback" element={<CashbackPage />} />
             <Route path="/marketing/affiliates" element={<AffiliatesPage />} />
+            <Route path="/plans" element={<PlanPage />} />
 
             {/* Expenses */}
             <Route path="/expenses" element={<ExpensesPage />} />
