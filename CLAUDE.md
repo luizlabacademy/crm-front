@@ -23,6 +23,7 @@ Key reference docs in `specs/frontend/`:
 - **[architecture.md](./specs/frontend/architecture.md)** — modular feature-based structure, state management (server vs client), error handling, UI layering
 - **[frontend-guidelines.md](./specs/frontend/frontend-guidelines.md)** — code conventions, component patterns, naming, validation, security, i18n (pt-BR)
 - **[api-integration-guidelines.md](./specs/frontend/api-integration-guidelines.md)** — backend URLs, auth, request/response contracts, paging, monetary values, read-only resources, API gaps
+- **[mock-guidelines.md](./specs/frontend/mock-guidelines.md)** — when and how to use mocks, file naming, JSON structure, REST conventions
 - **[ui-guidelines.md](./specs/frontend/ui-guidelines.md)** — UI states (loading, empty, success, error, 401, 403), form structure, labels, feedback
 - **[cdd-refactoring-plan.md](./specs/frontend/cdd-refactoring-plan.md)** — shared component extraction roadmap (4 waves), test setup, naming rules
 - **[README.md](./specs/frontend/README.md)** — overview, scope (delivery SMBs), screen index, flows
@@ -35,11 +36,27 @@ Key reference docs in `specs/frontend/`:
 |-----------|-------|
 | Implementing a new screen | `specs/frontend/screens/<domain>/` + `architecture.md` + `ui-guidelines.md` |
 | Adding a component | `cdd-refactoring-plan.md` (is it already extracted?) + `frontend-guidelines.md` |
-| Integrating with API | `api-integration-guidelines.md` (contracts, gaps, auth) |
+| Integrating with API | `api-integration-guidelines.md` (contracts, gaps, auth) + `mock-guidelines.md` (when to use mocks) |
 | Form validation or error handling | `frontend-guidelines.md` (seção 7) + `ui-guidelines.md` (seção 4) |
 | Styling or UI states | `ui-guidelines.md` (principles, standard structure, required states) |
 | Database/domain logic | `README.md` (flows, scope) |
 | Refactoring or cleanup | `cdd-refactoring-plan.md` (waves, governing rules) |
+| Using mocks or client-side data | `mock-guidelines.md` (when/how to mock, file structure, naming) |
+
+## API vs Mocks Decision
+
+**Rule:** Use the live API when available; use mocks only for endpoints that don't exist yet.
+
+1. **Check the live API first**: https://api-crm.luizlab.com/v3/api-docs
+2. If the endpoint exists and meets feature requirements → implement a TanStack Query hook with Axios
+3. If the endpoint doesn't exist → create a mock in `/src/mocks/` following `mock-guidelines.md`
+
+When implementing:
+- Live API: define a TanStack Query hook in `features/<feature>/api/`, never call Axios directly from components
+- Mocks: still consume via TanStack Query hooks; the hook returns mock data when the real endpoint is unavailable
+- Once the backend provides the endpoint, replace the mock with live API calls — components should not change
+
+For detailed mock structure, naming, and conventions, see **[mock-guidelines.md](./specs/frontend/mock-guidelines.md)**.
 
 ## Commands
 
@@ -80,6 +97,7 @@ src/
     auth/       # Zustand auth store
     hooks/      # Shared hooks
     utils/      # Formatting, helpers
+  mocks/        # Mock API responses (for endpoints not yet in live API)
 ```
 
 ### API layer
