@@ -373,7 +373,6 @@ export function MarketingAutomationPage() {
   const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [priceTableOpen, setPriceTableOpen] = useState(false);
-  const [pendingToggleId, setPendingToggleId] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(automations.length / pageSize));
   const pagedAutomations = useMemo(() => {
@@ -485,7 +484,6 @@ export function MarketingAutomationPage() {
                       // If automation is currently not active, attempt to activate -> show upgrade modal
                       const current = automations.find((a) => a.id === id);
                       if (current && current.status !== "Ativa") {
-                        setPendingToggleId(id);
                         setUpgradeModalOpen(true);
                         return;
                       }
@@ -518,7 +516,6 @@ export function MarketingAutomationPage() {
         open={upgradeModalOpen}
         onClose={() => {
           setUpgradeModalOpen(false);
-          setPendingToggleId(null);
         }}
         onViewPlans={() => {
           setUpgradeModalOpen(false);
