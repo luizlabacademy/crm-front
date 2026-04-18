@@ -9,7 +9,7 @@
       },
       {
         "label": "Chat",
-        "to": "/conversations",
+        "to": "/chat",
         "icon": "message-circle"
       }
     ]

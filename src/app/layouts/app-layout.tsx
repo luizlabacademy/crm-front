@@ -699,7 +699,12 @@ function TopBar({ onOpenMenu, onOpenFeatureSearch }: TopBarProps) {
           </button>
 
           <button
-            onClick={() => void navigate("/dashboard")}
+            onClick={() => {
+              if (document.fullscreenElement) {
+                void document.exitFullscreen().catch(() => undefined);
+              }
+              void navigate("/dashboard");
+            }}
             className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-accent"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background">

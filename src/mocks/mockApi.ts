@@ -55,6 +55,11 @@ import channels from "@/mocks/conversations/get-channels.json";
 import profile from "@/mocks/account/get-profile.json";
 import notifications from "@/mocks/account/get-notifications.json";
 
+// ─── Marketing ───────────────────────────────────────────────────────────────
+
+import marketingLeads from "@/mocks/marketing/get-leads.json";
+import marketingCampaigns from "@/mocks/marketing/get-campaigns.json";
+
 // ─── Dashboard API ───────────────────────────────────────────────────────────
 
 const funnelMap: Record<FunnelPeriod, typeof funnel30d> = {
@@ -209,4 +214,19 @@ export async function getNotifications(): Promise<MockNotification[]> {
 
 export function getNotificationsUnreadCount(): number {
   return notifications.meta.unreadCount;
+}
+
+// ─── Marketing API ───────────────────────────────────────────────────────────
+
+import type {
+  LeadBoardCard,
+  MarketingCampaign,
+} from "@/features/marketing/types/marketingTypes";
+
+export async function getMarketingLeads(): Promise<LeadBoardCard[]> {
+  return marketingLeads.data as unknown as LeadBoardCard[];
+}
+
+export async function getMarketingCampaigns(): Promise<MarketingCampaign[]> {
+  return marketingCampaigns.data as unknown as MarketingCampaign[];
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router";
 import { AuthGuard } from "@/app/guards/auth-guard";
 import { AppLayout } from "@/app/layouts/app-layout";
@@ -299,8 +299,15 @@ function AuthenticatedLayout() {
   );
 }
 
-// Authenticated routes without left nav shell
+// Authenticated routes without left nav shell — enters browser fullscreen on mount
 function AuthenticatedFullscreenLayout() {
+  useEffect(() => {
+    if (!document.fullscreenElement) {
+      void document.documentElement.requestFullscreen().catch(() => undefined);
+    }
+    // No cleanup here — exiting fullscreen is handled by the "Home" buttons inside each page
+  }, []);
+
   return (
     <AuthGuard>
       <Outlet />
@@ -456,7 +463,11 @@ export function AppRouter() {
           </Route>
 
           <Route element={<AuthenticatedFullscreenLayout />}>
-            <Route path="/conversations" element={<ConversationsPage />} />
+            <Route
+              path="/conversations"
+              element={<Navigate to="/chat" replace />}
+            />
+            <Route path="/chat" element={<ConversationsPage />} />
             <Route path="/schedules/board" element={<SchedulesBoardPage />} />
             <Route path="/marketing/leads" element={<LeadsBoardPage />} />
           </Route>

@@ -21,6 +21,12 @@ export interface LeadBoardCard {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  /** ISO date-time when the lead is/was scheduled */
+  scheduledAt: string | null;
+  /** ISO date-time when the lead was attended */
+  attendedAt: string | null;
+  /** ISO date-time when the lead was cancelled */
+  cancelledAt: string | null;
 }
 
 // ─── Campaign Types ───────────────────────────────────────────────────────────

@@ -987,6 +987,10 @@ export function SchedulesBoardPage() {
   );
   const dayGridRef = useRef<HTMLDivElement>(null);
 
+  const [mobileDatePickerOpen, setMobileDatePickerOpen] = useState(false);
+  // Mobile: single worker navigation
+  const [mobileWorkerIndex, setMobileWorkerIndex] = useState(0);
+
   const filteredWorkers = useMemo(
     () => WORKERS.filter((w) => selectedWorkerIds.includes(w.id)),
     [selectedWorkerIds],
@@ -1045,6 +1049,13 @@ export function SchedulesBoardPage() {
       setDayWorkerStart(maxStart);
     }
   }, [dayWorkerStart, dayWorkersVisibleCount, filteredWorkers.length]);
+
+  // Clamp mobile worker index
+  useEffect(() => {
+    if (mobileWorkerIndex >= filteredWorkers.length && filteredWorkers.length > 0) {
+      setMobileWorkerIndex(filteredWorkers.length - 1);
+    }
+  }, [mobileWorkerIndex, filteredWorkers.length]);
 
   const visibleDayWorkers = filteredWorkers.slice(
     dayWorkerStart,
@@ -1197,26 +1208,38 @@ export function SchedulesBoardPage() {
     return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
   }
 
+  const mobileCurrentWorker = filteredWorkers[mobileWorkerIndex] ?? null;
+  const canMobileWorkerPrev = mobileWorkerIndex > 0;
+  const canMobileWorkerNext = mobileWorkerIndex < filteredWorkers.length - 1;
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white text-foreground dark:bg-background">
       {/* Top bar */}
-      <header className="flex h-14 items-center justify-between gap-4 border-b border-border px-4 shrink-0">
-        <div className="flex items-center gap-3">
+      <header className="flex h-14 items-center justify-between gap-2 border-b border-border px-3 sm:px-4 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
-            onClick={() => void navigate("/dashboard")}
-            className="flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] leading-none text-muted-foreground transition-colors hover:text-foreground"
+            onClick={() => {
+              if (document.fullscreenElement) {
+                void document.exitFullscreen().catch(() => undefined);
+              }
+              void navigate("/dashboard");
+            }}
+            className="flex flex-col items-center gap-0.5 px-1.5 py-1 text-[11px] leading-none text-muted-foreground transition-colors hover:text-foreground shrink-0"
           >
             <Home size={16} />
             <span>Home</span>
           </button>
-          <span className="h-7 w-px bg-border/60" aria-hidden="true" />
-          <CalendarCheck size={20} className="text-primary shrink-0" />
-          <span className="font-semibold text-base">Board de Agendamentos</span>
+          <span className="h-7 w-px bg-border/60 shrink-0" aria-hidden="true" />
+          <CalendarCheck size={20} className="text-primary shrink-0 hidden sm:block" />
+          <span className="font-semibold text-base truncate">
+            <span className="sm:hidden">Agendamentos</span>
+            <span className="hidden sm:inline">Board de Agendamentos</span>
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-border overflow-hidden">
+          {/* View toggle - hidden on mobile (day view forced) */}
+          <div className="hidden sm:flex rounded-lg border border-border overflow-hidden">
             {(["day", "week", "month"] as ViewMode[]).map((v) => (
               <button
                 key={v}
@@ -1232,11 +1255,20 @@ export function SchedulesBoardPage() {
               </button>
             ))}
           </div>
+          {/* Mobile create button */}
+          <button
+            type="button"
+            onClick={() => openNewAppointment(new Date(currentDate))}
+            className="sm:hidden rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            title="Criar agendamento"
+          >
+            <Plus size={18} />
+          </button>
         </div>
       </header>
 
       {/* Calendar nav bar */}
-      <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-2 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 border-b border-border bg-card px-3 sm:px-4 py-2 shrink-0">
         <button
           onClick={prev}
           className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground"
@@ -1251,24 +1283,57 @@ export function SchedulesBoardPage() {
         </button>
         <button
           onClick={goToday}
-          className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+          className="rounded-md border border-border px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium hover:bg-accent transition-colors"
         >
           Hoje
         </button>
-        <span className="rounded-md bg-muted px-2.5 py-1 text-sm font-medium capitalize">
+        <button
+          type="button"
+          onClick={() => setMobileDatePickerOpen(true)}
+          className="sm:pointer-events-none rounded-md bg-muted px-2 sm:px-2.5 py-1 text-xs sm:text-sm font-medium capitalize truncate"
+        >
           {headerLabel()}
-        </span>
+        </button>
 
-        <div className="ml-auto">
+        <div className="ml-auto hidden sm:block">
           <Legend />
         </div>
       </div>
 
+      {/* Mobile: worker navigation bar */}
+      <div className="sm:hidden flex items-center justify-between border-b border-border bg-card px-3 py-2 shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileWorkerIndex((i) => Math.max(0, i - 1))}
+          disabled={!canMobileWorkerPrev}
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft size={18} />
+        </button>
+        {mobileCurrentWorker ? (
+          <div className="flex items-center gap-2">
+            <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", mobileCurrentWorker.color)} />
+            <span className="text-sm font-semibold">{mobileCurrentWorker.name}</span>
+          </div>
+        ) : (
+          <span className="text-sm text-muted-foreground">Nenhum profissional</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setMobileWorkerIndex((i) => Math.min(filteredWorkers.length - 1, i + 1))}
+          disabled={!canMobileWorkerNext}
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+
       {/* Calendar body */}
-      <div className="flex-1 overflow-hidden bg-white p-4 dark:bg-background">
+      <div className="flex-1 overflow-hidden bg-white p-2 sm:p-4 dark:bg-background">
         <div className="flex h-full gap-4">
+          {/* Desktop sidebar */}
           <aside
-            className="w-64 shrink-0 overflow-y-auto space-y-3 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
+            className="hidden sm:block w-64 shrink-0 overflow-y-auto space-y-3 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
             style={{ scrollbarWidth: "thin", scrollbarGutter: "stable" }}
           >
             <button
@@ -1384,38 +1449,145 @@ export function SchedulesBoardPage() {
             ref={dayGridRef}
             className="min-w-0 flex-1 rounded-xl border border-border bg-card overflow-hidden"
           >
-            {view === "day" && (
-              <DayView
-                currentDate={currentDate}
-                appointments={filteredAppointments}
-                workers={visibleDayWorkers}
-                columnWidth={dayColumnWidth}
-                onTimeCellClick={handleDayCellClick}
-                canMoveWorkersLeft={canMoveWorkersLeft}
-                canMoveWorkersRight={canMoveWorkersRight}
-                onMoveWorkersLeft={moveWorkersLeft}
-                onMoveWorkersRight={moveWorkersRight}
-                scrollToNowSignal={scrollToNowSignal}
-                onAppointmentClick={openExistingAppointment}
-              />
-            )}
-            {view === "week" && (
-              <WeekView
-                currentDate={currentDate}
-                appointments={filteredAppointments}
-                onAppointmentClick={openExistingAppointment}
-              />
-            )}
-            {view === "month" && (
-              <MonthView
-                currentDate={currentDate}
-                appointments={filteredAppointments}
-                onAppointmentClick={openExistingAppointment}
-              />
-            )}
+            {/* Desktop: normal views */}
+            <div className="hidden sm:block h-full">
+              {view === "day" && (
+                <DayView
+                  currentDate={currentDate}
+                  appointments={filteredAppointments}
+                  workers={visibleDayWorkers}
+                  columnWidth={dayColumnWidth}
+                  onTimeCellClick={handleDayCellClick}
+                  canMoveWorkersLeft={canMoveWorkersLeft}
+                  canMoveWorkersRight={canMoveWorkersRight}
+                  onMoveWorkersLeft={moveWorkersLeft}
+                  onMoveWorkersRight={moveWorkersRight}
+                  scrollToNowSignal={scrollToNowSignal}
+                  onAppointmentClick={openExistingAppointment}
+                />
+              )}
+              {view === "week" && (
+                <WeekView
+                  currentDate={currentDate}
+                  appointments={filteredAppointments}
+                  onAppointmentClick={openExistingAppointment}
+                />
+              )}
+              {view === "month" && (
+                <MonthView
+                  currentDate={currentDate}
+                  appointments={filteredAppointments}
+                  onAppointmentClick={openExistingAppointment}
+                />
+              )}
+            </div>
+            {/* Mobile: single worker day view */}
+            <div className="sm:hidden h-full">
+              {mobileCurrentWorker ? (
+                <DayView
+                  currentDate={currentDate}
+                  appointments={filteredAppointments.filter(
+                    (a) => a.workerId === mobileCurrentWorker.id,
+                  )}
+                  workers={[mobileCurrentWorker]}
+                  columnWidth={window.innerWidth - DAY_TIME_COL_WIDTH - 32}
+                  onTimeCellClick={handleDayCellClick}
+                  canMoveWorkersLeft={false}
+                  canMoveWorkersRight={false}
+                  onMoveWorkersLeft={() => {}}
+                  onMoveWorkersRight={() => {}}
+                  scrollToNowSignal={scrollToNowSignal}
+                  onAppointmentClick={openExistingAppointment}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Nenhum profissional selecionado
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Mobile date picker modal */}
+      {mobileDatePickerOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 sm:hidden">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h3 className="text-sm font-semibold">Selecionar data</h3>
+              <button
+                type="button"
+                onClick={() => setMobileDatePickerOpen(false)}
+                className="rounded p-1 text-muted-foreground hover:bg-accent"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="mb-3 relative flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={prevMiniMonth}
+                  className="absolute left-0 rounded p-1 text-muted-foreground hover:bg-accent"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <h3 className="text-sm font-semibold capitalize text-center">
+                  {format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })}
+                </h3>
+                <button
+                  type="button"
+                  onClick={nextMiniMonth}
+                  className="absolute right-0 rounded p-1 text-muted-foreground hover:bg-accent"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground mb-2">
+                {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
+                  <span key={`dp-${d}-${i}`} className="font-medium">{d}</span>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {monthDays.map((day) => (
+                  <button
+                    key={day.toISOString()}
+                    type="button"
+                    onClick={() => {
+                      setCurrentDate(day);
+                      setMobileDatePickerOpen(false);
+                    }}
+                    className={cn(
+                      "h-10 rounded-lg text-sm font-medium",
+                      isSameDay(day, currentDate)
+                        ? "bg-primary text-primary-foreground"
+                        : isSameDay(day, new Date())
+                          ? "bg-primary/10 text-primary"
+                          : isSameMonth(day, currentDate)
+                            ? "hover:bg-accent"
+                            : "text-muted-foreground/50 hover:bg-accent/30",
+                    )}
+                  >
+                    {format(day, "d")}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-end border-t border-border px-4 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentDate(new Date());
+                  setMobileDatePickerOpen(false);
+                }}
+                className="rounded-md border border-border px-4 py-1.5 text-xs font-medium hover:bg-accent"
+              >
+                Hoje
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isAppointmentModalOpen && (
         <NewAppointmentModal

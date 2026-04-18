@@ -190,10 +190,10 @@ function ContactItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/50",
+        "flex w-full items-center gap-3 border-b border-border/60 px-4 py-3 text-left transition-colors",
         isActive
-          ? "bg-primary/5 border-l-2 border-l-primary"
-          : "hover:bg-accent/50",
+          ? "border-l-2 border-l-primary bg-primary/10"
+          : "hover:bg-background/80",
       )}
     >
       <div className="relative shrink-0">
@@ -257,6 +257,15 @@ function ChatBubble({ message }: { message: ChatMessage }) {
             : "bg-card border border-border rounded-bl-md",
         )}
       >
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute bottom-1.5 h-3 w-3 rotate-45",
+            isOutbound
+              ? "-right-1.5 bg-primary"
+              : "-left-1.5 border-b border-l border-border bg-card",
+          )}
+        />
         {message.senderName && !isOutbound && (
           <p className="text-[10px] font-semibold text-primary mb-1">
             {message.senderName}
@@ -715,6 +724,17 @@ export function ConversationsPage() {
     setShowMobileChat(false);
   }
 
+  function handleBackToWorkspace() {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined);
+    }
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    void navigate("/dashboard");
+  }
+
   function handleSend() {
     if (!newMessage.trim() || !activeContactId) return;
     const contact = contacts.find((c) => c.id === activeContactId);
@@ -883,14 +903,19 @@ export function ConversationsPage() {
         />
       )}
 
-      <div className="relative flex h-[100dvh] overflow-hidden bg-muted/30">
+      <div className="relative flex h-[100dvh] overflow-hidden bg-slate-200/60">
         {/* ─── Left icon sidebar ─────────────────────────────────────────── */}
-        <aside className="hidden w-24 shrink-0 border-r border-border bg-card md:flex md:flex-col">
+        <aside className="hidden w-24 shrink-0 border-r border-slate-700 bg-slate-900 text-slate-100 md:flex md:flex-col">
           <nav className="flex-1 space-y-1 px-2 py-3">
             <button
               type="button"
-              onClick={() => void navigate("/dashboard")}
-              className="flex w-full flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-2 text-[10px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              onClick={() => {
+                if (document.fullscreenElement) {
+                  void document.exitFullscreen().catch(() => undefined);
+                }
+                void navigate("/dashboard");
+              }}
+              className="flex w-full flex-col items-center gap-1 rounded-xl border border-transparent px-1 py-2 text-[10px] text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
             >
               <Home size={24} />
               <span className="leading-none">Home</span>
@@ -901,8 +926,8 @@ export function ConversationsPage() {
               className={cn(
                 "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
                 chatTab === "open"
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+                  ? "border-primary/40 bg-primary/15 text-primary"
+                  : "border-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100",
               )}
             >
               <MessageCircle size={24} />
@@ -914,8 +939,8 @@ export function ConversationsPage() {
               className={cn(
                 "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
                 chatTab === "closed"
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+                  ? "border-primary/40 bg-primary/15 text-primary"
+                  : "border-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100",
               )}
             >
               <Archive size={24} />
@@ -929,8 +954,8 @@ export function ConversationsPage() {
               className={cn(
                 "flex w-full flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[10px] transition-colors",
                 showNewChatModal
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+                  ? "border-primary/40 bg-primary/15 text-primary"
+                  : "border-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100",
               )}
             >
               <Plus size={24} />
@@ -938,41 +963,51 @@ export function ConversationsPage() {
             </button>
           </nav>
 
-          <div className="border-t border-border mx-2" />
+          <div className="mx-2 border-t border-slate-700" />
           <div className="p-3">
             <button
               type="button"
               onClick={() => setShowProfilePanel(true)}
-              className="flex w-full flex-col items-center gap-1 rounded-xl p-2 hover:bg-accent transition-colors"
+              className="flex w-full flex-col items-center gap-1 rounded-xl p-2 transition-colors hover:bg-slate-800"
             >
               <img
                 src={agentProfile.photoUrl}
                 alt="Foto do atendente"
-                className="h-11 w-11 rounded-full object-cover ring-2 ring-border"
+                className="h-11 w-11 rounded-full object-cover ring-2 ring-slate-600"
               />
-              <span className="text-[10px] text-muted-foreground leading-none">
+              <span className="text-[10px] leading-none text-slate-300">
                 Perfil
               </span>
             </button>
           </div>
         </aside>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden border-l border-slate-300/70">
           {/* ─── Contact List ─────────────────────────────────────────────── */}
           <div
             className={cn(
-              "flex w-full min-h-0 flex-col border-r border-border bg-card lg:w-96 lg:min-w-[24rem] shrink-0",
+              "flex w-full min-h-0 flex-col border-r border-slate-300/70 bg-white lg:w-96 lg:min-w-[24rem] shrink-0",
               showMobileChat ? "hidden lg:flex" : "flex",
             )}
           >
-            <div className="flex h-16 items-center justify-between gap-3 border-b border-border px-4">
-              <h1 className="text-lg font-semibold">Chat</h1>
-              <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            <div className="flex h-16 items-center justify-between gap-3 border-b border-slate-300/70 bg-slate-100/90 px-4">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleBackToWorkspace}
+                  className="rounded-md p-1.5 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900 lg:hidden"
+                  aria-label="Voltar para dashboard"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <h1 className="text-lg font-semibold text-slate-900">Chat</h1>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-slate-300/80 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600">
                 {contacts.reduce((s, c) => s + c.unreadCount, 0)} nao lidas
               </span>
             </div>
 
-            <div className="px-3 py-2 border-b border-border">
+            <div className="border-b border-slate-200 bg-white px-3 py-2">
               <div className="relative">
                 <Search
                   size={14}
@@ -989,7 +1024,7 @@ export function ConversationsPage() {
             </div>
 
             {/* Channel filter chips */}
-            <div className="flex flex-wrap gap-1.5 px-3 py-2 border-b border-border">
+            <div className="flex flex-wrap gap-1.5 border-b border-slate-200 bg-slate-50/80 px-3 py-2">
               {ALL_CHANNELS.map((ch) => (
                 <button
                   key={ch.value}
@@ -1038,18 +1073,19 @@ export function ConversationsPage() {
           {/* ─── Chat Panel ──────────────────────────────────────────────── */}
           <div
             className={cn(
-              "flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden",
+              "flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden bg-slate-100/70",
               showMobileChat ? "flex" : "hidden lg:flex",
             )}
           >
             {/* Chat header */}
-            <div className="flex h-16 items-center gap-3 border-b border-border bg-card px-4 shrink-0">
+            <div className="flex h-16 items-center gap-3 border-b border-slate-300/80 bg-white px-4 shadow-sm shrink-0">
               <button
                 type="button"
                 onClick={handleBack}
-                className="lg:hidden rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="inline-flex items-center gap-1 rounded-md p-1.5 text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900 lg:hidden"
               >
                 <ArrowLeft size={18} />
+                <span className="text-xs font-medium">Conversas</span>
               </button>
               <div className="relative shrink-0">
                 <span
@@ -1123,8 +1159,8 @@ export function ConversationsPage() {
               style={{
                 scrollbarGutter: "stable",
                 backgroundImage:
-                  "radial-gradient(circle at 1px 1px, var(--color-border) 0.5px, transparent 0)",
-                backgroundSize: "24px 24px",
+                  "linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.55)), radial-gradient(circle at 1px 1px, rgba(148,163,184,0.25) 0.5px, transparent 0)",
+                backgroundSize: "100% 100%, 24px 24px",
               }}
             >
               {!activeContact ? (
@@ -1155,7 +1191,7 @@ export function ConversationsPage() {
             )}
 
             {/* Input area */}
-            <div className="border-t border-border bg-card px-4 py-3 shrink-0">
+            <div className="border-t border-slate-300/80 bg-white px-4 py-3 shadow-[0_-1px_0_rgba(15,23,42,0.04)] shrink-0">
               {/* Action toolbar (above input) */}
               {activeContact && (
                 <div className="mb-2 flex items-center gap-1.5">
