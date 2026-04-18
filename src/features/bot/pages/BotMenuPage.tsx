@@ -1,284 +1,62 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Plus,
   Edit2,
   Trash2,
-  ChevronDown,
   FileText,
   GitBranch,
+  Bold,
+  Italic,
+  List,
 } from "lucide-react";
+import {
+  ReactFlow,
+  type Node,
+  type Edge,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+  type Connection,
+  addEdge,
+  MiniMap,
+  Handle,
+  Position,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/PageHeader";
-import type {
-  BotMenuLevel,
-  BotMenuItem,
-  BotOperation,
-  BotTemplate,
-  OperationCategory,
-  ActionType,
-} from "../types";
+import type { FlowState, FlowNode, BotTemplate } from "../types";
 
-// ─── Initial Mock Data ───────────────────────────────────────────────────
+// ─── Initial Data ───────────────────────────────────────────────────────
 
-const MOCK_OPERATIONS_BY_CATEGORY: Record<OperationCategory, BotOperation[]> = {
-  capture: [
+const INITIAL_FLOW_STATE: FlowState = {
+  startNodeId: "start",
+  nodes: [
     {
-      id: "cap-1",
-      category: "capture",
-      label: "Capturar nome",
-      actionType: "WRITE",
-    },
-    {
-      id: "cap-2",
-      category: "capture",
-      label: "Capturar telefone",
-      actionType: "WRITE",
-    },
-    {
-      id: "cap-3",
-      category: "capture",
-      label: "Capturar email",
-      actionType: "WRITE",
-    },
-    {
-      id: "cap-4",
-      category: "capture",
-      label: "Identificar interesse",
-      actionType: "DECISION",
-    },
-    {
-      id: "cap-5",
-      category: "capture",
-      label: "Classificar lead",
-      actionType: "WRITE",
-    },
-    {
-      id: "cap-6",
-      category: "capture",
-      label: "Atualizar/consultar CRM",
-      actionType: "INTEGRATION",
-    },
-  ],
-  context: [
-    {
-      id: "ctx-1",
-      category: "context",
-      label: "Buscar histórico de atendimentos",
-      actionType: "READ",
-    },
-    {
-      id: "ctx-2",
-      category: "context",
-      label: "Recuperar preferências",
-      actionType: "READ",
-    },
-    {
-      id: "ctx-3",
-      category: "context",
-      label: "Aplicar tags dinâmicas",
-      actionType: "WRITE",
-    },
-    {
-      id: "ctx-4",
-      category: "context",
-      label: "Definir variáveis de sessão",
-      actionType: "WRITE",
-    },
-  ],
-  scheduling: [
-    {
-      id: "sch-1",
-      category: "scheduling",
-      label: "Consultar disponibilidade",
-      actionType: "READ",
-    },
-    {
-      id: "sch-2",
-      category: "scheduling",
-      label: "Sugerir horários otimizados",
-      actionType: "DECISION",
-    },
-    {
-      id: "sch-3",
-      category: "scheduling",
-      label: "Criar agendamento",
-      actionType: "WRITE",
-    },
-    {
-      id: "sch-4",
-      category: "scheduling",
-      label: "Confirmar agendamento",
-      actionType: "COMMUNICATION",
-    },
-    {
-      id: "sch-5",
-      category: "scheduling",
-      label: "Remarcar",
-      actionType: "WRITE",
-    },
-    {
-      id: "sch-6",
-      category: "scheduling",
-      label: "Cancelar",
-      actionType: "WRITE",
-    },
-  ],
-  commercial: [
-    {
-      id: "com-1",
-      category: "commercial",
-      label: "Recomendar serviços complementares",
-      actionType: "DECISION",
-    },
-    {
-      id: "com-2",
-      category: "commercial",
-      label: "Aplicar cupom/desconto",
-      actionType: "WRITE",
-    },
-    {
-      id: "com-3",
-      category: "commercial",
-      label: "Enviar oferta personalizada",
-      actionType: "COMMUNICATION",
-    },
-    {
-      id: "com-4",
-      category: "commercial",
-      label: "Reservar vaga temporária",
-      actionType: "WRITE",
-    },
-  ],
-  payment: [
-    {
-      id: "pay-1",
-      category: "payment",
-      label: "Gerar link de pagamento",
-      actionType: "INTEGRATION",
-    },
-    {
-      id: "pay-2",
-      category: "payment",
-      label: "Validar pagamento recebido",
-      actionType: "READ",
-    },
-    {
-      id: "pay-3",
-      category: "payment",
-      label: "Alterar status para pago/pendente",
-      actionType: "WRITE",
-    },
-  ],
-  operational: [
-    {
-      id: "op-1",
-      category: "operational",
-      label: "Criar pedido/OS",
-      actionType: "WRITE",
-    },
-    {
-      id: "op-2",
-      category: "operational",
-      label: "Consultar status do pedido",
-      actionType: "READ",
-    },
-    {
-      id: "op-3",
-      category: "operational",
-      label: "Atualizar status do atendimento",
-      actionType: "WRITE",
-    },
-    {
-      id: "op-4",
-      category: "operational",
-      label: "Notificar profissional/equipe",
-      actionType: "COMMUNICATION",
-    },
-  ],
-  communication: [
-    {
-      id: "msg-1",
-      category: "communication",
-      label: "Enviar resumo do agendamento",
-      actionType: "COMMUNICATION",
-    },
-    {
-      id: "msg-2",
-      category: "communication",
-      label: "Disparar lembretes automáticos",
-      actionType: "COMMUNICATION",
-    },
-    {
-      id: "msg-3",
-      category: "communication",
-      label: "Solicitar confirmação do cliente",
-      actionType: "COMMUNICATION",
-    },
-    {
-      id: "msg-4",
-      category: "communication",
-      label: "Transferir para atendente humano",
-      actionType: "INTEGRATION",
-    },
-  ],
-  retention: [
-    {
-      id: "ret-1",
-      category: "retention",
-      label: "Registrar feedback/NPS",
-      actionType: "WRITE",
-    },
-    {
-      id: "ret-2",
-      category: "retention",
-      label: "Oferecer retorno/manutenção",
-      actionType: "DECISION",
-    },
-    {
-      id: "ret-3",
-      category: "retention",
-      label: "Criar follow-up automático",
-      actionType: "WRITE",
-    },
-    {
-      id: "ret-4",
-      category: "retention",
-      label: "Reativar cliente inativo",
-      actionType: "DECISION",
-    },
-  ],
-};
-
-const INITIAL_MENU_LEVEL: BotMenuLevel = {
-  id: "root",
-  question: "Olá! O que você deseja?",
-  items: [
-    {
-      id: "item-1",
-      label: "Agendar um atendimento",
-      operations: [
-        MOCK_OPERATIONS_BY_CATEGORY.scheduling[0],
-        MOCK_OPERATIONS_BY_CATEGORY.scheduling[2],
+      id: "start",
+      type: "message",
+      text: "Olá! Como posso te ajudar?",
+      options: [
+        { id: "opt-1", label: "Agendar Atendimento", next: "schedule" },
+        { id: "opt-2", label: "Coletar Relatório", next: "report" },
       ],
-      submenu: null,
     },
     {
-      id: "item-2",
-      label: "Ver lista de serviços",
-      operations: [],
-      submenu: null,
+      id: "schedule",
+      type: "message",
+      text: "Qual serviço você deseja agendar?",
+      options: [
+        { id: "opt-3", label: "Cuidados com Diabetes", next: null },
+        { id: "opt-4", label: "Check-up Básico", next: null },
+        { id: "opt-5", label: "Check-up Completo", next: null },
+      ],
     },
     {
-      id: "item-3",
-      label: "Mudar o horário do meu agendamento",
-      operations: [MOCK_OPERATIONS_BY_CATEGORY.scheduling[4]],
-      submenu: null,
-    },
-    {
-      id: "item-4",
-      label: "Cancelar meu agendamento",
-      operations: [MOCK_OPERATIONS_BY_CATEGORY.scheduling[5]],
-      submenu: null,
+      id: "report",
+      type: "message",
+      text: "Por favor, informe o ID do relatório.",
+      options: [],
     },
   ],
 };
@@ -287,175 +65,181 @@ const INITIAL_TEMPLATES: BotTemplate[] = [
   {
     id: "tpl-1",
     title: "Confirmação de Agendamento",
-    body: "Perfeito! Seu agendamento foi confirmado para {data} às {hora} com {profissional}. Qualquer dúvida, entre em contato.",
+    body: "Perfeito! Seu agendamento foi confirmado para <strong>{data}</strong> às {hora}.",
     createdAt: "2026-04-15",
   },
   {
     id: "tpl-2",
     title: "Lembrete de Agendamento",
-    body: "Não esqueça! Você tem um agendamento amanhã às {hora} com {profissional}. Confirme sua presença ou nos avise se não puder comparecer.",
+    body: "Não esqueça! Você tem um agendamento amanhã às <strong>{hora}</strong>.",
     createdAt: "2026-04-16",
   },
   {
     id: "tpl-3",
     title: "Cancelamento de Agendamento",
-    body: "Seu agendamento para {data} foi cancelado. Se desejar remarcar, é só chamar a gente!",
+    body: "Seu agendamento para <strong>{data}</strong> foi cancelado.",
     createdAt: "2026-04-17",
   },
 ];
 
-// ─── Category Labels & Colors ───────────────────────────────────────────
+// ─── Custom Message Node ────────────────────────────────────────────────
 
-const CATEGORY_LABELS: Record<OperationCategory, string> = {
-  capture: "Captura e Qualificação",
-  context: "Contexto e Personalização",
-  scheduling: "Agendamento (core)",
-  commercial: "Comercial (conversão)",
-  payment: "Pagamento",
-  operational: "Operacional",
-  communication: "Comunicação",
-  retention: "Retenção",
-};
-
-const CATEGORY_COLORS: Record<OperationCategory, string> = {
-  capture: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  context: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  scheduling: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  commercial: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  payment: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
-  operational: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
-  communication: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
-  retention: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
-};
-
-const ACTION_TYPE_LABELS: Record<ActionType, string> = {
-  READ: "Consulta",
-  WRITE: "Cria/Atualiza",
-  DECISION: "Decisão",
-  INTEGRATION: "Integração",
-  COMMUNICATION: "Comunicação",
-};
-
-// ─── Operations Modal ───────────────────────────────────────────────────
-
-interface OperationsModalProps {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: (operations: BotOperation[]) => void;
-  initialOperations: BotOperation[];
+interface MessageNodeData {
+  label: string;
+  node: FlowNode;
+  onUpdate: (node: FlowNode) => void;
+  onDelete: () => void;
 }
 
-function OperationsModal({
-  open,
-  onClose,
-  onConfirm,
-  initialOperations,
-}: OperationsModalProps) {
-  const [selected, setSelected] = useState<Set<string>>(
-    new Set(initialOperations.map((op) => op.id))
-  );
-  const [expandedCategory, setExpandedCategory] =
-    useState<OperationCategory | null>(null);
+function MessageNode({
+  data,
+  selected,
+}: {
+  data: MessageNodeData;
+  selected: boolean;
+}) {
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [textValue, setTextValue] = useState(data.node.text);
+  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [editingOptionLabel, setEditingOptionLabel] = useState("");
 
-  if (!open) return null;
-
-  const toggleOperation = (opId: string) => {
-    const newSelected = new Set(selected);
-    if (newSelected.has(opId)) {
-      newSelected.delete(opId);
+  const handleTextBlur = () => {
+    if (textValue.trim() !== data.node.text) {
+      data.onUpdate({ ...data.node, text: textValue.trim() });
     } else {
-      newSelected.add(opId);
+      setTextValue(data.node.text);
     }
-    setSelected(newSelected);
+    setIsEditingText(false);
   };
 
-  const handleConfirm = () => {
-    const ops: BotOperation[] = [];
-    Object.entries(MOCK_OPERATIONS_BY_CATEGORY).forEach(([_, catOps]) => {
-      catOps.forEach((op) => {
-        if (selected.has(op.id)) ops.push(op);
-      });
+  const handleAddOption = () => {
+    const newOption = {
+      id: `opt-${Date.now()}`,
+      label: "Nova opção",
+      next: null,
+    };
+    data.onUpdate({
+      ...data.node,
+      options: [...data.node.options, newOption],
     });
-    onConfirm(ops);
-    onClose();
+  };
+
+  const handleUpdateOptionLabel = (optionId: string, newLabel: string) => {
+    data.onUpdate({
+      ...data.node,
+      options: data.node.options.map((opt) =>
+        opt.id === optionId ? { ...opt, label: newLabel } : opt
+      ),
+    });
+  };
+
+  const handleDeleteOption = (optionId: string) => {
+    data.onUpdate({
+      ...data.node,
+      options: data.node.options.filter((opt) => opt.id !== optionId),
+    });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-lg max-h-[80vh] overflow-auto">
-        <h2 className="text-lg font-semibold mb-4">Selecionar Operações</h2>
-
-        <div className="space-y-3">
-          {(
-            Object.entries(CATEGORY_LABELS) as [
-              OperationCategory,
-              string,
-            ][]
-          ).map(([catKey, catLabel]) => {
-            const ops = MOCK_OPERATIONS_BY_CATEGORY[catKey];
-            const isExpanded = expandedCategory === catKey;
-
-            return (
-              <div key={catKey} className="border border-border rounded-lg">
-                <button
-                  onClick={() =>
-                    setExpandedCategory(isExpanded ? null : catKey)
-                  }
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
-                >
-                  <span className="font-medium text-sm">{catLabel}</span>
-                  <ChevronDown
-                    size={16}
-                    className={cn(
-                      "transition-transform",
-                      isExpanded && "rotate-180"
-                    )}
-                  />
-                </button>
-
-                {isExpanded && (
-                  <div className="border-t border-border px-4 py-3 space-y-2 bg-muted/20">
-                    {ops.map((op) => (
-                      <label
-                        key={op.id}
-                        className="flex items-start gap-3 cursor-pointer hover:bg-muted/30 p-2 rounded"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selected.has(op.id)}
-                          onChange={() => toggleOperation(op.id)}
-                          className="mt-0.5"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">{op.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {ACTION_TYPE_LABELS[op.actionType]}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center justify-end gap-3 mt-6 border-t border-border pt-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-input hover:bg-muted transition-colors"
+    <div
+      className={cn(
+        "rounded-lg border-2 bg-card p-4 shadow-md min-w-72 max-w-sm",
+        selected ? "border-primary" : "border-border"
+      )}
+    >
+      {/* Text */}
+      <div className="mb-3">
+        {isEditingText ? (
+          <textarea
+            value={textValue}
+            onChange={(e) => setTextValue(e.target.value)}
+            onBlur={handleTextBlur}
+            autoFocus
+            rows={3}
+            className="w-full rounded border border-input bg-background p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        ) : (
+          <div
+            onClick={() => setIsEditingText(true)}
+            className="cursor-pointer rounded border border-border p-2 text-sm leading-relaxed hover:bg-muted/30"
           >
-            Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            Confirmar
-          </button>
-        </div>
+            {data.node.text}
+          </div>
+        )}
       </div>
+
+      {/* Options */}
+      <div className="space-y-2 mb-3">
+        {data.node.options.map((option) => (
+          <div key={option.id} className="flex items-center gap-2">
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={option.id}
+              className="!bg-primary !w-3 !h-3"
+            />
+            {editingOptionId === option.id ? (
+              <input
+                type="text"
+                value={editingOptionLabel}
+                onChange={(e) => setEditingOptionLabel(e.target.value)}
+                onBlur={() => {
+                  if (editingOptionLabel.trim()) {
+                    handleUpdateOptionLabel(option.id, editingOptionLabel);
+                  }
+                  setEditingOptionId(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (editingOptionLabel.trim()) {
+                      handleUpdateOptionLabel(option.id, editingOptionLabel);
+                    }
+                    setEditingOptionId(null);
+                  }
+                }}
+                autoFocus
+                className="flex-1 rounded border border-input bg-background px-2 py-1 text-xs outline-none focus:ring-2 focus:ring-ring"
+              />
+            ) : (
+              <button
+                onClick={() => {
+                  setEditingOptionId(option.id);
+                  setEditingOptionLabel(option.label);
+                }}
+                className="flex-1 rounded border border-border px-2 py-1 text-xs text-left hover:bg-muted/30"
+              >
+                {option.label}
+              </button>
+            )}
+            <button
+              onClick={() => handleDeleteOption(option.id)}
+              className="rounded p-0.5 text-muted-foreground hover:text-destructive"
+              title="Excluir opção"
+            >
+              <Trash2 size={12} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Add option button */}
+      <button
+        onClick={handleAddOption}
+        className="w-full rounded border border-dashed border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 flex items-center justify-center gap-1 mb-3"
+      >
+        <Plus size={12} />
+        Adicionar opção
+      </button>
+
+      {/* Delete node button */}
+      <button
+        onClick={data.onDelete}
+        className="w-full rounded bg-destructive/10 px-2 py-1 text-xs text-destructive hover:bg-destructive/20"
+      >
+        Excluir nó
+      </button>
+
+      <Handle type="target" position={Position.Left} />
     </div>
   );
 }
@@ -496,6 +280,10 @@ function TemplateModal({
     onClose();
   };
 
+  const applyFormat = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-lg max-h-[80vh] overflow-auto">
@@ -517,15 +305,68 @@ function TemplateModal({
 
           <div>
             <label className="block text-sm font-medium mb-2">Conteúdo</label>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Ex: Perfeito! Seu agendamento foi confirmado para {data} às {hora}..."
-              rows={8}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+
+            {/* Toolbar */}
+            <div className="flex items-center gap-1 border border-input rounded-t-lg bg-muted/30 p-2">
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormat("bold");
+                }}
+                className="rounded p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                title="Negrito (Ctrl+B)"
+              >
+                <Bold size={16} />
+              </button>
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormat("italic");
+                }}
+                className="rounded p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                title="Itálico (Ctrl+I)"
+              >
+                <Italic size={16} />
+              </button>
+              <div className="w-px h-6 bg-border mx-1" />
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormat("insertUnorderedList");
+                }}
+                className="rounded p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                title="Lista"
+              >
+                <List size={16} />
+              </button>
+              <div className="w-px h-6 bg-border mx-1" />
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormat("removeFormat");
+                }}
+                className="rounded p-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                title="Limpar formatação"
+              >
+                Limpar
+              </button>
+            </div>
+
+            {/* Editor */}
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => {
+                const content = (e.currentTarget as HTMLDivElement).innerHTML;
+                setBody(content);
+              }}
+              dangerouslySetInnerHTML={{ __html: body }}
+              className="w-full rounded-b-lg border border-t-0 border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring min-h-[200px] max-h-[400px] overflow-auto"
+              style={{ whiteSpace: "pre-wrap" }}
             />
+
             <p className="text-xs text-muted-foreground mt-1">
-              Use {"{variavel}"} para inserir variáveis dinâmicas
+              Use {"{variável}"} para inserir variáveis dinâmicas
             </p>
           </div>
         </div>
@@ -550,407 +391,273 @@ function TemplateModal({
   );
 }
 
-// ─── Menu Flow Components ───────────────────────────────────────────────
+// ─── WhatsApp Emulator ───────────────────────────────────────────────────
 
-interface MenuItemRowProps {
-  item: BotMenuItem;
-  onUpdate: (updated: BotMenuItem) => void;
-  onOpenOperationsModal: (item: BotMenuItem) => void;
-  onAddSubmenu: (item: BotMenuItem) => void;
-  onDelete: () => void;
+interface ConversationTurn {
+  type: "bot" | "user";
+  text?: string;
+  label?: string;
 }
 
-function MenuItemRow({
-  item,
-  onUpdate,
-  onOpenOperationsModal,
-  onAddSubmenu,
-  onDelete,
-}: MenuItemRowProps) {
-  const [isEditingLabel, setIsEditingLabel] = useState(false);
-  const [labelValue, setLabelValue] = useState(item.label);
+function WhatsAppEmulator({
+  flowState,
+}: {
+  flowState: FlowState;
+}) {
+  const [currentNodeId, setCurrentNodeId] = useState<string | null>(
+    flowState.startNodeId
+  );
+  const [conversation, setConversation] = useState<ConversationTurn[]>([]);
 
-  const handleLabelBlur = () => {
-    if (labelValue.trim() && labelValue !== item.label) {
-      onUpdate({ ...item, label: labelValue.trim() });
-    } else {
-      setLabelValue(item.label);
+  // Initialize: show first bot message
+  const handleInitialize = () => {
+    const startNode = flowState.nodes.find((n) => n.id === flowState.startNodeId);
+    if (startNode) {
+      setCurrentNodeId(startNode.id);
+      setConversation([{ type: "bot", text: startNode.text }]);
     }
-    setIsEditingLabel(false);
   };
 
-  const hasSubmenu = item.submenu !== null;
-  const hasOperations = item.operations.length > 0;
+  const handleOptionClick = (label: string, nextNodeId: string | null) => {
+    // Add user message
+    const newConversation: ConversationTurn[] = [
+      ...conversation,
+      { type: "user", label },
+    ];
+
+    if (nextNodeId) {
+      const nextNode = flowState.nodes.find((n) => n.id === nextNodeId);
+      if (nextNode) {
+        newConversation.push({ type: "bot", text: nextNode.text });
+        setConversation(newConversation);
+        setCurrentNodeId(nextNodeId);
+        return;
+      }
+    }
+
+    // End of flow
+    setConversation(newConversation);
+    setCurrentNodeId(null);
+  };
+
+  const currentNode = flowState.nodes.find((n) => n.id === currentNodeId);
 
   return (
-    <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/20 hover:bg-muted/30 transition-colors">
-      <div className="flex-1">
-        {isEditingLabel ? (
-          <input
-            type="text"
-            value={labelValue}
-            onChange={(e) => setLabelValue(e.target.value)}
-            onBlur={handleLabelBlur}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleLabelBlur();
-            }}
-            autoFocus
-            className="w-full rounded px-2 py-1 border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
-        ) : (
-          <div
-            onClick={() => setIsEditingLabel(true)}
-            className="text-sm font-medium cursor-pointer hover:text-primary p-1"
-          >
-            {item.label}
-          </div>
-        )}
+    <div className="flex flex-col h-full bg-white border-r border-border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
+        <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-sm font-bold">
+          CS
+        </div>
+        <div>
+          <div className="text-sm font-semibold">CS Diagnostics</div>
+          <div className="text-xs opacity-90">Online</div>
+        </div>
+      </div>
 
-        {hasOperations && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {item.operations.slice(0, 3).map((op) => (
-              <span
-                key={op.id}
+      {/* Chat area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        {conversation.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+            <button
+              onClick={handleInitialize}
+              className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              Iniciar conversa
+            </button>
+          </div>
+        ) : (
+          <>
+            {conversation.map((turn, idx) => (
+              <div
+                key={idx}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium",
-                  CATEGORY_COLORS[op.category]
+                  "flex",
+                  turn.type === "bot" ? "justify-start" : "justify-end"
                 )}
               >
-                {op.label}
-              </span>
-            ))}
-            {item.operations.length > 3 && (
-              <span className="text-xs text-muted-foreground px-2 py-0.5">
-                +{item.operations.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onOpenOperationsModal(item)}
-          className={cn(
-            "rounded px-3 py-1.5 text-xs font-medium transition-colors",
-            hasOperations
-              ? "bg-primary/20 text-primary hover:bg-primary/30"
-              : "border border-input hover:bg-muted"
-          )}
-          title={hasOperations ? "Editar operações" : "Adicionar operações"}
-        >
-          {hasOperations ? "Editar ops" : "+ Operação"}
-        </button>
-
-        {!hasSubmenu && (
-          <button
-            onClick={() => onAddSubmenu(item)}
-            className="rounded px-3 py-1.5 text-xs font-medium border border-input hover:bg-muted transition-colors"
-            title="Adicionar submenu"
-          >
-            + Submenu
-          </button>
-        )}
-
-        <button
-          onClick={onDelete}
-          className="rounded p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-          title="Excluir item"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-interface MenuLevelBoxProps {
-  level: BotMenuLevel;
-  onUpdate: (updated: BotMenuLevel) => void;
-  onOpenOperationsModal: (item: BotMenuItem) => void;
-  depth: number;
-}
-
-function MenuLevelBox({
-  level,
-  onUpdate,
-  onOpenOperationsModal,
-  depth,
-}: MenuLevelBoxProps) {
-  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
-  const [questionValue, setQuestionValue] = useState(level.question);
-  const [newItemLabel, setNewItemLabel] = useState("");
-  const [showNewItemInput, setShowNewItemInput] = useState(false);
-
-  const handleQuestionBlur = () => {
-    if (questionValue.trim() && questionValue !== level.question) {
-      onUpdate({ ...level, question: questionValue.trim() });
-    } else {
-      setQuestionValue(level.question);
-    }
-    setIsEditingQuestion(false);
-  };
-
-  const handleAddItem = () => {
-    if (!newItemLabel.trim()) {
-      setShowNewItemInput(false);
-      return;
-    }
-
-    const newItem: BotMenuItem = {
-      id: `item-${Date.now()}`,
-      label: newItemLabel.trim(),
-      operations: [],
-      submenu: null,
-    };
-
-    onUpdate({
-      ...level,
-      items: [...level.items, newItem],
-    });
-
-    setNewItemLabel("");
-    setShowNewItemInput(false);
-  };
-
-  const handleUpdateItem = (updatedItem: BotMenuItem) => {
-    onUpdate({
-      ...level,
-      items: level.items.map((item) =>
-        item.id === updatedItem.id ? updatedItem : item
-      ),
-    });
-  };
-
-  const handleDeleteItem = (itemId: string) => {
-    onUpdate({
-      ...level,
-      items: level.items.filter((item) => item.id !== itemId),
-    });
-  };
-
-  const handleAddSubmenu = (parentItem: BotMenuItem) => {
-    const newSubmenu: BotMenuLevel = {
-      id: `level-${Date.now()}`,
-      question: "Nova pergunta?",
-      items: [],
-    };
-
-    const updatedItem: BotMenuItem = {
-      ...parentItem,
-      submenu: newSubmenu,
-    };
-
-    handleUpdateItem(updatedItem);
-  };
-
-  const handleUpdateSubmenu = (
-    parentItemId: string,
-    updatedSubmenu: BotMenuLevel
-  ) => {
-    handleUpdateItem({
-      ...level.items.find((item) => item.id === parentItemId)!,
-      submenu: updatedSubmenu,
-    });
-  };
-
-  const marginLeft = depth > 0 ? "ml-6" : "";
-  const paddingLeft = depth > 0 ? "pl-6" : "";
-
-  return (
-    <div className={cn("relative", marginLeft)}>
-      {depth > 0 && (
-        <>
-          <div className="absolute -left-4 top-0 bottom-0 w-0 border-l-2 border-dashed border-border" />
-          <div className="absolute -left-4 top-6 w-4 border-t-2 border-dashed border-border" />
-        </>
-      )}
-
-      <div className={cn("rounded-xl border border-border bg-card p-6", paddingLeft)}>
-        {/* Question */}
-        <div className="mb-6">
-          {isEditingQuestion ? (
-            <textarea
-              value={questionValue}
-              onChange={(e) => setQuestionValue(e.target.value)}
-              onBlur={handleQuestionBlur}
-              autoFocus
-              rows={2}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-ring"
-            />
-          ) : (
-            <div
-              onClick={() => setIsEditingQuestion(true)}
-              className="text-sm font-semibold cursor-pointer hover:text-primary p-2 -m-2 rounded"
-            >
-              {level.question}
-            </div>
-          )}
-        </div>
-
-        {/* Items */}
-        <div className="space-y-3 mb-6">
-          {level.items.map((item) => (
-            <div key={item.id}>
-              <MenuItemRow
-                item={item}
-                onUpdate={handleUpdateItem}
-                onOpenOperationsModal={onOpenOperationsModal}
-                onAddSubmenu={handleAddSubmenu}
-                onDelete={() => handleDeleteItem(item.id)}
-              />
-
-              {/* Submenu */}
-              {item.submenu && (
-                <div className="mt-4">
-                  <MenuLevelBox
-                    level={item.submenu}
-                    onUpdate={(updated) =>
-                      handleUpdateSubmenu(item.id, updated)
-                    }
-                    onOpenOperationsModal={onOpenOperationsModal}
-                    depth={depth + 1}
-                  />
+                <div
+                  className={cn(
+                    "max-w-xs rounded-2xl px-4 py-2 text-sm",
+                    turn.type === "bot"
+                      ? "bg-gray-200 text-gray-900"
+                      : "bg-emerald-600 text-white"
+                  )}
+                >
+                  {turn.text || turn.label}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
 
-        {/* Add new item input */}
-        {showNewItemInput ? (
-          <input
-            type="text"
-            value={newItemLabel}
-            onChange={(e) => setNewItemLabel(e.target.value)}
-            onBlur={handleAddItem}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAddItem();
-            }}
-            autoFocus
-            placeholder="Novo item..."
-            className="w-full rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
-          />
-        ) : (
-          <button
-            onClick={() => setShowNewItemInput(true)}
-            className="w-full rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus size={14} />
-            Adicionar item
-          </button>
+            {/* Options */}
+            {currentNode && currentNode.options.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {currentNode.options.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => handleOptionClick(option.label, option.next)}
+                    className="w-full rounded-full border-2 border-emerald-600 px-4 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-600 hover:text-white transition-colors"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* End message */}
+            {currentNode === undefined && conversation.length > 0 && (
+              <div className="flex justify-start mt-4">
+                <div className="bg-gray-200 text-gray-900 rounded-2xl px-4 py-2 text-sm">
+                  Fim da conversa. Clique abaixo para reiniciar.
+                </div>
+              </div>
+            )}
+
+            {currentNode === undefined && (
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={() => {
+                    setConversation([]);
+                    setCurrentNodeId(null);
+                    handleInitialize();
+                  }}
+                  className="text-xs text-emerald-600 hover:underline"
+                >
+                  Reiniciar
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function MenuFlowTab({
-  level,
-  onUpdate,
-  onOpenOperationsModal,
-}: {
-  level: BotMenuLevel;
-  onUpdate: (updated: BotMenuLevel) => void;
-  onOpenOperationsModal: (item: BotMenuItem) => void;
-}) {
-  return (
-    <div className="space-y-6">
-      <MenuLevelBox
-        level={level}
-        onUpdate={onUpdate}
-        onOpenOperationsModal={onOpenOperationsModal}
-        depth={0}
-      />
-    </div>
-  );
+// ─── Flow Builder Canvas ────────────────────────────────────────────────
+
+interface FlowBuilderProps {
+  flowState: FlowState;
+  onUpdate: (flowState: FlowState) => void;
 }
 
-// ─── Templates Tab ─────────────────────────────────────────────────────
+function FlowBuilder({ flowState, onUpdate }: FlowBuilderProps) {
+  // Convert FlowNodes to ReactFlow nodes with positions
+  const initialRfNodes: Node[] = flowState.nodes.map((node, idx) => ({
+    id: node.id,
+    data: {
+      label: node.text,
+      node,
+      onUpdate: (updatedNode: FlowNode) => {
+        onUpdate({
+          ...flowState,
+          nodes: flowState.nodes.map((n) =>
+            n.id === updatedNode.id ? updatedNode : n
+          ),
+        });
+      },
+      onDelete: () => {
+        // Remove node and its edges
+        onUpdate({
+          ...flowState,
+          nodes: flowState.nodes.filter((n) => n.id !== node.id),
+        });
+      },
+    },
+    position: { x: idx * 350, y: idx * 100 },
+    type: "messageNode",
+  }));
 
-function TemplatesTab({
-  templates,
-  onDelete,
-  onOpenModal,
-}: {
-  templates: BotTemplate[];
-  onDelete: (id: string) => void;
-  onOpenModal: (template?: BotTemplate) => void;
-}) {
+  // Convert options to edges
+  const initialRfEdges: Edge[] = [];
+  flowState.nodes.forEach((node) => {
+    node.options.forEach((option) => {
+      if (option.next) {
+        initialRfEdges.push({
+          id: `edge-${option.id}`,
+          source: node.id,
+          sourceHandle: option.id,
+          target: option.next,
+          animated: true,
+        });
+      }
+    });
+  });
+
+  const [nodes, , onNodesChange] = useNodesState(initialRfNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialRfEdges);
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      const edge = addEdge(connection, edges);
+      setEdges(edge);
+
+      // Update flow state: find source option and set its next target
+      if (connection.sourceHandle) {
+        const sourceNode = flowState.nodes.find(
+          (n) => n.id === connection.source
+        );
+        if (sourceNode) {
+          const updatedNode = {
+            ...sourceNode,
+            options: sourceNode.options.map((opt) =>
+              opt.id === connection.sourceHandle
+                ? { ...opt, next: connection.target || null }
+                : opt
+            ),
+          };
+          onUpdate({
+            ...flowState,
+            nodes: flowState.nodes.map((n) =>
+              n.id === sourceNode.id ? updatedNode : n
+            ),
+          });
+        }
+      }
+    },
+    [edges, flowState, onUpdate, setEdges]
+  );
+
+  const handleAddNode = () => {
+    const newNode: FlowNode = {
+      id: `node-${Date.now()}`,
+      type: "message",
+      text: "Nova pergunta?",
+      options: [],
+    };
+    onUpdate({
+      ...flowState,
+      nodes: [...flowState.nodes, newNode],
+    });
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Templates de Mensagens</h3>
+    <div className="relative w-full h-full rounded-lg overflow-hidden border border-border">
+      {/* Toolbar */}
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-card border border-border rounded-lg p-2 shadow-md">
         <button
-          onClick={() => onOpenModal()}
-          className="flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+          onClick={handleAddNode}
+          className="flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          title="Adicionar novo nó"
         >
           <Plus size={14} />
-          Novo Template
+          Novo nó
         </button>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
-                Título
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">
-                Corpo
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {templates.length === 0 && (
-              <tr>
-                <td
-                  colSpan={3}
-                  className="px-4 py-10 text-center text-sm text-muted-foreground"
-                >
-                  Nenhum template criado.
-                </td>
-              </tr>
-            )}
-            {templates.map((template) => (
-              <tr
-                key={template.id}
-                className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
-              >
-                <td className="px-4 py-3 font-medium text-foreground">
-                  {template.title}
-                </td>
-                <td className="px-4 py-3 text-xs text-muted-foreground hidden sm:table-cell">
-                  {template.body.substring(0, 50)}
-                  {template.body.length > 50 ? "..." : ""}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => onOpenModal(template)}
-                      className="rounded p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      title="Editar template"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      onClick={() => onDelete(template.id)}
-                      className="rounded p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      title="Excluir template"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        nodeTypes={{ messageNode: MessageNode }}
+        fitView
+      >
+        <Background />
+        <Controls />
+        <MiniMap />
+      </ReactFlow>
     </div>
   );
 }
@@ -961,46 +668,11 @@ type Tab = "flow" | "templates";
 
 export function BotMenuPage() {
   const [activeTab, setActiveTab] = useState<Tab>("flow");
-  const [menuLevel, setMenuLevel] = useState<BotMenuLevel>(INITIAL_MENU_LEVEL);
+  const [flowState, setFlowState] = useState<FlowState>(INITIAL_FLOW_STATE);
   const [templates, setTemplates] = useState<BotTemplate[]>(INITIAL_TEMPLATES);
-  const [operationsModalOpen, setOperationsModalOpen] = useState(false);
-  const [selectedItemForOps, setSelectedItemForOps] =
-    useState<BotMenuItem | null>(null);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [selectedTemplateForEdit, setSelectedTemplateForEdit] =
     useState<BotTemplate | null>(null);
-
-  const handleOpenOperationsModal = (item: BotMenuItem) => {
-    setSelectedItemForOps(item);
-    setOperationsModalOpen(true);
-  };
-
-  const handleConfirmOperations = (operations: BotOperation[]) => {
-    if (!selectedItemForOps) return;
-
-    const updateItemRecursive = (
-      level: BotMenuLevel
-    ): BotMenuLevel => {
-      return {
-        ...level,
-        items: level.items.map((item) => {
-          if (item.id === selectedItemForOps.id) {
-            return { ...item, operations };
-          }
-          if (item.submenu) {
-            return {
-              ...item,
-              submenu: updateItemRecursive(item.submenu),
-            };
-          }
-          return item;
-        }),
-      };
-    };
-
-    setMenuLevel(updateItemRecursive(menuLevel));
-    setSelectedItemForOps(null);
-  };
 
   const handleSaveTemplate = (template: BotTemplate) => {
     if (selectedTemplateForEdit) {
@@ -1024,14 +696,14 @@ export function BotMenuPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-screen flex flex-col">
       <PageHeader
         title="Bot"
         description="Configure menus de atendimento automático e templates de resposta."
       />
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-border">
+      <div className="flex items-center gap-1 border-b border-border px-6">
         {(
           [
             { key: "flow" as const, label: "Fluxo de Menu", icon: <GitBranch size={14} /> },
@@ -1055,28 +727,104 @@ export function BotMenuPage() {
       </div>
 
       {/* Content */}
-      {activeTab === "flow" ? (
-        <MenuFlowTab
-          level={menuLevel}
-          onUpdate={setMenuLevel}
-          onOpenOperationsModal={handleOpenOperationsModal}
-        />
-      ) : (
-        <TemplatesTab
-          templates={templates}
-          onDelete={handleDeleteTemplate}
-          onOpenModal={handleOpenTemplateModal}
-        />
-      )}
+      <div className="flex-1 overflow-hidden p-6">
+        {activeTab === "flow" ? (
+          <div className="flex gap-6 h-full">
+            {/* Left: WhatsApp Emulator */}
+            <div className="w-[35%]">
+              <WhatsAppEmulator flowState={flowState} />
+            </div>
+
+            {/* Right: Flow Builder */}
+            <div className="flex-1">
+              <FlowBuilder flowState={flowState} onUpdate={setFlowState} />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Templates de Mensagens</h3>
+              <button
+                onClick={() => handleOpenTemplateModal()}
+                className="flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                <Plus size={14} />
+                Novo Template
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
+                      Título
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground hidden sm:table-cell">
+                      Corpo
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {templates.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="px-4 py-10 text-center text-sm text-muted-foreground"
+                      >
+                        Nenhum template criado.
+                      </td>
+                    </tr>
+                  )}
+                  {templates.map((template) => (
+                    <tr
+                      key={template.id}
+                      className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
+                    >
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        {template.title}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground hidden sm:table-cell">
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              template.body.substring(0, 60) +
+                              (template.body.length > 60 ? "..." : ""),
+                          }}
+                          className="line-clamp-1"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenTemplateModal(template)}
+                            className="rounded p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            title="Editar template"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTemplate(template.id)}
+                            className="rounded p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            title="Excluir template"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
-      <OperationsModal
-        open={operationsModalOpen}
-        onClose={() => setOperationsModalOpen(false)}
-        onConfirm={handleConfirmOperations}
-        initialOperations={selectedItemForOps?.operations ?? []}
-      />
-
       <TemplateModal
         open={templateModalOpen}
         onClose={() => {

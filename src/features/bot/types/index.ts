@@ -1,35 +1,23 @@
-export type OperationCategory =
-  | "capture"
-  | "context"
-  | "scheduling"
-  | "commercial"
-  | "payment"
-  | "operational"
-  | "communication"
-  | "retention";
-
-export type ActionType = "READ" | "WRITE" | "DECISION" | "INTEGRATION" | "COMMUNICATION";
-
-export interface BotOperation {
-  id: string;
-  category: OperationCategory;
-  label: string;
-  actionType: ActionType;
-}
-
-export interface BotMenuItem {
+// Flow Builder Types
+export interface FlowOption {
   id: string;
   label: string;
-  operations: BotOperation[];
-  submenu: BotMenuLevel | null;
+  next: string | null; // target node id
 }
 
-export interface BotMenuLevel {
+export interface FlowNode {
   id: string;
-  question: string;
-  items: BotMenuItem[];
+  type: "message";
+  text: string; // supports {{variable}} syntax
+  options: FlowOption[];
 }
 
+export interface FlowState {
+  nodes: FlowNode[];
+  startNodeId: string;
+}
+
+// Template Types
 export interface BotTemplate {
   id: string;
   title: string;
