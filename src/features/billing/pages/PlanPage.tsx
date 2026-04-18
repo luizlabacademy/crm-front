@@ -1,5 +1,8 @@
-import React, { useState } from "react";
-import { PriceTableModal } from "@/features/billing/components/UpgradeModals";
+import { useState } from "react";
+import {
+  PriceTableModal,
+  UpgradeNeededModal,
+} from "@/features/billing/components/UpgradeModals";
 
 const TIERS = [
   {
@@ -33,6 +36,7 @@ const TIERS = [
 
 export function PlanPage() {
   const [selectedCategory, setSelectedCategory] = useState<"autonomo" | "empresarial">("autonomo");
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [priceTableOpen, setPriceTableOpen] = useState(false);
 
   return (

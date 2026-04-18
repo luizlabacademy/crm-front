@@ -1,4 +1,3 @@
-import React from "react";
 import { X } from "lucide-react";
 
 export function PriceTableModal({ open, onClose }: { open: boolean; onClose: () => void }) {
