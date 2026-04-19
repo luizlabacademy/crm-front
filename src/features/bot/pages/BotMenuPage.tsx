@@ -11,6 +11,8 @@ import {
   ArrowLeft,
   X,
   CircleAlert,
+  Eye,
+  SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -714,6 +716,7 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
 // ─── Main Page ─────────────────────────────────────────────────────────
 
 type Tab = "dialogs" | "templates";
+type DialogsMobileTab = "preview" | "config";
 
 export function BotMenuPage() {
   const [activeTab, setActiveTab] = useState<Tab>("templates");
@@ -723,6 +726,8 @@ export function BotMenuPage() {
   const [templates, setTemplates] = useState<BotTemplate[]>(INITIAL_TEMPLATES);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [showDialogsInfoModal, setShowDialogsInfoModal] = useState(false);
+  const [dialogsMobileTab, setDialogsMobileTab] =
+    useState<DialogsMobileTab>("preview");
   const [selectedTemplateForEdit, setSelectedTemplateForEdit] =
     useState<BotTemplate | null>(null);
   const dialogsOverlayRef = useRef<HTMLDivElement | null>(null);
@@ -746,6 +751,7 @@ export function BotMenuPage() {
     }
 
     setShowDialogsInfoModal(true);
+    setDialogsMobileTab("preview");
 
     const overlayElement = dialogsOverlayRef.current;
     if (!overlayElement || document.fullscreenElement === overlayElement) {
@@ -828,16 +834,60 @@ export function BotMenuPage() {
           </button>
         </div>
 
-        <div className="w-full flex-1 overflow-y-auto p-4 lg:overflow-hidden lg:p-5">
-          <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col gap-4 lg:h-full lg:flex-row lg:gap-5">
-            <div className="flex w-full justify-center lg:w-auto lg:min-w-[320px] lg:justify-start">
-              <div className="h-[72vh] w-full max-h-[820px] max-w-[390px] overflow-hidden lg:h-full lg:max-h-none">
+        <div className="flex w-full flex-1 flex-col overflow-hidden p-0 lg:p-5">
+          <div className="mx-auto w-full max-w-[1440px] border-b border-border bg-white px-3 lg:hidden">
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setDialogsMobileTab("preview")}
+                className={cn(
+                  "inline-flex flex-1 items-center justify-center gap-1.5 border-b-2 py-3 text-sm font-medium transition-colors",
+                  dialogsMobileTab === "preview"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground"
+                )}
+              >
+                <Eye size={14} />
+                Visualizar
+              </button>
+
+              <div className="h-5 w-px bg-border" />
+
+              <button
+                type="button"
+                onClick={() => setDialogsMobileTab("config")}
+                className={cn(
+                  "inline-flex flex-1 items-center justify-center gap-1.5 border-b-2 py-3 text-sm font-medium transition-colors",
+                  dialogsMobileTab === "config"
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground"
+                )}
+              >
+                <SlidersHorizontal size={14} />
+                Configurar
+              </button>
+            </div>
+          </div>
+
+          <div className="mx-auto flex min-h-0 flex-1 w-full max-w-[1440px] flex-col gap-0 px-0 py-0 lg:flex-row lg:gap-5">
+            <div
+              className={cn(
+                "min-h-0 h-full w-full flex-1 justify-center p-3 lg:w-auto lg:min-w-[320px] lg:flex-none lg:justify-start lg:p-0",
+                dialogsMobileTab === "preview" ? "flex" : "hidden lg:flex"
+              )}
+            >
+              <div className="h-full w-full max-w-[390px] overflow-hidden">
                 <WhatsAppEmulator flowState={flowState} />
               </div>
             </div>
 
-            <div className="flex w-full min-w-0 flex-1 flex-col rounded-xl border border-border bg-card shadow-sm">
-              <div className="border-b border-border px-4 py-3">
+            <div
+              className={cn(
+                "h-full min-h-0 w-full min-w-0 flex-col rounded-none border border-border bg-card shadow-none lg:flex-1 lg:rounded-xl lg:shadow-sm",
+                dialogsMobileTab === "config" ? "flex" : "hidden lg:flex"
+              )}
+            >
+              <div className="hidden border-b border-border px-4 py-3 lg:block">
                 <h3 className="text-sm font-semibold text-foreground">
                   Configuração do Menu
                 </h3>
