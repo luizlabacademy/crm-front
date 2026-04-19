@@ -18,6 +18,7 @@ import { useTenantsSelector } from "@/lib/api/useTenants";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
+import { EmptyState } from "@/components/shared/EmptyState";
 import {
   QuoteComposerOverlay,
   type QuoteFinalizePayload,
@@ -489,18 +490,19 @@ export function OrderListPage({ viewMode = "quotes" }: OrderListPageProps) {
                 ))
               ) : orders.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-4 py-12 text-center text-muted-foreground"
-                  >
-                    <p>Nenhum {singularLabel} encontrado.</p>
-                    <button
-                      type="button"
-                      onClick={() => openQuote()}
-                      className="mt-2 text-sm text-primary hover:underline"
-                    >
-                      Criar primeiro {singularLabel}
-                    </button>
+                  <td colSpan={5}>
+                    <EmptyState
+                      title={`Nenhum ${singularLabel} encontrado.`}
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => openQuote()}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Criar primeiro {singularLabel}
+                        </button>
+                      }
+                    />
                   </td>
                 </tr>
               ) : (

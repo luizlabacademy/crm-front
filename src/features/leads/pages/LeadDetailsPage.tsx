@@ -18,7 +18,7 @@ import {
   useLeadMessages,
   useSendLeadMessage,
 } from "@/features/leads/api/useLeads";
-import { useAuthStore } from "@/lib/auth/authStore";
+import { useAuthStore, decodeJwt } from "@/lib/auth/authStore";
 import { LEAD_STATUS_COLORS } from "@/features/leads/types/leadTypes";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
@@ -27,16 +27,12 @@ import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function decodeJwtSub(token: string | null): number | null {
+function decodeJwtUserId(token: string | null): number | null {
   if (!token) return null;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const sub = payload.userId ?? payload.sub;
-    const parsed = parseInt(String(sub), 10);
-    return isNaN(parsed) ? null : parsed;
-  } catch {
-    return null;
-  }
+  const payload = decodeJwt(token);
+  const sub = (payload as Record<string, unknown>).userId ?? payload.sub;
+  const parsed = parseInt(String(sub), 10);
+  return isNaN(parsed) ? null : parsed;
 }
 
 // ─── Message schema ───────────────────────────────────────────────────────────
@@ -56,7 +52,7 @@ export function LeadDetailsPage() {
   const leadId = id ? parseInt(id, 10) : null;
 
   const token = useAuthStore((s) => s.token);
-  const currentUserId = decodeJwtSub(token);
+  const currentUserId = decodeJwtUserId(token);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);

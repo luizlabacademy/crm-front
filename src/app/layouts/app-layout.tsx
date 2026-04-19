@@ -43,7 +43,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { toast } from "sonner";
 import navigationConfig from "@/app/config/navigation.json";
 import { useAuthStore } from "@/lib/auth/authStore";
@@ -51,6 +51,49 @@ import { applyTheme, getStoredTheme } from "@/lib/theme/theme";
 import { cn } from "@/lib/utils";
 import notificationsResponse from "@/mocks/GET-account--notifications.json";
 import profileResponse from "@/mocks/GET-account--profile.json";
+
+// ─── ErrorBoundary ────────────────────────────────────────────────────────────
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  ErrorBoundaryState
+> {
+  state: ErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Erro não capturado:", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+          <p className="text-lg font-semibold text-foreground">
+            Algo deu errado nesta página.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Tente recarregar ou navegue para outra seção.
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 interface NavItem {
   label: string;
@@ -1037,7 +1080,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <main className="min-w-0 flex-1 p-4 md:p-6">
           <BreadcrumbBar items={breadcrumbs} />
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
 

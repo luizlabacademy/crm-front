@@ -441,7 +441,7 @@ export function LeadsBoardPage() {
     buildLeads(leadsJson.responseBody),
   );
   const [campaigns] = useState<MarketingCampaign[]>(
-    campaignsJson.responseBody as unknown as MarketingCampaign[],
+    campaignsJson.responseBody as MarketingCampaign[],
   );
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
     campaignIdParam,

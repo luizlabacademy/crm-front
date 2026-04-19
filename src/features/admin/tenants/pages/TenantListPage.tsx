@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Plus, Pencil, Trash2, Building2, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import {
@@ -15,6 +15,7 @@ import { SkeletonRow } from "@/components/shared/SkeletonRow";
 import { ActiveBadge } from "@/components/shared/ActiveBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
+import { EmptyState } from "@/components/shared/EmptyState";
 import {
   getDefaultPageSize,
   setDefaultPageSize,
@@ -109,24 +110,19 @@ export function TenantListPage() {
                 ))
               ) : tenants.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-4 py-12 text-center text-muted-foreground"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <Building2
-                        size={32}
-                        className="text-muted-foreground/50"
-                      />
-                      <p>Nenhum tenant encontrado.</p>
-                      <button
-                        type="button"
-                        onClick={() => void navigate("/tenants/new")}
-                        className="mt-1 text-sm text-primary hover:underline"
-                      >
-                        Criar tenant
-                      </button>
-                    </div>
+                  <td colSpan={5}>
+                    <EmptyState
+                      title="Nenhum tenant encontrado."
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => void navigate("/tenants/new")}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Criar tenant
+                        </button>
+                      }
+                    />
                   </td>
                 </tr>
               ) : (

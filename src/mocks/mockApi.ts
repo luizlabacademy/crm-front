@@ -74,7 +74,7 @@ const funnelMap: Record<FunnelPeriod, typeof funnel30d> = {
 
 export async function getFunnelData(period: FunnelPeriod): Promise<FunnelData> {
   const response = funnelMap[period];
-  return response.responseBody as unknown as FunnelData;
+  return response.responseBody as FunnelData;
 }
 
 const conversionMap: Record<ConversionPeriod, typeof conversionDaily> = {
@@ -107,7 +107,7 @@ export async function getCampaignOptions(): Promise<CampaignFilterOption[]> {
 
 // ─── Campaigns API ───────────────────────────────────────────────────────────
 
-export interface MockCampaign {
+export interface CampaignItem {
   id: number;
   name: string;
   channel: "whatsapp" | "email";
@@ -121,7 +121,7 @@ export interface MockCampaign {
   createdAt: string;
 }
 
-export interface MockContactList {
+export interface ContactListItem {
   id: number;
   name: string;
   channel: "whatsapp" | "email";
@@ -129,12 +129,12 @@ export interface MockContactList {
   createdAt: string;
 }
 
-export async function getCampaigns(): Promise<MockCampaign[]> {
-  return campaigns.responseBody as MockCampaign[];
+export async function getCampaigns(): Promise<CampaignItem[]> {
+  return campaigns.responseBody as CampaignItem[];
 }
 
-export async function getContactLists(): Promise<MockContactList[]> {
-  return contactLists.responseBody as MockContactList[];
+export async function getContactLists(): Promise<ContactListItem[]> {
+  return contactLists.responseBody as ContactListItem[];
 }
 
 // ─── Conversations API ───────────────────────────────────────────────────────
@@ -147,7 +147,7 @@ export async function getConversationMessages() {
   return messages.responseBody;
 }
 
-export interface MockCatalogItem {
+export interface CatalogItem {
   id: number;
   tenantId: number;
   name: string;
@@ -155,11 +155,11 @@ export interface MockCatalogItem {
   priceCents: number;
 }
 
-export async function getCatalogItems(): Promise<MockCatalogItem[]> {
-  return catalogItems.responseBody as MockCatalogItem[];
+export async function getCatalogItems(): Promise<CatalogItem[]> {
+  return catalogItems.responseBody as CatalogItem[];
 }
 
-export interface MockConversationOrder {
+export interface ConversationOrder {
   id: number;
   code: string;
   totalCents: number;
@@ -167,24 +167,24 @@ export interface MockConversationOrder {
 }
 
 export async function getConversationRecentOrders(): Promise<
-  MockConversationOrder[]
+  ConversationOrder[]
 > {
-  return conversationRecentOrders.responseBody as MockConversationOrder[];
+  return conversationRecentOrders.responseBody as ConversationOrder[];
 }
 
-export interface MockChannel {
+export interface Channel {
   value: string;
   label: string;
   color: string;
 }
 
-export async function getChannels(): Promise<MockChannel[]> {
-  return channels.responseBody as MockChannel[];
+export async function getChannels(): Promise<Channel[]> {
+  return channels.responseBody as Channel[];
 }
 
 // ─── Account API ─────────────────────────────────────────────────────────────
 
-export interface MockProfile {
+export interface UserProfile {
   id: number;
   fullName: string;
   email: string;
@@ -194,11 +194,11 @@ export interface MockProfile {
   avatarUrl: string;
 }
 
-export async function getProfile(): Promise<MockProfile> {
-  return profile.responseBody as MockProfile;
+export async function getProfile(): Promise<UserProfile> {
+  return profile.responseBody as UserProfile;
 }
 
-export interface MockNotification {
+export interface Notification {
   id: string;
   title: string;
   description: string;
@@ -207,12 +207,12 @@ export interface MockNotification {
   createdAt: string;
 }
 
-export async function getNotifications(): Promise<MockNotification[]> {
-  return notifications.responseBody as MockNotification[];
+export async function getNotifications(): Promise<Notification[]> {
+  return notifications.responseBody as Notification[];
 }
 
 export function getNotificationsUnreadCount(): number {
-  return (notifications.responseBody as any[]).length;
+  return (notifications.responseBody as Notification[]).length;
 }
 
 // ─── Marketing API ───────────────────────────────────────────────────────────
@@ -223,9 +223,9 @@ import type {
 } from "@/features/marketing/types/marketingTypes";
 
 export async function getMarketingLeads(): Promise<LeadBoardCard[]> {
-  return marketingLeads.responseBody as unknown as LeadBoardCard[];
+  return marketingLeads.responseBody as LeadBoardCard[];
 }
 
 export async function getMarketingCampaigns(): Promise<MarketingCampaign[]> {
-  return marketingCampaigns.responseBody as unknown as MarketingCampaign[];
+  return marketingCampaigns.responseBody as MarketingCampaign[];
 }

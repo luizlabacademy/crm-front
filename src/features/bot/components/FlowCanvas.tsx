@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import {
   addEdge,
@@ -112,7 +113,7 @@ function MenuNode({
 
     const selectedOperation = mode as BotOperation;
     if (options[index].nextMenuRef) {
-      window.alert(
+      toast.warning(
         "Para ações diferentes de 'Abrir submenu', não é necessário criar submenus manualmente. O sistema cria esse fluxo automaticamente.",
       );
     }

@@ -30,7 +30,7 @@ import {
 
 function useCampaigns() {
   const [campaigns, setCampaigns] = useState<MarketingCampaign[]>(
-    campaignsData.responseBody as unknown as MarketingCampaign[],
+    campaignsData.responseBody as MarketingCampaign[],
   );
 
   function addCampaign(payload: CreateCampaignPayload): MarketingCampaign {

@@ -21,10 +21,10 @@ import {
 
 function useAutomationData() {
   const [templates, setTemplates] = useState<AutomationTemplate[]>(
-    automationData.responseBody.templates as unknown as AutomationTemplate[],
+    automationData.responseBody.templates as AutomationTemplate[],
   );
   const [automations, setAutomations] = useState<MarketingAutomation[]>(
-    automationData.responseBody.automations as unknown as MarketingAutomation[],
+    automationData.responseBody.automations as MarketingAutomation[],
   );
 
   function updateTemplate(id: string, message: string) {

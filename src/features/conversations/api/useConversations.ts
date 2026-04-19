@@ -94,7 +94,7 @@ export function useConversations(params: UseConversationsParams = {}) {
         return list.map(mapApiToContact);
       } catch {
         // Graceful fallback to mock data during development
-        return (contactsResponse.responseBody as unknown as ConversationContact[]).map(
+        return (contactsResponse.responseBody as ConversationContact[]).map(
           (c) => ({
             ...c,
             contactType: (c.contactType ??
@@ -140,7 +140,7 @@ export function useConversationMessages(
       }
 
       // Fallback to mock
-      const mockRecord = messagesResponse.responseBody as unknown as Record<
+      const mockRecord = messagesResponse.responseBody as Record<
         string,
         ChatMessage[]
       >;

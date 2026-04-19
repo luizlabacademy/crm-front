@@ -40,7 +40,7 @@ function generateReferralCode(name: string): string {
 
 function useAffiliates() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>(
-    affiliatesData.responseBody as unknown as Affiliate[],
+    affiliatesData.responseBody as Affiliate[],
   );
 
   function addAffiliate(payload: CreateAffiliatePayload): Affiliate {

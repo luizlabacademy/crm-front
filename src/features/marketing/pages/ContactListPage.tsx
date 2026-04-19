@@ -28,7 +28,7 @@ import {
 
 function useContacts() {
   const [contacts, setContacts] = useState<MarketingContact[]>(
-    contactsData.responseBody as unknown as MarketingContact[],
+    contactsData.responseBody as MarketingContact[],
   );
 
   function addContact(

@@ -18,6 +18,7 @@ import { SkeletonRow } from "@/components/shared/SkeletonRow";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -160,18 +161,19 @@ export function LeadListPage() {
                 ))
               ) : leads.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-12 text-center text-muted-foreground"
-                  >
-                    <p>Nenhum lead encontrado.</p>
-                    <button
-                      type="button"
-                      onClick={() => void navigate("/leads/new")}
-                      className="mt-2 text-sm text-primary hover:underline"
-                    >
-                      Criar primeiro lead
-                    </button>
+                  <td colSpan={7}>
+                    <EmptyState
+                      title="Nenhum lead encontrado."
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => void navigate("/leads/new")}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Criar primeiro lead
+                        </button>
+                      }
+                    />
                   </td>
                 </tr>
               ) : (

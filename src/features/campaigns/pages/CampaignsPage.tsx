@@ -21,8 +21,8 @@ import { ptBR } from "date-fns/locale";
 import {
   getCampaigns,
   getContactLists,
-  type MockCampaign,
-  type MockContactList,
+  type CampaignItem,
+  type ContactListItem,
 } from "@/mocks/mockApi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,8 +30,8 @@ import {
 type CampaignChannel = "whatsapp" | "email";
 type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "failed";
 
-type Campaign = MockCampaign;
-type ContactList = MockContactList;
+type Campaign = CampaignItem;
+type ContactList = ContactListItem;
 
 // ─── Mock Data (from centralized mocks — replace with React Query hooks) ────
 

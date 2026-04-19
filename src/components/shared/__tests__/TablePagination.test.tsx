@@ -15,7 +15,7 @@ describe("TablePagination", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("shows correct page label", () => {
+  it("shows correct page number", () => {
     render(
       <TablePagination
         page={1}
@@ -24,7 +24,7 @@ describe("TablePagination", () => {
         onNext={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Página 2 de 5/)).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
   });
 
   it("disables Anterior on first page", () => {

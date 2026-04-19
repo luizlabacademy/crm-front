@@ -30,7 +30,7 @@ import {
 // ─── Mock service ─────────────────────────────────────────────────────────────
 
 function useCoupons() {
-  const [coupons, setCoupons] = useState<Coupon[]>(couponsData.responseBody as unknown as Coupon[]);
+  const [coupons, setCoupons] = useState<Coupon[]>(couponsData.responseBody as Coupon[]);
 
   function addCoupon(payload: CreateCouponPayload): Coupon {
     const newCoupon: Coupon = {

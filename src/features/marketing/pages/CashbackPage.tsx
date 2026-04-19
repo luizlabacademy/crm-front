@@ -30,7 +30,7 @@ import {
 
 function useCashbackRules() {
   const [rules, setRules] = useState<CashbackRule[]>(
-    cashbackData.responseBody as unknown as CashbackRule[],
+    cashbackData.responseBody as CashbackRule[],
   );
 
   function addRule(payload: CreateCashbackRulePayload): CashbackRule {

@@ -6,7 +6,7 @@ interface JwtPayload {
   [key: string]: unknown;
 }
 
-function decodeJwt(token: string): JwtPayload {
+export function decodeJwt(token: string): JwtPayload {
   try {
     const base64Url = token.split(".")[1];
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");

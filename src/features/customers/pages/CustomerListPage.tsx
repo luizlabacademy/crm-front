@@ -17,6 +17,7 @@ import { ActiveBadge } from "@/components/shared/ActiveBadge";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { Button } from "@/components/shared/Button";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { InputGroup, InputGroupAddon } from "@/components/shared/InputGroup";
 import {
   getDefaultPageSize,
@@ -191,16 +192,19 @@ export function CustomerListPage() {
                 ))
               ) : customers.length === 0 ? (
                 <TableEmptyRow colSpan={7}>
-                  <p>Nenhum cliente encontrado.</p>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="xs"
-                    onClick={() => void navigate("/customers/new")}
-                    className="mt-2"
-                  >
-                    Cadastrar primeiro cliente
-                  </Button>
+                  <EmptyState
+                    title="Nenhum cliente encontrado."
+                    action={
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="xs"
+                        onClick={() => void navigate("/customers/new")}
+                      >
+                        Cadastrar primeiro cliente
+                      </Button>
+                    }
+                  />
                 </TableEmptyRow>
               ) : (
                 customers.map((customer) => (

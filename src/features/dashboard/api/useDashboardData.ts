@@ -16,13 +16,13 @@ import type {
   RecentOrder,
 } from "@/features/dashboard/types/dashboardTypes";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers (exported for testing) ──────────────────────────────────────────
 
-function isClosed(status: string): boolean {
+export function isClosed(status: string): boolean {
   return status === ORDER_STATUS.DELIVERED;
 }
 
-function isPending(status: string): boolean {
+export function isPending(status: string): boolean {
   return (
     status === ORDER_STATUS.NEW ||
     status === ORDER_STATUS.AWAITING_PAYMENT ||
@@ -31,7 +31,7 @@ function isPending(status: string): boolean {
   );
 }
 
-function truncate(text: string, max: number): string {
+export function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
   return text.slice(0, max).trimEnd() + "…";
 }

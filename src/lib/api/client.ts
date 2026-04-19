@@ -2,8 +2,15 @@
 import { toast } from "sonner";
 import { useAuthStore } from "@/lib/auth/authStore";
 
+const baseURL = import.meta.env.VITE_API_BASE_URL;
+if (import.meta.env.DEV && !baseURL) {
+  throw new Error(
+    "[crm-front] VITE_API_BASE_URL não está definido. Verifique o arquivo .env.",
+  );
+}
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },

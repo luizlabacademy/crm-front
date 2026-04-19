@@ -148,7 +148,7 @@ const MOCK_CONTACTS: ConversationContact[] = (
   contactType: (contact.contactType ?? "customer") as ConversationContactType,
 }));
 
-const MOCK_MESSAGES = messagesResponse.responseBody as unknown as Record<
+const MOCK_MESSAGES = messagesResponse.responseBody as Record<
   string,
   ChatMessage[]
 >;
