@@ -1,0 +1,75 @@
+{
+  "method": "GET",
+  "route": "/bot/scheduling-journey",
+  "responseBody": {
+    "dayPrompt": "Escolha um dia",
+    "timePrompt": "Escolha um horário",
+    "professionalPrompt": "Escolha um profissional",
+    "days": [
+      "Segunda-feira",
+      "Terça-feira",
+      "Quarta-feira",
+      "Quinta-feira",
+      "Sexta-feira"
+    ],
+    "times": [
+      "09:00",
+      "10:30",
+      "13:00",
+      "15:30",
+      "17:00"
+    ],
+    "categories": {
+      "hair": {
+        "displayName": "Cabeleireiro",
+        "servicePrompt": "Escolha um serviço de cabeleireiro:",
+        "services": [
+          "Corte Masculino",
+          "Corte Feminino",
+          "Escova",
+          "Hidratação"
+        ],
+        "professionals": [
+          "Amanda",
+          "Bruna",
+          "Carla"
+        ]
+      },
+      "nails": {
+        "displayName": "Manicure / Pedicure",
+        "servicePrompt": "Escolha um serviço de manicure/pedicure:",
+        "services": [
+          "Manicure",
+          "Pedicure",
+          "Manicure e Pedicure"
+        ],
+        "professionals": [
+          "Fernanda",
+          "Juliana",
+          "Patricia"
+        ]
+      },
+      "all": {
+        "displayName": "Todos os serviços",
+        "servicePrompt": "Escolha um serviço:",
+        "services": [
+          "Corte Masculino",
+          "Corte Feminino",
+          "Escova",
+          "Hidratação",
+          "Manicure",
+          "Pedicure",
+          "Manicure e Pedicure"
+        ],
+        "professionals": [
+          "Amanda",
+          "Bruna",
+          "Carla",
+          "Fernanda",
+          "Juliana",
+          "Patricia"
+        ]
+      }
+    }
+  }
+}

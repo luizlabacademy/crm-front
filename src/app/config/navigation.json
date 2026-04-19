@@ -63,7 +63,7 @@
         "icon": "zap"
       },
       {
-        "label": "Bot",
+        "label": "Chatbot",
         "to": "/bot/menu",
         "icon": "bot"
       },

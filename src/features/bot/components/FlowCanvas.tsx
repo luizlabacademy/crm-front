@@ -1,348 +1,581 @@
-import { useState, useRef, useEffect } from "react";
-import { Plus } from "lucide-react";
-import type { BotFlowState, Menu } from "../types";
-import { MenuNodeCustom } from "./MenuNodeCustom";
-import { FlowEdgeRenderer } from "./FlowEdgeRenderer";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import {
+  addEdge,
+  Background,
+  Controls,
+  type Connection,
+  type Edge,
+  type Node,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+  Handle,
+  Position,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { cn } from "@/lib/utils";
+import {
+  BOT_OPERATION,
+  BOT_OPTION_TYPE,
+  type BotFlowState,
+  type BotOperation,
+  type Menu,
+} from "../types";
 
-interface FlowNode {
-  id: string;
+type MenuNodeData = Record<string, unknown> & {
   menu: Menu;
-  x: number;
-  y: number;
-}
-
-interface DragState {
-  nodeId: string | null;
-  offsetX: number;
-  offsetY: number;
-}
-
-interface ConnectingState {
-  sourceNodeId: string;
-  sourceOptionIdx: number;
-}
+  onUpdate: (menu: Menu) => void;
+  onDelete: () => void;
+};
 
 interface FlowCanvasProps {
   flowState: BotFlowState;
   onUpdate: (flowState: BotFlowState) => void;
 }
 
-export function FlowCanvas({ flowState, onUpdate }: FlowCanvasProps) {
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes] = useState<FlowNode[]>(() =>
-    flowState.menus.map((menu, idx) => ({
-      id: menu.ref,
-      menu,
-      x: idx * 420,
-      y: Math.floor(idx / 3) * 280,
-    }))
-  );
+const OPERATION_OPTIONS: { value: BotOperation; label: string }[] = [
+  {
+    value: BOT_OPERATION.LIST_HAIR_SERVICES,
+    label: "Exibir serviços de cabeleireiro",
+  },
+  {
+    value: BOT_OPERATION.LIST_NAIL_SERVICES,
+    label: "Exibir serviços de manicure/pedicure",
+  },
+  { value: BOT_OPERATION.LIST_ALL_SERVICES, label: "Exibir todos os serviços" },
+  {
+    value: BOT_OPERATION.LIST_AVAILABLE_TIMES,
+    label: "Exibir horários disponíveis",
+  },
+  {
+    value: BOT_OPERATION.LIST_AVAILABLE_PROFESSIONALS,
+    label: "Exibir profissionais disponíveis",
+  },
+  { value: BOT_OPERATION.FINISH_SCHEDULING, label: "Finalizar agendamento" },
+  { value: BOT_OPERATION.CANCEL_SCHEDULING, label: "Cancelar agendamento" },
+];
 
-  const [dragState, setDragState] = useState<DragState>({
-    nodeId: null,
-    offsetX: 0,
-    offsetY: 0,
-  });
+const isSubmenuOption = (option: Menu["options"][number]) =>
+  option.type !== BOT_OPTION_TYPE.OPERATION;
 
-  const [connectingState, setConnectingState] =
-    useState<ConnectingState | null>(null);
+function MenuNode({
+  data,
+  selected,
+}: {
+  data: MenuNodeData;
+  selected: boolean;
+}) {
+  const [questionDraft, setQuestionDraft] = useState(data.menu.question);
+  const [isEditingQuestion, setIsEditingQuestion] = useState(false);
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-
-  // Atualizar fluxo quando nós mudam
   useEffect(() => {
-    onUpdate({
-      ...flowState,
-      menus: nodes.map((node) => node.menu),
-    });
-  }, [nodes, flowState, onUpdate]);
+    setQuestionDraft(data.menu.question);
+  }, [data.menu.question]);
 
-  const handleNodeMouseDown = (nodeId: string, e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const node = nodes.find((n) => n.id === nodeId);
-    if (!node) return;
-
-    const offsetX = e.clientX - rect.left - node.x * zoom - panOffset.x;
-    const offsetY = e.clientY - rect.top - node.y * zoom - panOffset.y;
-
-    setDragState({ nodeId, offsetX, offsetY });
-    setSelectedNodeId(nodeId);
+  const handleQuestionCommit = () => {
+    const nextQuestion = questionDraft.trim() || "Nova pergunta?";
+    if (nextQuestion !== data.menu.question) {
+      data.onUpdate({ ...data.menu, question: nextQuestion });
+    }
+    setIsEditingQuestion(false);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (dragState.nodeId && e.buttons === 1) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+  const handleAddOption = () => {
+    data.onUpdate({
+      ...data.menu,
+      options: [
+        ...data.menu.options,
+        {
+          label: "Digire o nome do submenu",
+          type: BOT_OPTION_TYPE.SUBMENU,
+          nextMenuRef: null,
+          operation: null,
+        },
+      ],
+    });
+  };
 
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left - panOffset.x - dragState.offsetX) / zoom;
-      const y = (e.clientY - rect.top - panOffset.y - dragState.offsetY) / zoom;
+  const handleOptionModeChange = (index: number, mode: string) => {
+    const options = [...data.menu.options];
 
-      setNodes((prev) =>
-        prev.map((node) =>
-          node.id === dragState.nodeId ? { ...node, x, y } : node
-        )
+    if (mode === BOT_OPTION_TYPE.SUBMENU) {
+      options[index] = {
+        ...options[index],
+        type: BOT_OPTION_TYPE.SUBMENU,
+        operation: null,
+        nextMenuRef: options[index].nextMenuRef,
+      };
+      data.onUpdate({ ...data.menu, options });
+      return;
+    }
+
+    const selectedOperation = mode as BotOperation;
+    if (options[index].nextMenuRef) {
+      window.alert(
+        "Para ações diferentes de 'Abrir submenu', não é necessário criar submenus manualmente. O sistema cria esse fluxo automaticamente.",
       );
     }
-  };
 
-  const handleMouseUp = () => {
-    setDragState({ nodeId: null, offsetX: 0, offsetY: 0 });
-  };
-
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 2) {
-      // Right click for pan
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startPan = { ...panOffset };
-
-      const handleMouseMove = (moveE: MouseEvent) => {
-        const deltaX = moveE.clientX - startX;
-        const deltaY = moveE.clientY - startY;
-        setPanOffset({
-          x: startPan.x + deltaX,
-          y: startPan.y + deltaY,
-        });
-      };
-
-      const handleMouseUp = () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const newZoom = Math.max(0.1, Math.min(3, zoom - e.deltaY * 0.001));
-    setZoom(newZoom);
-  };
-
-  const handleAddNode = () => {
-    const newRef = `MENU_${Date.now()}`;
-    const newMenu: Menu = {
-      ref: newRef,
-      question: "Nova pergunta?",
-      options: [],
-    };
-    const maxY = Math.max(0, ...nodes.map((n) => n.y));
-    setNodes([...nodes, { id: newRef, menu: newMenu, x: 0, y: maxY + 280 }]);
-  };
-
-  const handleDeleteNode = (nodeId: string) => {
-    setNodes((prev) => prev.filter((n) => n.id !== nodeId));
-    setConnectingState(null);
-  };
-
-  const handleDuplicateNode = (nodeId: string) => {
-    const node = nodes.find((n) => n.id === nodeId);
-    if (!node) return;
-
-    const newRef = `MENU_${Date.now()}`;
-    const newMenu: Menu = {
-      ...node.menu,
-      ref: newRef,
-      options: node.menu.options.map((opt) => ({ ...opt })),
+    options[index] = {
+      ...options[index],
+      type: BOT_OPTION_TYPE.OPERATION,
+      operation: selectedOperation,
+      nextMenuRef: null,
     };
 
-    setNodes([
-      ...nodes,
-      {
-        id: newRef,
-        menu: newMenu,
-        x: node.x + 440,
-        y: node.y,
-      },
-    ]);
+    data.onUpdate({ ...data.menu, options });
   };
 
-  const handleUpdateMenu = (updatedMenu: Menu) => {
-    setNodes((prev) =>
-      prev.map((n) =>
-        n.id === updatedMenu.ref ? { ...n, menu: updatedMenu } : n
-      )
-    );
+  const handleOptionLabelChange = (index: number, label: string) => {
+    const options = [...data.menu.options];
+    options[index] = { ...options[index], label };
+    data.onUpdate({ ...data.menu, options });
   };
 
-  const handleStartConnection = (optionIdx: number, nodeId: string) => {
-    setConnectingState({ sourceNodeId: nodeId, sourceOptionIdx: optionIdx });
-  };
-
-  const handleCompleteConnection = (targetNodeId: string) => {
-    if (!connectingState || connectingState.sourceNodeId === targetNodeId)
-      return;
-
-    const sourceNode = nodes.find((n) => n.id === connectingState.sourceNodeId);
-    if (!sourceNode) return;
-
-    const updatedMenu = { ...sourceNode.menu };
-    updatedMenu.options[connectingState.sourceOptionIdx].nextMenuRef =
-      targetNodeId;
-
-    setNodes((prev) =>
-      prev.map((n) =>
-        n.id === sourceNode.menu.ref ? { ...n, menu: updatedMenu } : n
-      )
-    );
-
-    setConnectingState(null);
-  };
-
-  const handleCancelConnection = () => {
-    setConnectingState(null);
+  const handleOptionDelete = (index: number) => {
+    const options = data.menu.options.filter((_, optionIndex) => optionIndex !== index);
+    data.onUpdate({ ...data.menu, options });
   };
 
   return (
     <div
-      ref={canvasRef}
-      className="relative w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-hidden"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseDown={handleCanvasMouseDown}
-      onContextMenu={(e) => e.preventDefault()}
-      onWheel={handleWheel}
-      style={{ cursor: dragState.nodeId ? "grabbing" : "grab" }}
+      className={cn(
+        "w-80 rounded-xl border bg-card shadow-md",
+        selected ? "border-primary ring-2 ring-primary/20" : "border-border",
+      )}
     >
-      {/* Toolbar */}
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2 shadow-lg">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+        <span className="rounded bg-muted px-2 py-1 text-xs font-mono text-muted-foreground">
+          {data.menu.ref}
+        </span>
         <button
-          onClick={handleAddNode}
-          className="flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-          title="Adicionar novo diálogo (Ctrl+N)"
+          type="button"
+          onClick={data.onDelete}
+          className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          title="Excluir menu"
         >
-          <Plus size={14} />
-          Novo diálogo
+          <Trash2 size={14} />
         </button>
       </div>
 
-      {/* Info */}
-      <div className="absolute bottom-4 left-4 z-20 text-xs text-slate-500 dark:text-slate-400">
-        <div>🖱️ Arrastar para mover nós</div>
-        <div>🖱️ Clique direito para pan</div>
-        <div>🔍 Scroll para zoom</div>
-        {connectingState && (
-          <div className="mt-2 text-orange-600 dark:text-orange-400">
-            Clique em outro diálogo para conectar (ESC para cancelar)
-          </div>
-        )}
-      </div>
-
-      {/* Canvas Content */}
-      <svg
-        className="absolute inset-0 pointer-events-none"
-        width={canvasRef.current?.clientWidth}
-        height={canvasRef.current?.clientHeight}
-      >
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="10"
-            markerHeight="10"
-            refX="9"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 10 3, 0 6" className="fill-slate-400" />
-          </marker>
-          <marker
-            id="arrowhead-connecting"
-            markerWidth="10"
-            markerHeight="10"
-            refX="9"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 10 3, 0 6" className="fill-orange-500" />
-          </marker>
-        </defs>
-
-        {/* Edges */}
-        <FlowEdgeRenderer
-          nodes={nodes}
-          panOffset={panOffset}
-          zoom={zoom}
-        />
-
-        {/* Connecting line preview */}
-        {connectingState && (
-          <line
-            x1={
-              (nodes.find((n) => n.id === connectingState.sourceNodeId)?.x ??
-                0) *
-                zoom +
-              panOffset.x +
-              380
-            }
-            y1={
-              (nodes.find((n) => n.id === connectingState.sourceNodeId)?.y ??
-                0) *
-                zoom +
-              panOffset.y +
-              100
-            }
-            x2={canvasRef.current?.clientWidth ?? 0}
-            y2={canvasRef.current?.clientHeight ?? 0}
-            className="stroke-orange-500 stroke-2 pointer-events-none"
-            strokeDasharray="5,5"
-            markerEnd="url(#arrowhead-connecting)"
-          />
-        )}
-      </svg>
-
-      {/* Nodes */}
-      <div className="absolute inset-0 pointer-events-none">
-        {nodes.map((node) => (
-          <div
-            key={node.id}
-            style={{
-              transform: `translate(${node.x * zoom + panOffset.x}px, ${node.y * zoom + panOffset.y}px) scale(${zoom})`,
-              transformOrigin: "0 0",
-              pointerEvents: "auto",
-            }}
-          >
-            <MenuNodeCustom
-              menu={node.menu}
-              isSelected={selectedNodeId === node.id}
-              isConnecting={connectingState?.sourceNodeId === node.id}
-              onMouseDown={(e) => handleNodeMouseDown(node.id, e)}
-              onUpdate={handleUpdateMenu}
-              onDelete={() => handleDeleteNode(node.id)}
-              onDuplicate={() => handleDuplicateNode(node.id)}
-              onStartConnection={handleStartConnection}
-              onCompleteConnection={() => handleCompleteConnection(node.id)}
-              onCancelConnection={handleCancelConnection}
+      <div className="space-y-3 p-4">
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted-foreground">
+            Pergunta
+          </label>
+          {isEditingQuestion ? (
+            <textarea
+              value={questionDraft}
+              onChange={(event) => setQuestionDraft(event.target.value)}
+              onBlur={handleQuestionCommit}
+              onKeyDown={(event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+                  handleQuestionCommit();
+                }
+              }}
+              rows={3}
+              autoFocus
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
             />
-          </div>
-        ))}
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditingQuestion(true)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted/40"
+            >
+              {data.menu.question}
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground">Opções</p>
+          {data.menu.options.map((option, index) => (
+            <div
+              key={`${data.menu.ref}-option-${index}`}
+              className="relative space-y-1.5 rounded-lg border border-border bg-background px-2 py-1.5"
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  value={option.label}
+                  onChange={(event) =>
+                    handleOptionLabelChange(index, event.target.value)
+                  }
+                  className="flex-1 bg-transparent px-1 text-xs text-foreground outline-none"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => handleOptionDelete(index)}
+                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  title="Remover opção"
+                >
+                  <Trash2 size={12} />
+                </button>
+
+                {isSubmenuOption(option) && (
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={`opt-${index}`}
+                    className="!h-3 !w-3 !border-2 !border-white !bg-primary"
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 px-1">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Ação:
+                </span>
+                <select
+                  value={
+                    option.type === BOT_OPTION_TYPE.OPERATION
+                      ? (option.operation ?? BOT_OPERATION.LIST_ALL_SERVICES)
+                      : BOT_OPTION_TYPE.SUBMENU
+                  }
+                  onChange={(event) =>
+                    handleOptionModeChange(index, event.target.value)
+                  }
+                  className="h-7 flex-1 rounded border border-input bg-background px-2 text-[11px] text-foreground outline-none"
+                >
+                  <option value={BOT_OPTION_TYPE.SUBMENU}>Abrir submenu</option>
+                  {OPERATION_OPTIONS.map((operationOption) => (
+                    <option key={operationOption.value} value={operationOption.value}>
+                      {operationOption.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={handleAddOption}
+            className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-border px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+          >
+            <Plus size={12} />
+            Adicionar opção
+          </button>
+        </div>
       </div>
 
-      {/* Keyboard shortcuts */}
-      <div
-        onKeyDown={(e) => {
-          if (e.key === "Escape") {
-            setConnectingState(null);
-            setSelectedNodeId(null);
-          }
-          if (e.ctrlKey && e.key === "n") {
-            e.preventDefault();
-            handleAddNode();
-          }
-        }}
-        tabIndex={-1}
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
       />
+    </div>
+  );
+}
+
+function buildInitialNodes(flowState: BotFlowState): Node<MenuNodeData>[] {
+  const HORIZONTAL_GAP = 460;
+  const VERTICAL_GAP = 270;
+  const menuByRef = new Map(flowState.menus.map((menu) => [menu.ref, menu]));
+  const visited = new Set<string>();
+  const depthByRef = new Map<string, number>();
+  const queue: string[] = [];
+
+  if (menuByRef.has(flowState.initialMenuRef)) {
+    queue.push(flowState.initialMenuRef);
+    depthByRef.set(flowState.initialMenuRef, 0);
+  }
+
+  while (queue.length > 0) {
+    const currentRef = queue.shift();
+    if (!currentRef || visited.has(currentRef)) {
+      continue;
+    }
+
+    visited.add(currentRef);
+    const currentDepth = depthByRef.get(currentRef) ?? 0;
+    const currentMenu = menuByRef.get(currentRef);
+
+    if (!currentMenu) {
+      continue;
+    }
+
+    currentMenu.options.forEach((option) => {
+      if (!isSubmenuOption(option) || !option.nextMenuRef || !menuByRef.has(option.nextMenuRef)) {
+        return;
+      }
+
+      const knownDepth = depthByRef.get(option.nextMenuRef);
+      const nextDepth = currentDepth + 1;
+
+      if (knownDepth === undefined || nextDepth < knownDepth) {
+        depthByRef.set(option.nextMenuRef, nextDepth);
+      }
+
+      if (!visited.has(option.nextMenuRef)) {
+        queue.push(option.nextMenuRef);
+      }
+    });
+  }
+
+  let fallbackDepth =
+    depthByRef.size > 0 ? Math.max(...depthByRef.values()) + 1 : 0;
+
+  flowState.menus.forEach((menu) => {
+    if (!depthByRef.has(menu.ref)) {
+      depthByRef.set(menu.ref, fallbackDepth);
+      fallbackDepth += 1;
+    }
+  });
+
+  const menusByDepth = new Map<number, Menu[]>();
+  flowState.menus.forEach((menu) => {
+    const depth = depthByRef.get(menu.ref) ?? 0;
+    const levelMenus = menusByDepth.get(depth) ?? [];
+    levelMenus.push(menu);
+    menusByDepth.set(depth, levelMenus);
+  });
+
+  const orderedDepths = [...menusByDepth.keys()].sort((a, b) => a - b);
+  const positionedNodes: Node<MenuNodeData>[] = [];
+
+  orderedDepths.forEach((depth) => {
+    const levelMenus = menusByDepth
+      .get(depth)
+      ?.sort((first, second) => first.ref.localeCompare(second.ref));
+
+    if (!levelMenus) {
+      return;
+    }
+
+    levelMenus.forEach((menu, index) => {
+      positionedNodes.push({
+        id: menu.ref,
+        type: "menuNode",
+        position: { x: depth * HORIZONTAL_GAP, y: index * VERTICAL_GAP },
+        data: {
+          menu,
+          onUpdate: () => undefined,
+          onDelete: () => undefined,
+        },
+      });
+    });
+  });
+
+  return positionedNodes;
+}
+
+function buildInitialEdges(flowState: BotFlowState): Edge[] {
+  return flowState.menus.flatMap((menu) => {
+    const menuEdges: Edge[] = [];
+
+    menu.options.forEach((option, optionIndex) => {
+      if (!isSubmenuOption(option) || !option.nextMenuRef) {
+        return;
+      }
+
+      menuEdges.push({
+        id: `edge-${menu.ref}-${optionIndex}`,
+        source: menu.ref,
+        target: option.nextMenuRef,
+        sourceHandle: `opt-${optionIndex}`,
+        animated: true,
+      });
+    });
+
+    return menuEdges;
+  });
+}
+
+export function FlowCanvas({ flowState, onUpdate }: FlowCanvasProps) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<MenuNodeData>>(
+    buildInitialNodes(flowState),
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState(buildInitialEdges(flowState));
+
+  const nodeTypes = useMemo(() => ({ menuNode: MenuNode }), []);
+
+  const updateMenuNode = useCallback(
+    (menuRef: string, updatedMenu: Menu) => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === menuRef
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  menu: updatedMenu,
+                },
+              }
+            : node,
+        ),
+      );
+    },
+    [setNodes],
+  );
+
+  const deleteMenuNode = useCallback(
+    (menuRef: string) => {
+      setNodes((prevNodes) => prevNodes.filter((node) => node.id !== menuRef));
+      setEdges((prevEdges) =>
+        prevEdges.filter((edge) => edge.source !== menuRef && edge.target !== menuRef),
+      );
+    },
+    [setEdges, setNodes],
+  );
+
+  const flowNodes = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onUpdate: (menu: Menu) => updateMenuNode(node.id, menu),
+          onDelete: () => deleteMenuNode(node.id),
+        },
+      })),
+    [deleteMenuNode, nodes, updateMenuNode],
+  );
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.sourceHandle) {
+        return;
+      }
+
+      const sourceNode = flowNodes.find((node) => node.id === connection.source);
+      const optionIndex = Number(connection.sourceHandle.replace("opt-", ""));
+      const sourceOption = sourceNode?.data.menu.options[optionIndex];
+
+      if (!sourceOption || sourceOption.type === BOT_OPTION_TYPE.OPERATION) {
+        window.alert(
+          "Esta opção está configurada como ação. Não é necessário criar submenu: o sistema cria automaticamente o fluxo desse tipo de ação.",
+        );
+        return;
+      }
+
+      setEdges((prevEdges) => {
+        const filteredEdges = prevEdges.filter(
+          (edge) =>
+            !(
+              edge.source === connection.source &&
+              edge.sourceHandle === connection.sourceHandle
+            ),
+        );
+
+        return addEdge(
+          {
+            ...connection,
+            id: `edge-${connection.source}-${connection.sourceHandle ?? "default"}`,
+            animated: true,
+          },
+          filteredEdges,
+        );
+      });
+    },
+    [flowNodes, setEdges],
+  );
+
+  useEffect(() => {
+    const validSourceHandles = new Set<string>();
+
+    flowNodes.forEach((node) => {
+      node.data.menu.options.forEach((option, index) => {
+        if (isSubmenuOption(option)) {
+          validSourceHandles.add(`${node.id}|opt-${index}`);
+        }
+      });
+    });
+
+    setEdges((prevEdges) => {
+      const filteredEdges = prevEdges.filter((edge) =>
+        validSourceHandles.has(`${edge.source}|${edge.sourceHandle ?? ""}`),
+      );
+
+      return filteredEdges.length === prevEdges.length ? prevEdges : filteredEdges;
+    });
+  }, [flowNodes, setEdges]);
+
+  const handleAddNode = () => {
+    const menuRef = `MENU_${Date.now()}`;
+    const maxY = Math.max(
+      0,
+      ...nodes.map((node) =>
+        typeof node.position.y === "number" ? node.position.y : 0,
+      ),
+    );
+
+    setNodes((prevNodes) => [
+      ...prevNodes,
+      {
+        id: menuRef,
+        type: "menuNode",
+        position: { x: 0, y: maxY + 280 },
+        data: {
+          menu: { ref: menuRef, question: "Nova pergunta?", options: [] },
+          onUpdate: () => undefined,
+          onDelete: () => undefined,
+        },
+      },
+    ]);
+  };
+
+  useEffect(() => {
+    const nextMenus = flowNodes.map((node) => {
+      const options = node.data.menu.options.map((option, index) => {
+        if (!isSubmenuOption(option)) {
+          return {
+            ...option,
+            nextMenuRef: null,
+          };
+        }
+
+        const edge = edges.find(
+          (flowEdge) =>
+            flowEdge.source === node.id && flowEdge.sourceHandle === `opt-${index}`,
+        );
+
+        return {
+          ...option,
+          nextMenuRef: edge?.target ?? null,
+        };
+      });
+
+      return {
+        ...node.data.menu,
+        options,
+      };
+    });
+
+    onUpdate({
+      initialMenuRef:
+        nextMenus.find((menu) => menu.ref === flowState.initialMenuRef)?.ref ??
+        nextMenus[0]?.ref ??
+        flowState.initialMenuRef,
+      menus: nextMenus,
+    });
+  }, [edges, flowNodes, flowState.initialMenuRef, onUpdate]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden rounded-lg border border-border bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      <button
+        type="button"
+        onClick={handleAddNode}
+        className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-md transition-opacity hover:opacity-90"
+      >
+        <Plus size={14} />
+        Novo Submenu
+      </button>
+
+      <ReactFlow
+        nodes={flowNodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={handleConnect}
+        nodeTypes={nodeTypes}
+        fitView
+      >
+        <Background />
+        <Controls />
+      </ReactFlow>
     </div>
   );
 }

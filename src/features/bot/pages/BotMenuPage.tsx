@@ -10,88 +10,73 @@ import {
   List,
   ArrowLeft,
   X,
+  CircleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { FlowCanvas } from "../components";
-import type { BotFlowState, BotTemplate } from "../types";
+import {
+  BOT_OPERATION,
+  BOT_OPTION_TYPE,
+  type BotFlowState,
+  type BotOperation,
+  type BotTemplate,
+  type MenuOption,
+} from "../types";
+import botSchedulingJourneyMock from "@/mocks/GET-bot--scheduling-journey.json";
 
 // ─── Initial Data ───────────────────────────────────────────────────────
 
 const INITIAL_BOT_FLOW_STATE: BotFlowState = {
-  initialMenuRef: "PRINCIPAL",
+  initialMenuRef: "MENU_PRINCIPAL",
   menus: [
     {
-      ref: "PRINCIPAL",
-      question: "Olá! O que você deseja?",
+      ref: "MENU_PRINCIPAL",
+      question: "Olá! O que deseja?",
       options: [
-        { label: "Agendar atendimento", nextMenuRef: "AGENDAR" },
-        { label: "Meus agendamentos", nextMenuRef: "MEUS_AGENDAMENTOS" },
-        { label: "Serviços", nextMenuRef: "SERVICOS" },
-        { label: "Falar com atendente", nextMenuRef: "ATENDENTE" },
+        {
+          label: "Agendar Atendimento",
+          type: BOT_OPTION_TYPE.SUBMENU,
+          nextMenuRef: "ESCOLHER_CATEGORIA",
+          operation: null,
+        },
+        {
+          label: "Ver lista de serviços",
+          type: BOT_OPTION_TYPE.OPERATION,
+          nextMenuRef: null,
+          operation: BOT_OPERATION.LIST_ALL_SERVICES,
+        },
+        {
+          label: "Cancelar meu agendamento",
+          type: BOT_OPTION_TYPE.OPERATION,
+          nextMenuRef: null,
+          operation: BOT_OPERATION.CANCEL_SCHEDULING,
+        },
       ],
     },
     {
-      ref: "AGENDAR",
-      question: "Qual serviço?",
+      ref: "ESCOLHER_CATEGORIA",
+      question: "Escolha a categoria do serviço",
       options: [
-        { label: "Cabelo", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Unhas", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Sobrancelhas", nextMenuRef: "CONFIRMAR_SERVICO" },
-        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
+        {
+          label: "Cabeleireiro",
+          type: BOT_OPTION_TYPE.OPERATION,
+          nextMenuRef: null,
+          operation: BOT_OPERATION.LIST_HAIR_SERVICES,
+        },
+        {
+          label: "Manicure / Pedicure",
+          type: BOT_OPTION_TYPE.OPERATION,
+          nextMenuRef: null,
+          operation: BOT_OPERATION.LIST_NAIL_SERVICES,
+        },
+        {
+          label: "Quero ver todos",
+          type: BOT_OPTION_TYPE.OPERATION,
+          nextMenuRef: null,
+          operation: BOT_OPERATION.LIST_ALL_SERVICES,
+        },
       ],
-    },
-    {
-      ref: "CONFIRMAR_SERVICO",
-      question: "Deseja confirmar o agendamento?",
-      options: [
-        { label: "Sim", nextMenuRef: "CONFIRMADO" },
-        { label: "Não", nextMenuRef: "AGENDAR" },
-      ],
-    },
-    {
-      ref: "CONFIRMADO",
-      question: "Agendamento confirmado. Deseja algo mais?",
-      options: [
-        { label: "Novo agendamento", nextMenuRef: "AGENDAR" },
-        { label: "Menu principal", nextMenuRef: "PRINCIPAL" },
-      ],
-    },
-    {
-      ref: "MEUS_AGENDAMENTOS",
-      question: "O que deseja fazer?",
-      options: [
-        { label: "Consultar", nextMenuRef: "CONSULTAR" },
-        { label: "Cancelar", nextMenuRef: "CANCELAR" },
-        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
-      ],
-    },
-    {
-      ref: "CONSULTAR",
-      question: "Consultando seu agendamento...",
-      options: [{ label: "Voltar", nextMenuRef: "MEUS_AGENDAMENTOS" }],
-    },
-    {
-      ref: "CANCELAR",
-      question: "Deseja cancelar seu agendamento?",
-      options: [
-        { label: "Sim", nextMenuRef: "PRINCIPAL" },
-        { label: "Não", nextMenuRef: "MEUS_AGENDAMENTOS" },
-      ],
-    },
-    {
-      ref: "SERVICOS",
-      question: "Quais serviços deseja ver?",
-      options: [
-        { label: "Cabelo", nextMenuRef: "AGENDAR" },
-        { label: "Unhas", nextMenuRef: "AGENDAR" },
-        { label: "Voltar", nextMenuRef: "PRINCIPAL" },
-      ],
-    },
-    {
-      ref: "ATENDENTE",
-      question: "Estamos te transferindo para um atendente.",
-      options: [{ label: "Voltar", nextMenuRef: "PRINCIPAL" }],
     },
   ],
 };
@@ -273,11 +258,88 @@ interface ConversationTurn {
   label?: string;
 }
 
+type BookingCategory = "hair" | "nails" | "all";
+type BookingStep = "service" | "day" | "time" | "professional" | "confirmation";
+
+interface BookingJourneyState {
+  category: BookingCategory;
+  step: BookingStep;
+  service?: string;
+  day?: string;
+  time?: string;
+  professional?: string;
+  visibleTimesCount?: number;
+}
+
+type BookingFlowMock = {
+  responseBody: {
+    dayPrompt: string;
+    timePrompt: string;
+    professionalPrompt: string;
+    days: string[];
+    times: string[];
+    categories: Record<
+      BookingCategory,
+      {
+        displayName: string;
+        servicePrompt: string;
+        services: string[];
+        professionals: string[];
+      }
+    >;
+  };
+};
+
+const bookingFlowMock = botSchedulingJourneyMock as BookingFlowMock;
+
+const BOOKING_CATEGORY_BY_OPERATION: Partial<Record<BotOperation, BookingCategory>> = {
+  [BOT_OPERATION.LIST_HAIR_SERVICES]: "hair",
+  [BOT_OPERATION.LIST_NAIL_SERVICES]: "nails",
+  [BOT_OPERATION.LIST_ALL_SERVICES]: "all",
+};
+
+const capitalizeFirst = (value: string) =>
+  value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+
+const getNextSevenDaysLabels = () => {
+  const weekdayFormatter = new Intl.DateTimeFormat("pt-BR", { weekday: "long" });
+  const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "long" });
+  const baseDate = new Date();
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(baseDate);
+    date.setDate(baseDate.getDate() + index);
+
+    const weekday = capitalizeFirst(weekdayFormatter.format(date));
+    const month = capitalizeFirst(monthFormatter.format(date));
+    const day = date.getDate();
+
+    return `${weekday}, ${day} de ${month}`;
+  });
+};
+
+const getHalfHourTimeSlots = () => {
+  const slots: string[] = [];
+
+  for (let hour = 9; hour <= 22; hour += 1) {
+    const hourLabel = hour.toString().padStart(2, "0");
+    slots.push(`${hourLabel}:00`);
+
+    if (hour < 22) {
+      slots.push(`${hourLabel}:30`);
+    }
+  }
+
+  return slots;
+};
+
 function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
   const [currentMenuRef, setCurrentMenuRef] = useState<string | null>(
     flowState.initialMenuRef
   );
   const [conversation, setConversation] = useState<ConversationTurn[]>([]);
+  const [bookingJourney, setBookingJourney] =
+    useState<BookingJourneyState | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const handleInitialize = () => {
@@ -286,22 +348,210 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
     );
     if (startMenu) {
       setCurrentMenuRef(startMenu.ref);
+      setBookingJourney(null);
       setConversation([{ type: "bot", text: startMenu.question }]);
     }
   };
 
-  const handleOptionClick = (label: string, nextMenuRef: string | null) => {
-    const newConversation: ConversationTurn[] = [
+  const getOperationResponse = (operation: MenuOption["operation"]) => {
+    switch (operation) {
+      case BOT_OPERATION.LIST_AVAILABLE_TIMES:
+        return "Horários disponíveis hoje: 10:00, 11:30, 14:00 e 16:30.";
+      case BOT_OPERATION.LIST_AVAILABLE_PROFESSIONALS:
+        return "Profissionais disponíveis: Ana, Bruna e Carla.";
+      case BOT_OPERATION.FINISH_SCHEDULING:
+        return "Perfeito! Vamos finalizar seu agendamento. Informe seu nome completo.";
+      case BOT_OPERATION.CANCEL_SCHEDULING:
+        return "Tudo bem. Para cancelar, informe o número do seu agendamento.";
+      default:
+        return "Operação executada com sucesso.";
+    }
+  };
+
+  const getBookingOptions = (journey: BookingJourneyState) => {
+    const categoryData = bookingFlowMock.responseBody.categories[journey.category];
+
+    switch (journey.step) {
+      case "service":
+        return categoryData.services;
+      case "day":
+        return getNextSevenDaysLabels();
+      case "time":
+        {
+          const allTimeSlots = getHalfHourTimeSlots();
+          const visibleCount = Math.min(
+            journey.visibleTimesCount ?? 6,
+            allTimeSlots.length
+          );
+          const visibleSlots = allTimeSlots.slice(0, visibleCount);
+
+          if (visibleCount < allTimeSlots.length) {
+            return [...visibleSlots, "Ver mais horários"];
+          }
+
+          return visibleSlots;
+        }
+      case "professional":
+        return categoryData.professionals;
+      case "confirmation":
+        return ["Confirmar agendamento", "Voltar ao início"];
+      default:
+        return [];
+    }
+  };
+
+  const startBookingJourney = (
+    category: BookingCategory,
+    newConversation: ConversationTurn[]
+  ) => {
+    const categoryData = bookingFlowMock.responseBody.categories[category];
+
+    setBookingJourney({
+      category,
+      step: "service",
+    });
+    setConversation([
+      ...newConversation,
+      {
+        type: "bot",
+        text: categoryData.servicePrompt,
+      },
+    ]);
+  };
+
+  const handleBookingChoiceClick = (choice: string) => {
+    if (!bookingJourney) {
+      return;
+    }
+
+    const nextConversation: ConversationTurn[] = [
       ...conversation,
-      { type: "user", label },
+      { type: "user", label: choice },
     ];
 
-    if (nextMenuRef) {
-      const nextMenu = flowState.menus.find((m) => m.ref === nextMenuRef);
+    if (bookingJourney.step === "service") {
+      setBookingJourney({ ...bookingJourney, service: choice, step: "day" });
+      setConversation([
+        ...nextConversation,
+        { type: "bot", text: bookingFlowMock.responseBody.dayPrompt },
+      ]);
+      return;
+    }
+
+    if (bookingJourney.step === "day") {
+      setBookingJourney({
+        ...bookingJourney,
+        day: choice,
+        step: "time",
+        visibleTimesCount: 6,
+      });
+      setConversation([
+        ...nextConversation,
+        { type: "bot", text: `Escolha um horário de ${choice}:` },
+      ]);
+      return;
+    }
+
+    if (bookingJourney.step === "time") {
+      if (choice === "Ver mais horários") {
+        setBookingJourney({
+          ...bookingJourney,
+          visibleTimesCount: (bookingJourney.visibleTimesCount ?? 6) + 6,
+        });
+        return;
+      }
+
+      setBookingJourney({ ...bookingJourney, time: choice, step: "professional" });
+      setConversation([
+        ...nextConversation,
+        { type: "bot", text: bookingFlowMock.responseBody.professionalPrompt },
+      ]);
+      return;
+    }
+
+    if (bookingJourney.step === "professional") {
+      const categoryData = bookingFlowMock.responseBody.categories[bookingJourney.category];
+      const nextJourney: BookingJourneyState = {
+        ...bookingJourney,
+        professional: choice,
+        step: "confirmation",
+      };
+
+      setBookingJourney(nextJourney);
+      setConversation([
+        ...nextConversation,
+        {
+          type: "bot",
+          text:
+            "Resumo do agendamento:\n" +
+            `Categoria: ${categoryData.displayName}\n` +
+            `Serviço: ${nextJourney.service}\n` +
+            `Dia: ${nextJourney.day}\n` +
+            `Horário: ${nextJourney.time}\n` +
+            `Profissional: ${nextJourney.professional}\n\n` +
+            "Deseja confirmar?",
+        },
+      ]);
+      return;
+    }
+
+    if (bookingJourney.step === "confirmation") {
+      if (choice === "Confirmar agendamento") {
+        setBookingJourney(null);
+        setCurrentMenuRef(null);
+        setConversation([
+          ...nextConversation,
+          {
+            type: "bot",
+            text: "Agendamento confirmado com sucesso!",
+          },
+        ]);
+        return;
+      }
+
+      const startMenu = flowState.menus.find(
+        (menu) => menu.ref === flowState.initialMenuRef
+      );
+
+      setBookingJourney(null);
+      setCurrentMenuRef(flowState.initialMenuRef);
+      setConversation([
+        ...nextConversation,
+        ...(startMenu ? [{ type: "bot" as const, text: startMenu.question }] : []),
+      ]);
+    }
+  };
+
+  const handleOptionClick = (option: MenuOption) => {
+    const newConversation: ConversationTurn[] = [
+      ...conversation,
+      { type: "user", label: option.label },
+    ];
+
+    if (option.type === BOT_OPTION_TYPE.OPERATION) {
+      const category = option.operation
+        ? BOOKING_CATEGORY_BY_OPERATION[option.operation]
+        : undefined;
+
+      if (category) {
+        startBookingJourney(category, newConversation);
+        return;
+      }
+
+      newConversation.push({
+        type: "bot",
+        text: getOperationResponse(option.operation),
+      });
+      setConversation(newConversation);
+      return;
+    }
+
+    if (option.nextMenuRef) {
+      const nextMenu = flowState.menus.find((m) => m.ref === option.nextMenuRef);
       if (nextMenu) {
         newConversation.push({ type: "bot", text: nextMenu.question });
         setConversation(newConversation);
-        setCurrentMenuRef(nextMenuRef);
+        setCurrentMenuRef(option.nextMenuRef);
         return;
       }
     }
@@ -311,6 +561,29 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
   };
 
   const currentMenu = flowState.menus.find((m) => m.ref === currentMenuRef);
+  const hasBackToMainOption =
+    currentMenu?.options.some(
+      (option) =>
+        option.type === BOT_OPTION_TYPE.SUBMENU &&
+        option.nextMenuRef === flowState.initialMenuRef,
+    ) ?? false;
+
+  const optionsWithBackToMain: MenuOption[] =
+    currentMenu &&
+    currentMenu.ref !== flowState.initialMenuRef &&
+    !hasBackToMainOption
+      ? [
+          ...currentMenu.options,
+          {
+            label: "Voltar ao menu principal",
+            type: BOT_OPTION_TYPE.SUBMENU,
+            nextMenuRef: flowState.initialMenuRef,
+            operation: null,
+          },
+        ]
+      : currentMenu?.options ?? [];
+
+  const bookingOptions = bookingJourney ? getBookingOptions(bookingJourney) : [];
 
   useEffect(() => {
     const chatContainer = chatScrollRef.current;
@@ -369,7 +642,7 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
                   >
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
+                        "max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
                         turn.type === "bot"
                           ? "rounded-tl-sm bg-[#202c33] text-[#e9edef]"
                           : "rounded-tr-sm bg-[#005c4b] text-white"
@@ -380,27 +653,31 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
                   </div>
                 ))}
 
-                {currentMenu && currentMenu.options.length > 0 && (
+                {bookingJourney && bookingOptions.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    {currentMenu.options.map((option, idx) => (
+                    {bookingOptions.map((optionLabel, idx) => (
                       <button
-                        key={idx}
-                        onClick={() =>
-                          handleOptionClick(option.label, option.nextMenuRef)
-                        }
+                        key={`${bookingJourney.step}-${idx}`}
+                        onClick={() => handleBookingChoiceClick(optionLabel)}
                         className="w-full rounded-xl border border-emerald-400/60 bg-[#111b21] px-4 py-2.5 text-left text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-emerald-200"
                       >
-                        {option.label}
+                        {optionLabel}
                       </button>
                     ))}
                   </div>
                 )}
 
-                {currentMenu === undefined && conversation.length > 0 && (
-                  <div className="mt-3 flex justify-start">
-                    <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-[#202c33] px-3.5 py-2.5 text-sm text-[#e9edef]">
-                      Fim da conversa. Clique abaixo para reiniciar.
-                    </div>
+                {!bookingJourney && currentMenu && optionsWithBackToMain.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {optionsWithBackToMain.map((option, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleOptionClick(option)}
+                        className="w-full rounded-xl border border-emerald-400/60 bg-[#111b21] px-4 py-2.5 text-left text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-emerald-200"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
                 )}
 
@@ -414,7 +691,7 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
                       }}
                       className="text-xs font-medium text-emerald-300 hover:text-emerald-200"
                     >
-                      Reiniciar
+                      Reiniciar conversa
                     </button>
                   </div>
                 )}
@@ -445,6 +722,7 @@ export function BotMenuPage() {
   );
   const [templates, setTemplates] = useState<BotTemplate[]>(INITIAL_TEMPLATES);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [showDialogsInfoModal, setShowDialogsInfoModal] = useState(false);
   const [selectedTemplateForEdit, setSelectedTemplateForEdit] =
     useState<BotTemplate | null>(null);
   const dialogsOverlayRef = useRef<HTMLDivElement | null>(null);
@@ -466,6 +744,8 @@ export function BotMenuPage() {
     if (activeTab !== "dialogs") {
       return;
     }
+
+    setShowDialogsInfoModal(true);
 
     const overlayElement = dialogsOverlayRef.current;
     if (!overlayElement || document.fullscreenElement === overlayElement) {
@@ -533,7 +813,7 @@ export function BotMenuPage() {
               <GitBranch size={20} />
             </div>
             <div className="flex flex-col leading-tight text-left">
-              <span className="text-lg font-semibold text-foreground">Menus do Bot</span>
+              <span className="text-lg font-semibold text-foreground">Menu do Chatbot</span>
               <span className="text-sm text-muted-foreground">Editor em tela cheia</span>
             </div>
           </div>
@@ -565,12 +845,48 @@ export function BotMenuPage() {
                   Edite menus, opções e transições do bot
                 </p>
               </div>
-              <div className="flex-1 overflow-hidden p-4">
+              <div className="flex-1 overflow-hidden">
                 <FlowCanvas flowState={flowState} onUpdate={setFlowState} />
               </div>
             </div>
           </div>
         </div>
+
+        {showDialogsInfoModal && (
+          <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/45 p-4">
+            <div className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-xl">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                  <CircleAlert size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">
+                    Aviso importante para configurar o menu
+                  </h3>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Você não precisa criar opções como "Voltar ao início". Na
+                    conversa, o retorno ao menu principal é tratado
+                    automaticamente.
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Quando a ação for diferente de "Abrir submenu", não crie
+                    submenus manuais. O sistema cria automaticamente o fluxo
+                    desse tipo de ação.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowDialogsInfoModal(false)}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  Ok
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     ) : null;
 
@@ -578,7 +894,7 @@ export function BotMenuPage() {
     <>
       <div className="h-screen flex flex-col">
         <PageHeader
-          title="Bot"
+          title="Chatbot"
           description="Configure menus de atendimento automático e templates de resposta."
         />
 
@@ -593,7 +909,7 @@ export function BotMenuPage() {
               },
               {
                 key: "dialogs" as const,
-                label: "Menus do Bot",
+                label: "Menu do Chatbot",
                 icon: <GitBranch size={14} />,
               },
             ] as { key: Tab; label: string; icon: React.ReactNode }[]
