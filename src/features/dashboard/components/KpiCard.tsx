@@ -80,7 +80,7 @@ export function KpiCard({
 
   if (variant === "compact") {
     return (
-      <div className="relative flex flex-col gap-3 rounded-md border border-border/80 bg-card p-5 shadow-sm md:p-4">
+      <div className="relative flex flex-col gap-2.5 rounded-md border border-border/80 bg-card p-4 shadow-sm md:p-3">
         {!isError && !isLoading && (
           <button
             type="button"
@@ -92,13 +92,13 @@ export function KpiCard({
           </button>
         )}
 
-        <div className="flex min-w-0 items-center gap-2 pr-6">
+        <div className="flex min-w-0 items-start gap-2 pr-6 min-h-[2.5rem] md:min-h-0">
           {Icon && (
-            <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/70 text-foreground/70 md:h-6 md:w-6">
+            <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/70 text-foreground/70 md:h-6 md:w-6">
               <Icon size={14} strokeWidth={1.7} className="md:h-3 md:w-3" />
             </span>
           )}
-          <span className="truncate text-base font-medium text-foreground/75 md:text-sm">
+          <span className="line-clamp-2 text-sm font-medium leading-tight text-foreground/75 md:line-clamp-1 md:truncate md:text-sm">
             {label}
           </span>
         </div>
@@ -205,7 +205,7 @@ export function KpiCard({
               {visible ? displayValue : HIDDEN_VALUE}
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <p className="truncate text-base font-medium text-foreground/75 md:text-sm">
+              <p className="text-sm font-medium leading-tight text-foreground/75 md:text-sm">
                 {label}
               </p>
               {hasTrend && (

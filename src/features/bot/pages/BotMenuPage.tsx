@@ -598,7 +598,7 @@ function WhatsAppEmulator({ flowState }: { flowState: BotFlowState }) {
   }, [conversation, currentMenuRef]);
 
   return (
-    <div className="flex h-full items-center justify-start bg-transparent">
+    <div className="flex h-full w-full items-center justify-center bg-transparent">
       <div className="relative h-full w-full max-w-[390px] rounded-[42px] bg-neutral-900 p-[10px] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
         <div className="absolute left-[-3px] top-28 h-10 w-1 rounded-l-full bg-neutral-700/70" />
         <div className="absolute left-[-3px] top-44 h-16 w-1 rounded-l-full bg-neutral-700/70" />
@@ -828,15 +828,15 @@ export function BotMenuPage() {
           </button>
         </div>
 
-        <div className="w-full flex-1 overflow-hidden p-5">
-          <div className="flex h-full gap-5">
-            <div className="flex w-auto min-w-[320px] flex-col">
-              <div className="flex-1 overflow-hidden">
+        <div className="w-full flex-1 overflow-y-auto p-4 lg:overflow-hidden lg:p-5">
+          <div className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col gap-4 lg:h-full lg:flex-row lg:gap-5">
+            <div className="flex w-full justify-center lg:w-auto lg:min-w-[320px] lg:justify-start">
+              <div className="h-[72vh] w-full max-h-[820px] max-w-[390px] overflow-hidden lg:h-full lg:max-h-none">
                 <WhatsAppEmulator flowState={flowState} />
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-1 flex-col rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex w-full min-w-0 flex-1 flex-col rounded-xl border border-border bg-card shadow-sm">
               <div className="border-b border-border px-4 py-3">
                 <h3 className="text-sm font-semibold text-foreground">
                   Configuração do Menu
@@ -899,7 +899,7 @@ export function BotMenuPage() {
         />
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 border-b border-border px-6">
+        <div className="mt-3 flex items-center gap-1 border-b border-border px-4 md:px-6">
           {(
             [
               {

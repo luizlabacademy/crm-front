@@ -33,6 +33,29 @@ const PERIOD_OPTIONS: { value: ConversionPeriod; label: string }[] = [
   { value: "yearly", label: "Anual" },
 ];
 
+const DASHBOARD_PERIOD_STORAGE_KEY = "dashboard_conversion_period";
+
+function getDefaultConversionPeriod(): ConversionPeriod {
+  try {
+    const storedValue = localStorage.getItem(DASHBOARD_PERIOD_STORAGE_KEY);
+    if (storedValue === "daily" || storedValue === "monthly" || storedValue === "yearly") {
+      return storedValue;
+    }
+  } catch {
+    // ignore read errors and fallback to default
+  }
+
+  return "daily";
+}
+
+function setDefaultConversionPeriod(period: ConversionPeriod) {
+  try {
+    localStorage.setItem(DASHBOARD_PERIOD_STORAGE_KEY, period);
+  } catch {
+    // ignore persistence errors
+  }
+}
+
 const CHART_VIEW_OPTIONS: { value: DashboardChartType; label: string }[] = [
   { value: "area", label: "Area" },
   { value: "line", label: "Linhas" },
@@ -49,13 +72,13 @@ type ChartMode =
   | "servicesCompleted";
 
 const CHART_MODE_OPTIONS: { value: ChartMode; label: string }[] = [
-  { value: "sales", label: "Desempenho de Vendas" },
+  { value: "sales", label: "Vendas" },
   { value: "expenses", label: "Despesas" },
   { value: "leads", label: "Leads" },
-  { value: "conversion", label: "Curva de Conversão" },
+  { value: "conversion", label: "Conversão" },
   { value: "newCustomers", label: "Novos Clientes" },
   { value: "activeCustomers", label: "Clientes Ativos" },
-  { value: "servicesCompleted", label: "Atendimentos Realizados" },
+  { value: "servicesCompleted", label: "Atendimentos" },
 ];
 
 const MONTH_SEASONALITY = [
@@ -226,7 +249,9 @@ export function ConversionRateChart() {
     getDefaultDashboardChartType(),
   );
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
-  const [period, setPeriod] = useState<ConversionPeriod>("monthly");
+  const [period, setPeriod] = useState<ConversionPeriod>(() =>
+    getDefaultConversionPeriod(),
+  );
   const [referenceDate, setReferenceDate] = useState(
     () => new Date(now.getFullYear(), now.getMonth(), 1),
   );
@@ -260,6 +285,10 @@ export function ConversionRateChart() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setDefaultConversionPeriod(period);
+  }, [period]);
 
   const rawData = useMemo<ChartPoint[]>(() => {
     const profile = MODE_PROFILES[mode];
@@ -658,7 +687,7 @@ export function ConversionRateChart() {
           {chartView === "area" ? (
             <AreaChart
               data={filteredData}
-              margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+              margin={{ top: 5, right: 10, left: 8, bottom: 0 }}
             >
               <defs>
                 <linearGradient
@@ -693,6 +722,7 @@ export function ConversionRateChart() {
                   fill: "var(--muted-foreground)",
                   fontWeight: 500,
                 }}
+                width={88}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxisValue}
@@ -718,7 +748,7 @@ export function ConversionRateChart() {
           ) : chartView === "line" ? (
             <LineChart
               data={filteredData}
-              margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+              margin={{ top: 5, right: 10, left: 8, bottom: 0 }}
             >
               <CartesianGrid
                 strokeDasharray="4 4"
@@ -741,6 +771,7 @@ export function ConversionRateChart() {
                   fill: "var(--muted-foreground)",
                   fontWeight: 500,
                 }}
+                width={88}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxisValue}
@@ -767,7 +798,7 @@ export function ConversionRateChart() {
           ) : (
             <BarChart
               data={filteredData}
-              margin={{ top: 5, right: 10, left: -10, bottom: 0 }}
+              margin={{ top: 5, right: 10, left: 8, bottom: 0 }}
             >
               <CartesianGrid
                 strokeDasharray="4 4"
@@ -790,6 +821,7 @@ export function ConversionRateChart() {
                   fill: "var(--muted-foreground)",
                   fontWeight: 500,
                 }}
+                width={88}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxisValue}

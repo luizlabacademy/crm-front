@@ -238,8 +238,8 @@ export function DashboardPage() {
 
       {/* Funnel & Conversion panels — 2 columns on large */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <FunnelPanel />
         <ConversionRateChart />
+        <FunnelPanel />
       </div>
 
       {/* Recent activity — 2 columns on large */}

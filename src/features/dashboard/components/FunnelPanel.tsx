@@ -155,7 +155,7 @@ export function FunnelPanel() {
     <div className="rounded-xl border border-border/80 bg-card shadow-sm">
       <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between gap-3">
         <h2 className="text-[15px] font-semibold tracking-tight">
-          Funil de Conversão
+          Funil de Vendas
         </h2>
         <div className="flex items-center gap-2">
           <CampaignFilterDropdown
