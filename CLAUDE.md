@@ -207,3 +207,64 @@ Before writing code, ask:
 - **Does the spec have a gap or conflict?** Flag it and work around it explicitly.
 
 Specs evolve, but the principle is constant: **specs are the contract; code follows specs, not the reverse.**
+
+## OpenCode — Regra obrigatória de validação e Git
+
+Esta regra deve ser aplicada obrigatoriamente em:
+- CLAUDE.md
+- AGENTS.md
+
+Aplica-se a qualquer agente executando tarefas no repositório.
+
+---
+
+## Validação local obrigatória por alteração
+
+A cada alteração solicitada, execute validação local antes de concluir a tarefa.
+
+### Regra de produtividade
+Não rode a suíte completa por padrão. Priorize apenas a área impactada pela mudança.
+
+### O que deve ser validado
+Para cada alteração, executar somente o necessário da área afetada, como:
+- teste unitário do componente, hook, service, util ou módulo alterado;
+- teste da página/feature relacionada;
+- build local quando a alteração puder afetar integração, tipagem, imports, rotas, bundling ou estrutura da aplicação;
+- validação manual local do fluxo principal da tela/feature alterada.
+
+### Escopo da execução
+Preferir sempre:
+- testes do arquivo alterado;
+- testes da feature alterada;
+- testes diretamente relacionados ao fluxo impactado.
+
+Evitar por padrão:
+- rodar todos os testes do projeto;
+- rodar validações amplas sem necessidade;
+- executar processos demorados fora do escopo da mudança.
+
+### Critério
+A validação deve ser proporcional ao impacto:
+- mudança pequena: testar somente arquivos/fluxos diretamente afetados;
+- mudança média: testar a feature/módulo afetado;
+- mudança maior: testar área afetada + build local.
+
+### Entrega
+Ao finalizar, informar objetivamente:
+- o que foi validado;
+- quais comandos foram executados;
+- se a validação passou ou se ficou alguma pendência.
+
+Se não for possível executar algo localmente, declarar isso explicitamente e informar o motivo.
+
+---
+
+## Controle de versionamento (Git)
+
+Regra obrigatória para agentes OpenCode:
+
+- Não realizar `commit`, `push`, `merge` ou `PR` sem solicitação explícita.
+- Alterações devem permanecer apenas no workspace local até instrução do usuário.
+- Se necessário, apenas sugerir mensagem de commit (não executar).
+- Aguardar autorização explícita para qualquer operação de versionamento.
+- Em operações potencialmente destrutivas (`reset`, `rebase`, `force push`), sempre aguardar confirmação explícita.
