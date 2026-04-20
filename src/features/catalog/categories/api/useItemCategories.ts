@@ -12,12 +12,14 @@ interface UseItemCategoriesParams {
   page?: number;
   size?: number;
   tenantId?: number | null;
+  name?: string;
+  showOnSite?: boolean;
 }
 
 export function useItemCategories(params: UseItemCategoriesParams = {}) {
-  const { page = 0, size = 20, tenantId } = params;
+  const { page = 0, size = 20, tenantId, name, showOnSite } = params;
   return useQuery<PageResponse<ItemCategoryResponse>>({
-    queryKey: ["item-categories", { page, size, tenantId }],
+    queryKey: ["item-categories", { page, size, tenantId, name, showOnSite }],
     queryFn: async () => {
       const { data } = await api.get<PageResponse<ItemCategoryResponse>>(
         "/api/v1/item-categories",
@@ -26,6 +28,8 @@ export function useItemCategories(params: UseItemCategoriesParams = {}) {
             page,
             size,
             ...(tenantId != null ? { tenantId } : {}),
+            ...(name ? { name } : {}),
+            ...(showOnSite != null ? { showOnSite } : {}),
           },
         },
       );

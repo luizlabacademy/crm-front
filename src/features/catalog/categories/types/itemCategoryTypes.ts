@@ -6,6 +6,7 @@ export interface ItemCategoryResponse {
   id: number;
   tenantId: number;
   name: string;
+  showOnSite: boolean;
   availableTypes: ItemCategoryAvailableType[];
   photo?: string | null;
   createdAt: string;
@@ -15,6 +16,7 @@ export interface ItemCategoryResponse {
 export interface ItemCategoryRequest {
   tenantId: number;
   name: string;
+  showOnSite: boolean;
   availableTypes: ItemCategoryAvailableType[];
 }
 

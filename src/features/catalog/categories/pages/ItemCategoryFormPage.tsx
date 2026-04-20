@@ -18,6 +18,7 @@ import { PhotoUploader } from "@/components/shared/PhotoUploader";
 
 const schema = z.object({
   name: z.string().min(1, "Nome obrigatorio"),
+  showOnSite: z.boolean(),
   availableTypes: z
     .array(z.enum(["PRODUCT", "SERVICE"]))
     .min(1, "Selecione pelo menos um tipo"),
@@ -53,13 +54,18 @@ export function ItemCategoryFormPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", availableTypes: ["PRODUCT", "SERVICE"] },
+    defaultValues: {
+      name: "",
+      showOnSite: false,
+      availableTypes: ["PRODUCT", "SERVICE"],
+    },
   });
 
   useEffect(() => {
     if (existing) {
       reset({
         name: existing.name,
+        showOnSite: existing.showOnSite ?? false,
         availableTypes: existing.availableTypes ?? ["PRODUCT", "SERVICE"],
       });
     }
@@ -70,6 +76,7 @@ export function ItemCategoryFormPage() {
       const body = {
         tenantId: existing?.tenantId ?? 1,
         name: values.name,
+        showOnSite: values.showOnSite,
         availableTypes: values.availableTypes as ItemCategoryAvailableType[],
       };
 
@@ -204,6 +211,18 @@ export function ItemCategoryFormPage() {
             )}
           />
           <FieldError message={errors.availableTypes?.message} />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            id="showOnSite"
+            type="checkbox"
+            {...register("showOnSite")}
+            className="h-4 w-4 rounded border-input accent-primary"
+          />
+          <label htmlFor="showOnSite" className="text-sm text-foreground">
+            Exibir no site/landing page
+          </label>
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">

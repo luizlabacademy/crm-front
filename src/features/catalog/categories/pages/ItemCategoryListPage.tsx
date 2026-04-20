@@ -32,6 +32,21 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
+function SiteBadge({ showOnSite }: { showOnSite: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+        showOnSite
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-muted text-muted-foreground",
+      )}
+    >
+      {showOnSite ? "Sim" : "Nao"}
+    </span>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function ItemCategoryListPage() {
@@ -39,24 +54,24 @@ export function ItemCategoryListPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [search, setSearch] = useState("");
+  const [showOnSiteFilter, setShowOnSiteFilter] = useState<"all" | "true" | "false">("all");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteName, setDeleteName] = useState("");
 
   const { data, isLoading, isError } = useItemCategories({
     page,
     size: pageSize,
+    name: search.trim() || undefined,
+    showOnSite:
+      showOnSiteFilter === "all"
+        ? undefined
+        : showOnSiteFilter === "true",
   });
   const deleteMutation = useDeleteItemCategory();
 
   const categories = data?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
-
-  const filtered = search.trim()
-    ? categories.filter((c) =>
-        c.name.toLowerCase().includes(search.toLowerCase()),
-      )
-    : categories;
 
   async function handleDelete() {
     if (deleteId === null) return;
@@ -109,19 +124,37 @@ export function ItemCategoryListPage() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search
-          size={14}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-        />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar categoria..."
-          className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
-        />
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            placeholder="Buscar categoria..."
+            className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
+          />
+        </div>
+
+        <select
+          value={showOnSiteFilter}
+          onChange={(e) => {
+            setShowOnSiteFilter(e.target.value as "all" | "true" | "false");
+            setPage(0);
+          }}
+          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        >
+          <option value="all">Exibir no site: todos</option>
+          <option value="true">Exibir no site: sim</option>
+          <option value="false">Exibir no site: nao</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -135,6 +168,9 @@ export function ItemCategoryListPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Tipos
               </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Exibir no site
+              </th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Acoes
               </th>
@@ -144,7 +180,7 @@ export function ItemCategoryListPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={3} className="px-4 py-3">
+                  <td colSpan={4} className="px-4 py-3">
                     <div className="h-4 w-full animate-pulse rounded bg-muted" />
                   </td>
                 </tr>
@@ -152,15 +188,15 @@ export function ItemCategoryListPage() {
             ) : isError ? (
               <tr>
                 <td
-                  colSpan={3}
+                  colSpan={4}
                   className="px-4 py-8 text-center text-sm text-destructive"
                 >
                   Erro ao carregar categorias.
                 </td>
               </tr>
-            ) : filtered.length === 0 ? (
+            ) : categories.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-12 text-center">
+                <td colSpan={4} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Tag size={32} className="text-muted-foreground/30" />
                     <p className="text-sm text-muted-foreground">
@@ -177,7 +213,7 @@ export function ItemCategoryListPage() {
                 </td>
               </tr>
             ) : (
-              filtered.map((cat) => (
+              categories.map((cat) => (
                 <tr
                   key={cat.id}
                   className="hover:bg-muted/20 transition-colors"
@@ -192,6 +228,9 @@ export function ItemCategoryListPage() {
                         <span className="text-muted-foreground/50 text-xs">—</span>
                       )}
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <SiteBadge showOnSite={cat.showOnSite} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">

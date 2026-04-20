@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, Loader2, Trash2, Upload } from "lucide-react";
+import { Camera, Loader2, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ export function PhotoUploader({
 }: PhotoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const enabledQuery = entityId != null && entityId > 0;
 
   const { data: uploads = [], isFetching } = useUploads({
@@ -103,13 +104,37 @@ export function PhotoUploader({
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      {previewOpen && displayUrl && (
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+          aria-label="Fechar preview"
+        >
+          <img
+            src={displayUrl}
+            alt="Preview"
+            className="max-h-[90vh] max-w-[95vw] rounded-lg"
+          />
+          <span className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white">
+            <X size={18} />
+          </span>
+        </button>
+      )}
+
       <div className="relative shrink-0">
-        <div
+        <button
+          type="button"
+          onClick={() => {
+            if (displayUrl) setPreviewOpen(true);
+          }}
+          aria-label="Abrir foto"
           className={cn(
             "overflow-hidden border border-border bg-muted",
             dimensions,
             shapeClass,
             "flex items-center justify-center",
+            displayUrl ? "cursor-zoom-in" : "cursor-default",
           )}
         >
           {displayUrl ? (
@@ -124,7 +149,7 @@ export function PhotoUploader({
           ) : (
             <Camera size={26} className="text-muted-foreground/60" />
           )}
-        </div>
+        </button>
 
         {isUploading && (
           <div
