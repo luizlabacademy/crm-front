@@ -11,7 +11,8 @@
       "Bash(xargs grep *)",
       "WebFetch(domain:api-crm.luizlab.com)",
       "Bash(npx tsc *)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }

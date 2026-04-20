@@ -43,6 +43,29 @@ export function useUploads({ fileType, entityId, enabled = true }: UseUploadsPar
   });
 }
 
+// ─── List by fileType only (no entityId filter) ──────────────────────────────
+
+interface UseUploadsByTypeParams {
+  fileType: UploadFileType;
+  enabled?: boolean;
+}
+
+export function useUploadsByType({
+  fileType,
+  enabled = true,
+}: UseUploadsByTypeParams) {
+  return useQuery<UploadResponse[]>({
+    queryKey: ["uploads", "by-type", fileType],
+    queryFn: async () => {
+      const { data } = await api.get<UploadResponse[]>("/api/v1/uploads", {
+        params: { fileType },
+      });
+      return data;
+    },
+    enabled,
+  });
+}
+
 // ─── Get by ID ────────────────────────────────────────────────────────────────
 
 export function useUpload(id: string | null) {
@@ -110,6 +133,55 @@ export function useUploadFromUrl() {
 
   return {
     uploadFromUrl,
+    isPending: uploadFile.isPending,
+  };
+}
+
+// ─── Copy upload (fetch source file, re-upload as new fileType) ───────────────
+
+interface CopyUploadParams {
+  source: UploadResponse;
+  targetFileType: UploadFileType;
+  tenantId: number;
+  entityId: number;
+  legend?: string;
+  sortOrder?: number;
+}
+
+export function useCopyUpload() {
+  const uploadFile = useUploadFile();
+
+  async function copyUpload(params: CopyUploadParams): Promise<UploadResponse> {
+    const sourceUrl = params.source.viewUrl
+      ? params.source.viewUrl
+      : `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/v1/uploads/${params.source.id}/view`;
+
+    const token = localStorage.getItem("crm_token");
+    const response = await fetch(sourceUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!response.ok) {
+      throw new Error(`Falha ao baixar arquivo de origem (${response.status})`);
+    }
+    const blob = await response.blob();
+    const contentType =
+      params.source.contentType || blob.type || "application/octet-stream";
+    const fileName =
+      params.source.fileName || `slide-${params.source.id}`;
+    const file = new File([blob], fileName, { type: contentType });
+
+    return uploadFile.mutateAsync({
+      file,
+      fileType: params.targetFileType,
+      tenantId: params.tenantId,
+      entityId: params.entityId,
+      legend: params.legend,
+      sortOrder: params.sortOrder,
+    });
+  }
+
+  return {
+    copyUpload,
     isPending: uploadFile.isPending,
   };
 }

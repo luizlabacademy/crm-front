@@ -7,6 +7,8 @@ export type UploadFileType =
   | "USER"
   | "CATEGORY"
   | "SLIDE"
+  | "SLIDE_SAAS"
+  | "SLIDE_OWN"
   | "BANNER"
   | "OTHERS";
 

@@ -4,11 +4,23 @@ import {
   UpgradeNeededModal,
 } from "@/features/billing/components/UpgradeModals";
 
-const TIERS = [
+type PlanCategory = "autonomo" | "empresarial";
+type TierId = "basic" | "plus" | "pro";
+type Tier = {
+  id: TierId;
+  name: string;
+  basePrice: number;
+  subtitle: string;
+  features: string[];
+};
+
+const BUSINESS_MULTIPLIER = 1.5;
+
+const TIERS: Tier[] = [
   {
     id: "basic",
     name: "Go",
-    price: "0",
+    basePrice: 0,
     subtitle: "Plano Free",
     features: [
       "CRM",
@@ -21,21 +33,49 @@ const TIERS = [
   {
     id: "plus",
     name: "Plus",
-    price: "39",
+    basePrice: 39,
     subtitle: "Profissional Autônomo",
     features: ["CRM completo", "WhatsApp marketing", "E-mail marketing", "Automação de marketing", "Campanhas de marketing"],
   },
   {
     id: "pro",
     name: "Pro",
-    price: "129",
+    basePrice: 129,
     subtitle: "Empresarial",
     features: ["Tudo do Plus", "Usuários e permissões", "Integrações avançadas", "Relatórios e histórico"],
   },
 ];
 
+function formatPlanPrice(price: number) {
+  const minimumFractionDigits = Number.isInteger(price) ? 0 : 2;
+  return price.toLocaleString("pt-BR", { minimumFractionDigits, maximumFractionDigits: 2 });
+}
+
+function getTierPrice(tierId: TierId, basePrice: number, category: PlanCategory) {
+  if (tierId === "basic") return basePrice;
+  return category === "empresarial" ? basePrice * BUSINESS_MULTIPLIER : basePrice;
+}
+
+function getTierFeatures(tierId: TierId, baseFeatures: string[], category: PlanCategory) {
+  if (tierId === "plus") {
+    return [...baseFeatures, "Backups automáticos", "Suporte via e-mail"];
+  }
+
+  if (tierId === "pro") {
+    const proFeatures = [...baseFeatures, "Suporte via chat em horário comercial"];
+
+    if (category === "empresarial") {
+      proFeatures.push("SLA de 30 minutos para retorno do suporte", "+ R$ 49,90 por filial");
+    }
+
+    return proFeatures;
+  }
+
+  return baseFeatures;
+}
+
 export function PlanPage() {
-  const [selectedCategory, setSelectedCategory] = useState<"autonomo" | "empresarial">("autonomo");
+  const [selectedCategory, setSelectedCategory] = useState<PlanCategory>("autonomo");
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [priceTableOpen, setPriceTableOpen] = useState(false);
 
@@ -64,6 +104,15 @@ export function PlanPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {TIERS.map((tier) => {
           const highlighted = tier.id === "pro";
+          const tierPrice = getTierPrice(tier.id, tier.basePrice, selectedCategory);
+          const tierFeatures = getTierFeatures(tier.id, tier.features, selectedCategory);
+          const tierSubtitle =
+            tier.id === "basic"
+              ? tier.subtitle
+              : selectedCategory === "empresarial"
+                ? "Empresarial"
+                : "Profissional Autônomo";
+
           return (
             <div
               key={tier.id}
@@ -73,11 +122,11 @@ export function PlanPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-2xl font-bold">{tier.name}</h3>
-                    <p className="text-sm text-muted-foreground">{tier.subtitle}</p>
+                    <p className="text-sm text-muted-foreground">{tierSubtitle}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">R$</div>
-                    <div className="text-4xl font-extrabold">{tier.price}</div>
+                    <div className="text-4xl font-extrabold">{formatPlanPrice(tierPrice)}</div>
                     <div className="text-xs text-muted-foreground">/ mês</div>
                   </div>
                 </div>
@@ -85,7 +134,7 @@ export function PlanPage() {
                 <p className="mt-4 text-sm text-gray-700">{tier.id === "basic" ? "Comece gratuitamente e cresça conforme precisa." : "Desbloqueie recursos avançados para escalar seu negócio."}</p>
 
                 <div className="mt-6 space-y-2">
-                  {tier.features.map((f) => (
+                  {tierFeatures.map((f) => (
                     <div key={f} className="flex items-start gap-3">
                       <div className="mt-1 h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground text-[11px]">✓</div>
                       <div className="text-sm text-foreground">{f}</div>

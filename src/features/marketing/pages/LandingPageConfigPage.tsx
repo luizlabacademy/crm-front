@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Plus,
   Trash2,
@@ -17,17 +17,22 @@ import {
   Sparkles,
   Palette,
   Check,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { UpgradeNeededModal, PriceTableModal } from "@/features/billing/components/UpgradeModals";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
+import { SlideGalleryModal } from "@/features/marketing/components/SlideGalleryModal";
 import {
   useItemCategories,
   useCreateItemCategory,
   useItemCategoriesCatalog,
   useUpdateItemCategory,
 } from "@/features/catalog/categories/api/useItemCategories";
+import { useUploadFile } from "@/features/uploads/api/useUploads";
+import { getUploadViewUrl } from "@/features/uploads/types/uploadTypes";
 import type {
   ItemCategoryAvailableType,
   ItemCategoryRequest,
@@ -275,6 +280,15 @@ export function LandingPageConfigPage() {
   const [modalName, setModalName] = useState("");
   const [modalDescription, setModalDescription] = useState("");
   const [modalShowOnSite, setModalShowOnSite] = useState(true);
+  type SlideSourceTarget =
+    | { mode: "new" }
+    | { mode: "replace"; slideId: string };
+  const [sourcePickerTarget, setSourcePickerTarget] =
+    useState<SlideSourceTarget | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [isUploadingSlide, setIsUploadingSlide] = useState(false);
+  const slideFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadSlideMutation = useUploadFile();
 
   const { data: serviceListData, isLoading: isLoadingServices, isError: isErrorServices, refetch: refetchServiceList } =
     useItemCategories({
@@ -348,16 +362,6 @@ export function LandingPageConfigPage() {
   }
 
   // ── Slides ──
-  function addSlide() {
-    const slide: LandingPageSlide = {
-      id: `slide-${Date.now()}`,
-      imageUrl: "",
-      title: "",
-      subtitle: "",
-    };
-    setConfig((prev) => ({ ...prev, slides: [...prev.slides, slide] }));
-  }
-
   function updateSlide(
     id: string,
     field: keyof LandingPageSlide,
@@ -391,6 +395,85 @@ export function LandingPageConfigPage() {
       ];
       return { ...prev, slides: newSlides };
     });
+  }
+
+  // ── Slide image source (gallery or local upload) ──
+  const defaultTenantId = allCategories[0]?.tenantId ?? 1;
+
+  function openSourcePickerForNew() {
+    setSourcePickerTarget({ mode: "new" });
+  }
+
+  function openSourcePickerForSlide(slideId: string) {
+    setSourcePickerTarget({ mode: "replace", slideId });
+  }
+
+  function applyImageUrl(url: string) {
+    setSourcePickerTarget((current) => {
+      if (!current) return null;
+      if (current.mode === "new") {
+        const slide: LandingPageSlide = {
+          id: `slide-${Date.now()}`,
+          imageUrl: url,
+          title: "",
+          subtitle: "",
+        };
+        setConfig((prev) => ({ ...prev, slides: [...prev.slides, slide] }));
+        requestAnimationFrame(() => {
+          document
+            .getElementById(`slide-card-${slide.id}`)
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      } else {
+        setConfig((prev) => ({
+          ...prev,
+          slides: prev.slides.map((s) =>
+            s.id === current.slideId ? { ...s, imageUrl: url } : s,
+          ),
+        }));
+      }
+      return null;
+    });
+  }
+
+  function chooseFromGallery() {
+    setGalleryOpen(true);
+  }
+
+  function triggerLocalUpload() {
+    slideFileInputRef.current?.click();
+  }
+
+  async function handleSlideFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !sourcePickerTarget) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 10MB.");
+      return;
+    }
+
+    setIsUploadingSlide(true);
+    try {
+      const uploaded = await uploadSlideMutation.mutateAsync({
+        file,
+        fileType: "SLIDE_OWN",
+        tenantId: defaultTenantId,
+        entityId: defaultTenantId,
+      });
+      applyImageUrl(getUploadViewUrl(uploaded));
+      toast.success("Slide enviado com sucesso.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível enviar a imagem. Tente novamente.");
+    } finally {
+      setIsUploadingSlide(false);
+    }
   }
 
   async function handleSubmitServiceModal(e: FormEvent<HTMLFormElement>) {
@@ -782,7 +865,7 @@ export function LandingPageConfigPage() {
               será exibido como slide automático.
             </p>
             <button
-              onClick={addSlide}
+              onClick={openSourcePickerForNew}
               className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
             >
               <Plus size={13} />
@@ -800,6 +883,7 @@ export function LandingPageConfigPage() {
           {config.slides.map((slide, idx) => (
             <div
               key={slide.id}
+              id={`slide-card-${slide.id}`}
               className="rounded-xl border border-border bg-card p-4 space-y-3"
             >
               <div className="flex items-center justify-between">
@@ -834,20 +918,38 @@ export function LandingPageConfigPage() {
                 </div>
               </div>
 
+              {slide.imageUrl ? (
+                <img
+                  src={slide.imageUrl}
+                  alt={`Slide ${idx + 1}`}
+                  className="h-40 w-full rounded-lg object-cover border border-border"
+                />
+              ) : (
+                <div className="flex h-40 w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 text-muted-foreground">
+                  <div className="flex flex-col items-center gap-1">
+                    <Image size={24} className="opacity-40" />
+                    <span className="text-xs">Nenhuma imagem selecionada</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openSourcePickerForSlide(slide.id)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+                >
+                  <Image size={13} />
+                  {slide.imageUrl ? "Trocar imagem" : "Escolher imagem"}
+                </button>
+              </div>
+
               <Field
                 label="URL da Imagem"
                 value={slide.imageUrl}
                 onChange={(v) => updateSlide(slide.id, "imageUrl", v)}
                 placeholder="https://..."
               />
-
-              {slide.imageUrl && (
-                <img
-                  src={slide.imageUrl}
-                  alt={`Slide ${idx + 1}`}
-                  className="h-40 w-full rounded-lg object-cover border border-border"
-                />
-              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
@@ -1199,6 +1301,82 @@ export function LandingPageConfigPage() {
       />
 
       <PriceTableModal open={priceTableOpen} onClose={() => setPriceTableOpen(false)} />
+
+      <input
+        ref={slideFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => void handleSlideFileChange(e)}
+        className="hidden"
+      />
+
+      {sourcePickerTarget !== null && !galleryOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg">
+            <div className="mb-1 flex items-center justify-between">
+              <h3 className="text-base font-semibold">
+                {sourcePickerTarget.mode === "new"
+                  ? "Adicionar novo slide"
+                  : "Trocar imagem do slide"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSourcePickerTarget(null)}
+                className="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
+                disabled={isUploadingSlide}
+              >
+                Cancelar
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Como você quer adicionar a imagem?
+            </p>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={chooseFromGallery}
+                disabled={isUploadingSlide}
+                className="flex flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 text-center hover:bg-accent transition-colors disabled:opacity-50"
+              >
+                <Image size={24} className="text-primary" />
+                <span className="text-sm font-medium">Escolher da galeria</span>
+                <span className="text-xs text-muted-foreground">
+                  Slides prontos disponibilizados pela plataforma.
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={triggerLocalUpload}
+                disabled={isUploadingSlide}
+                className="flex flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 text-center hover:bg-accent transition-colors disabled:opacity-50"
+              >
+                {isUploadingSlide ? (
+                  <Loader2 size={24} className="animate-spin text-primary" />
+                ) : (
+                  <Upload size={24} className="text-primary" />
+                )}
+                <span className="text-sm font-medium">
+                  {isUploadingSlide ? "Enviando..." : "Fazer upload"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Envie uma imagem do seu computador.
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SlideGalleryModal
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        tenantId={defaultTenantId}
+        entityId={defaultTenantId}
+        onPicked={(upload) => {
+          applyImageUrl(getUploadViewUrl(upload));
+        }}
+      />
     </div>
   );
 }

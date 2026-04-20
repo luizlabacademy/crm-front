@@ -56,6 +56,8 @@ export function PriceTableModal({ open, onClose }: { open: boolean; onClose: () 
                 <li>E-mail marketing</li>
                 <li>Automação</li>
                 <li>Campanhas</li>
+                <li>Backups automáticos</li>
+                <li>Suporte via e-mail</li>
               </ul>
               <div className="mt-6">
                 <button className="w-full rounded-full border bg-white px-4 py-2 text-sm">Seu plano atual</button>
@@ -67,7 +69,7 @@ export function PriceTableModal({ open, onClose }: { open: boolean; onClose: () 
               <h3 className="text-2xl font-bold">Pro</h3>
               <p className="text-sm text-muted-foreground">Empresarial</p>
               <div className="mt-4 flex items-baseline gap-2">
-                <div className="text-3xl font-extrabold">R$ 129</div>
+                <div className="text-3xl font-extrabold">R$ 193,50</div>
                 <div className="text-sm text-muted-foreground">/ mês</div>
               </div>
               <ul className="mt-6 space-y-2 text-sm">
@@ -75,6 +77,9 @@ export function PriceTableModal({ open, onClose }: { open: boolean; onClose: () 
                 <li>Usuários e permissões</li>
                 <li>Integrações avançadas</li>
                 <li>Relatórios</li>
+                <li>Suporte via chat em horário comercial</li>
+                <li>SLA de 30 minutos para retorno do suporte</li>
+                <li>+ R$ 49,90 por filial</li>
               </ul>
               <div className="mt-6">
                 <button className="w-full rounded-full bg-indigo-600 px-4 py-2 text-sm text-white">Fazer upgrade para o Pro</button>
