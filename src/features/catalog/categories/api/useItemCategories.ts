@@ -125,3 +125,16 @@ export function useItemCategoriesCatalog(tenantId?: number | null) {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// ─── Service categories (for landing page) ────────────────────────────────────
+
+export function useServiceCategories(tenantId?: number | null) {
+  const query = useItemCategoriesCatalog(tenantId);
+  const serviceCategories = (query.data ?? []).filter((cat) =>
+    cat.availableTypes?.includes("SERVICE"),
+  );
+  return {
+    ...query,
+    data: serviceCategories,
+  };
+}

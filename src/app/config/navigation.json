@@ -118,8 +118,13 @@
         "icon": "user-cog"
       },
       {
-        "label": "Itens",
-        "to": "/catalog/items",
+        "label": "Serviços",
+        "to": "/catalog/services",
+        "icon": "wrench"
+      },
+      {
+        "label": "Produtos",
+        "to": "/catalog/products",
         "icon": "package"
       },
       {

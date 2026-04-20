@@ -383,6 +383,10 @@ export function AppRouter() {
             <Route path="/catalog/items" element={<ItemListPage />} />
             <Route path="/catalog/items/new" element={<ItemFormPage />} />
             <Route path="/catalog/items/:id/edit" element={<ItemFormPage />} />
+            <Route path="/catalog/products" element={<ItemListPage />} />
+            <Route path="/catalog/products/new" element={<ItemFormPage />} />
+            <Route path="/catalog/services" element={<ItemListPage />} />
+            <Route path="/catalog/services/new" element={<ItemFormPage />} />
 
             <Route
               path="/catalog/categories"

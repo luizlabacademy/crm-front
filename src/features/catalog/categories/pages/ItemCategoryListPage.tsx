@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Search, Pencil, Trash2, Tag } from "lucide-react";
 import { toast } from "sonner";
-import { ActiveBadge } from "@/components/shared/ActiveBadge";
+import { cn } from "@/lib/utils";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
@@ -13,6 +13,24 @@ import {
   getDefaultPageSize,
   setDefaultPageSize,
 } from "@/lib/pagination/pageSizePreference";
+
+// ─── Type Badge ───────────────────────────────────────────────────────────────
+
+function TypeBadge({ type }: { type: string }) {
+  const isProduct = type === "PRODUCT";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+        isProduct
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+          : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+      )}
+    >
+      {isProduct ? "Produto" : "Servico"}
+    </span>
+  );
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -61,7 +79,7 @@ export function ItemCategoryListPage() {
             <>
               Tem certeza que deseja excluir{" "}
               <span className="font-medium text-foreground">{deleteName}</span>?
-              Esta ação não pode ser desfeita.
+              Esta acao nao pode ser desfeita.
             </>
           }
           onConfirm={() => void handleDelete()}
@@ -115,10 +133,7 @@ export function ItemCategoryListPage() {
                 Nome
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Descricao
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Status
+                Tipos
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Acoes
@@ -129,7 +144,7 @@ export function ItemCategoryListPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={4} className="px-4 py-3">
+                  <td colSpan={3} className="px-4 py-3">
                     <div className="h-4 w-full animate-pulse rounded bg-muted" />
                   </td>
                 </tr>
@@ -137,7 +152,7 @@ export function ItemCategoryListPage() {
             ) : isError ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={3}
                   className="px-4 py-8 text-center text-sm text-destructive"
                 >
                   Erro ao carregar categorias.
@@ -145,7 +160,7 @@ export function ItemCategoryListPage() {
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center">
+                <td colSpan={3} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Tag size={32} className="text-muted-foreground/30" />
                     <p className="text-sm text-muted-foreground">
@@ -168,11 +183,15 @@ export function ItemCategoryListPage() {
                   className="hover:bg-muted/20 transition-colors"
                 >
                   <td className="px-4 py-3 font-medium">{cat.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground truncate max-w-xs">
-                    {cat.description ?? "—"}
-                  </td>
                   <td className="px-4 py-3">
-                    <ActiveBadge active={cat.active} />
+                    <div className="flex items-center gap-1.5">
+                      {(cat.availableTypes ?? []).map((t) => (
+                        <TypeBadge key={t} type={t} />
+                      ))}
+                      {(!cat.availableTypes || cat.availableTypes.length === 0) && (
+                        <span className="text-muted-foreground/50 text-xs">—</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">

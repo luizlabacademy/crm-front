@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import { Plus, Search, Pencil, Trash2, Package, Tag } from "lucide-react";
+import { useNavigate, useSearchParams, useLocation } from "react-router";
+import { Plus, Search, Pencil, Trash2, Package, Tag, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { ActiveBadge } from "@/components/shared/ActiveBadge";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { useItems, useDeleteItem } from "@/features/catalog/items/api/useItems";
 import { useItemCategoriesCatalog } from "@/features/catalog/categories/api/useItemCategories";
+import type { ItemType } from "@/features/catalog/items/types/itemTypes";
 import {
   getDefaultPageSize,
   setDefaultPageSize,
@@ -18,6 +18,27 @@ import {
 
 export function ItemListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // Derive type from route path first, then fallback to query param
+  const pathType: ItemType | null = location.pathname.includes("/catalog/products")
+    ? "PRODUCT"
+    : location.pathname.includes("/catalog/services")
+      ? "SERVICE"
+      : null;
+  const requestedType = pathType ?? searchParams.get("type");
+  const typeFilter: ItemType | null =
+    requestedType === "SERVICE" || requestedType === "PRODUCT"
+      ? requestedType
+      : null;
+
+  const basePath = typeFilter === "PRODUCT"
+    ? "/catalog/products"
+    : typeFilter === "SERVICE"
+      ? "/catalog/services"
+      : "/catalog/items";
+
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
   const [search, setSearch] = useState("");
@@ -25,21 +46,34 @@ export function ItemListPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteName, setDeleteName] = useState("");
 
-  const { data, isLoading, isError } = useItems({ page, size: pageSize });
-  const { data: categories = [] } = useItemCategoriesCatalog();
+  const { data, isLoading, isError } = useItems({
+    page,
+    size: pageSize,
+    type: typeFilter ?? undefined,
+    search: search || undefined,
+    categoryId: categoryFilter ?? undefined,
+  });
+  const { data: allCategories = [] } = useItemCategoriesCatalog();
+  // Filter categories by type
+  const categories = typeFilter
+    ? allCategories.filter((c) => c.availableTypes?.includes(typeFilter))
+    : allCategories;
   const deleteMutation = useDeleteItem();
 
   const items = data?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
 
-  const filtered = items.filter((item) => {
-    const matchSearch =
-      !search.trim() || item.name.toLowerCase().includes(search.toLowerCase());
-    const matchCategory =
-      categoryFilter === null || item.categoryId === categoryFilter;
-    return matchSearch && matchCategory;
-  });
+  const isService = typeFilter === "SERVICE";
+  const isProduct = typeFilter === "PRODUCT";
+  const itemLabel = isService ? "servicos" : isProduct ? "produtos" : "itens";
+  const itemLabelSingular = isService ? "servico" : isProduct ? "produto" : "item";
+  const pageTitle = isService
+    ? "Servicos do Catalogo"
+    : isProduct
+      ? "Produtos do Catalogo"
+      : "Itens do Catalogo";
+  const ItemIcon = isService ? Wrench : Package;
 
   async function handleDelete() {
     if (deleteId === null) return;
@@ -62,7 +96,7 @@ export function ItemListPage() {
             <>
               Tem certeza que deseja excluir{" "}
               <span className="font-medium text-foreground">{deleteName}</span>?
-              Esta ação não pode ser desfeita.
+              Esta acao nao pode ser desfeita.
             </>
           }
           onConfirm={() => void handleDelete()}
@@ -77,18 +111,24 @@ export function ItemListPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Itens do Catalogo</h1>
+          <h1 className="text-2xl font-semibold">{pageTitle}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {totalElements} itens cadastrados
+            {totalElements} {itemLabel} cadastrados
           </p>
         </div>
         <button
           type="button"
-          onClick={() => void navigate("/catalog/items/new")}
+          onClick={() =>
+            void navigate(
+              typeFilter
+                ? `${basePath}/new?type=${typeFilter}`
+                : "/catalog/items/new",
+            )
+          }
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
         >
           <Plus size={16} />
-          Novo Item
+          Novo {itemLabelSingular}
         </button>
       </div>
 
@@ -102,8 +142,11 @@ export function ItemListPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar item..."
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            placeholder={`Buscar ${itemLabelSingular}...`}
             className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
           />
         </div>
@@ -111,7 +154,10 @@ export function ItemListPage() {
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
-              onClick={() => setCategoryFilter(null)}
+              onClick={() => {
+                setCategoryFilter(null);
+                setPage(0);
+              }}
               className={cn(
                 "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                 categoryFilter === null
@@ -125,9 +171,10 @@ export function ItemListPage() {
               <button
                 key={cat.id}
                 type="button"
-                onClick={() =>
-                  setCategoryFilter(cat.id === categoryFilter ? null : cat.id)
-                }
+                onClick={() => {
+                  setCategoryFilter(cat.id === categoryFilter ? null : cat.id);
+                  setPage(0);
+                }}
                 className={cn(
                   "flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                   categoryFilter === cat.id
@@ -143,7 +190,7 @@ export function ItemListPage() {
         )}
       </div>
 
-      {/* Grid / Table */}
+      {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -157,9 +204,6 @@ export function ItemListPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 SKU
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Preco
-              </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Status
               </th>
@@ -172,7 +216,7 @@ export function ItemListPage() {
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={6} className="px-4 py-3">
+                  <td colSpan={5} className="px-4 py-3">
                     <div className="h-4 w-full animate-pulse rounded bg-muted" />
                   </td>
                 </tr>
@@ -180,32 +224,38 @@ export function ItemListPage() {
             ) : isError ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   className="px-4 py-8 text-center text-sm text-destructive"
                 >
-                  Erro ao carregar itens.
+                  Erro ao carregar {itemLabel}.
                 </td>
               </tr>
-            ) : filtered.length === 0 ? (
+            ) : items.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center">
+                <td colSpan={5} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
-                    <Package size={32} className="text-muted-foreground/30" />
+                    <ItemIcon size={32} className="text-muted-foreground/30" />
                     <p className="text-sm text-muted-foreground">
-                      Nenhum item encontrado.
+                      Nenhum {itemLabelSingular} encontrado.
                     </p>
                     <button
                       type="button"
-                      onClick={() => void navigate("/catalog/items/new")}
+                      onClick={() =>
+                        void navigate(
+                          typeFilter
+                            ? `${basePath}/new?type=${typeFilter}`
+                            : "/catalog/items/new",
+                        )
+                      }
                       className="text-xs text-primary hover:underline"
                     >
-                      Criar primeiro item
+                      Criar primeiro {itemLabelSingular}
                     </button>
                   </div>
                 </td>
               </tr>
             ) : (
-              filtered.map((item) => (
+              items.map((item) => (
                 <tr
                   key={item.id}
                   className="hover:bg-muted/20 transition-colors"
@@ -213,16 +263,9 @@ export function ItemListPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
-                        <Package size={14} className="text-muted-foreground" />
+                        <ItemIcon size={14} className="text-muted-foreground" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium">{item.name}</p>
-                        {item.description && (
-                          <p className="text-[11px] text-muted-foreground truncate max-w-xs">
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
+                      <p className="font-medium">{item.name}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
@@ -232,14 +275,11 @@ export function ItemListPage() {
                         {item.categoryName}
                       </span>
                     ) : (
-                      "—"
+                      <span className="text-muted-foreground/50">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {item.sku ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums">
-                    {formatCurrency(item.priceCents)}
+                    {item.sku ?? <span className="text-muted-foreground/50">—</span>}
                   </td>
                   <td className="px-4 py-3">
                     <ActiveBadge active={item.active} />
@@ -249,7 +289,9 @@ export function ItemListPage() {
                       <button
                         type="button"
                         onClick={() =>
-                          void navigate(`/catalog/items/${item.id}/edit`)
+                          void navigate(
+                            `/catalog/items/${item.id}/edit${typeFilter ? `?type=${typeFilter}` : ""}`,
+                          )
                         }
                         className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                         title="Editar"

@@ -1,11 +1,13 @@
 // ─── Item Category ────────────────────────────────────────────────────────────
 
+export type ItemCategoryAvailableType = "PRODUCT" | "SERVICE";
+
 export interface ItemCategoryResponse {
   id: number;
   tenantId: number;
   name: string;
-  description?: string | null;
-  active: boolean;
+  availableTypes: ItemCategoryAvailableType[];
+  photo?: string | null;
   createdAt: string;
   updatedAt?: string | null;
 }
@@ -13,8 +15,7 @@ export interface ItemCategoryResponse {
 export interface ItemCategoryRequest {
   tenantId: number;
   name: string;
-  description?: string | null;
-  active: boolean;
+  availableTypes: ItemCategoryAvailableType[];
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────────────

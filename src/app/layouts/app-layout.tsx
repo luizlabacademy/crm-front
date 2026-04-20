@@ -187,6 +187,7 @@ function SidebarLink({ item, onClick }: SidebarLinkProps) {
   return (
     <NavLink
       to={item.to}
+      end
       onClick={onClick}
       className={({ isActive }) =>
         cn(

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -11,13 +11,15 @@ import {
   useCreateItemCategory,
   useUpdateItemCategory,
 } from "@/features/catalog/categories/api/useItemCategories";
+import type { ItemCategoryAvailableType } from "@/features/catalog/categories/types/itemCategoryTypes";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const schema = z.object({
   name: z.string().min(1, "Nome obrigatorio"),
-  description: z.string().optional(),
-  active: z.boolean(),
+  availableTypes: z
+    .array(z.enum(["PRODUCT", "SERVICE"]))
+    .min(1, "Selecione pelo menos um tipo"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -46,18 +48,18 @@ export function ItemCategoryFormPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", description: "", active: true },
+    defaultValues: { name: "", availableTypes: ["PRODUCT", "SERVICE"] },
   });
 
   useEffect(() => {
     if (existing) {
       reset({
         name: existing.name,
-        description: existing.description ?? "",
-        active: existing.active,
+        availableTypes: existing.availableTypes ?? ["PRODUCT", "SERVICE"],
       });
     }
   }, [existing, reset]);
@@ -67,8 +69,7 @@ export function ItemCategoryFormPage() {
       const body = {
         tenantId: existing?.tenantId ?? 1,
         name: values.name,
-        description: values.description ?? null,
-        active: values.active,
+        availableTypes: values.availableTypes as ItemCategoryAvailableType[],
       };
 
       if (isEditing && categoryId !== null) {
@@ -135,26 +136,45 @@ export function ItemCategoryFormPage() {
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-foreground">
-            Descricao
+            Tipos aceitos <span className="text-destructive">*</span>
           </label>
-          <textarea
-            {...register("description")}
-            placeholder="Descricao opcional..."
-            rows={3}
-            className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
+          <Controller
+            name="availableTypes"
+            control={control}
+            render={({ field }) => (
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={field.value.includes("PRODUCT")}
+                    onChange={(e) => {
+                      const next = e.target.checked
+                        ? [...field.value, "PRODUCT" as const]
+                        : field.value.filter((t) => t !== "PRODUCT");
+                      field.onChange(next);
+                    }}
+                    className="h-4 w-4 rounded border-input accent-primary"
+                  />
+                  Produto
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={field.value.includes("SERVICE")}
+                    onChange={(e) => {
+                      const next = e.target.checked
+                        ? [...field.value, "SERVICE" as const]
+                        : field.value.filter((t) => t !== "SERVICE");
+                      field.onChange(next);
+                    }}
+                    className="h-4 w-4 rounded border-input accent-primary"
+                  />
+                  Servico
+                </label>
+              </div>
+            )}
           />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="active"
-            {...register("active")}
-            className="h-4 w-4 rounded border-input accent-primary"
-          />
-          <label htmlFor="active" className="text-sm text-foreground">
-            Ativo
-          </label>
+          <FieldError message={errors.availableTypes?.message} />
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
