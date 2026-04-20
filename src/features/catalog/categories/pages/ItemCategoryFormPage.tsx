@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import {
   useItemCategory,
   useCreateItemCategory,
-  useUpdateItemCategory,
+  usePatchItemCategory,
 } from "@/features/catalog/categories/api/useItemCategories";
 import type { ItemCategoryAvailableType } from "@/features/catalog/categories/types/itemCategoryTypes";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
@@ -45,7 +45,7 @@ export function ItemCategoryFormPage() {
   const { data: existing, isLoading: isLoadingExisting } =
     useItemCategory(categoryId);
   const createMutation = useCreateItemCategory();
-  const updateMutation = useUpdateItemCategory();
+  const updateMutation = usePatchItemCategory();
 
   const {
     register,

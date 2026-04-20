@@ -101,6 +101,27 @@ export function useUpdateItemCategory() {
   });
 }
 
+export function usePatchItemCategory() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    ItemCategoryResponse,
+    Error,
+    { id: number; body: Partial<ItemCategoryRequest> }
+  >({
+    mutationFn: async ({ id, body }) => {
+      const { data } = await api.patch<ItemCategoryResponse>(
+        `/api/v1/item-categories/${id}`,
+        body,
+      );
+      return data;
+    },
+    onSuccess: (_data, { id }) => {
+      void queryClient.invalidateQueries({ queryKey: ["item-categories"] });
+      void queryClient.invalidateQueries({ queryKey: ["item-categories", id] });
+    },
+  });
+}
+
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 export function useDeleteItemCategory() {

@@ -11,12 +11,12 @@ import {
   Instagram,
   Pencil,
   Eye,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   ChevronDown,
   Globe,
-  Sparkles,
   Palette,
-  Check,
   Loader2,
   X,
 } from "lucide-react";
@@ -30,7 +30,7 @@ import {
   useItemCategories,
   useCreateItemCategory,
   useItemCategoriesCatalog,
-  useUpdateItemCategory,
+  usePatchItemCategory,
 } from "@/features/catalog/categories/api/useItemCategories";
 import {
   useDeleteUpload,
@@ -55,6 +55,7 @@ import {
 import type {
   LandingPageConfig,
   LandingPageTheme,
+  LandingPageThemeStyleId,
 } from "@/features/marketing/types/marketingTypes";
 
 // ─── Storage key ──────────────────────────────────────────────────────────────
@@ -71,10 +72,165 @@ interface LandingServiceCategory {
   availableTypes: ItemCategoryAvailableType[];
 }
 
+interface ThemeStyleOption {
+  id: LandingPageThemeStyleId;
+  theme: LandingPageTheme;
+  label: string;
+  description: string;
+  heroClassName: string;
+  bodyClassName: string;
+  blockClassName: string;
+  lineClassName: string;
+}
+
+const THEME_STYLE_OPTIONS: ThemeStyleOption[] = [
+  {
+    id: "rose-bloom",
+    theme: "rose",
+    label: "Rose Bloom",
+    description: "Suave e romântico",
+    heroClassName: "bg-gradient-to-r from-rose-400 to-pink-500",
+    bodyClassName: "bg-white",
+    blockClassName: "bg-rose-100 border border-rose-200",
+    lineClassName: "bg-rose-200",
+  },
+  {
+    id: "rose-sunset",
+    theme: "rose",
+    label: "Rose Sunset",
+    description: "Quente e acolhedor",
+    heroClassName: "bg-gradient-to-r from-orange-400 to-rose-500",
+    bodyClassName: "bg-rose-50",
+    blockClassName: "bg-white border border-rose-200",
+    lineClassName: "bg-rose-300",
+  },
+  {
+    id: "rose-coral",
+    theme: "rose",
+    label: "Rose Coral",
+    description: "Vibrante e moderno",
+    heroClassName: "bg-gradient-to-r from-pink-500 to-fuchsia-500",
+    bodyClassName: "bg-pink-50",
+    blockClassName: "bg-white border border-pink-200",
+    lineClassName: "bg-pink-300",
+  },
+  {
+    id: "dark-gold",
+    theme: "dark",
+    label: "Dark Gold",
+    description: "Luxuoso e elegante",
+    heroClassName: "bg-gradient-to-r from-neutral-950 to-neutral-800",
+    bodyClassName: "bg-neutral-900",
+    blockClassName: "bg-neutral-800 border border-neutral-700",
+    lineClassName: "bg-yellow-500/50",
+  },
+  {
+    id: "dark-slate",
+    theme: "dark",
+    label: "Dark Slate",
+    description: "Sério e profissional",
+    heroClassName: "bg-gradient-to-r from-slate-950 to-slate-800",
+    bodyClassName: "bg-slate-900",
+    blockClassName: "bg-slate-800 border border-slate-700",
+    lineClassName: "bg-slate-500",
+  },
+  {
+    id: "dark-emerald",
+    theme: "dark",
+    label: "Dark Emerald",
+    description: "Premium e impactante",
+    heroClassName: "bg-gradient-to-r from-zinc-950 to-emerald-900",
+    bodyClassName: "bg-zinc-900",
+    blockClassName: "bg-zinc-800 border border-zinc-700",
+    lineClassName: "bg-emerald-500/60",
+  },
+  {
+    id: "minimal-clean",
+    theme: "minimal",
+    label: "Minimal Clean",
+    description: "Leve e organizado",
+    heroClassName: "bg-white",
+    bodyClassName: "bg-gray-50",
+    blockClassName: "bg-white border border-gray-200",
+    lineClassName: "bg-gray-300",
+  },
+  {
+    id: "minimal-soft",
+    theme: "minimal",
+    label: "Minimal Soft",
+    description: "Claro e delicado",
+    heroClassName: "bg-gradient-to-r from-slate-100 to-gray-200",
+    bodyClassName: "bg-gray-100",
+    blockClassName: "bg-white border border-gray-300",
+    lineClassName: "bg-gray-400",
+  },
+  {
+    id: "minimal-contrast",
+    theme: "minimal",
+    label: "Minimal Contrast",
+    description: "Limpo com destaque",
+    heroClassName: "bg-gradient-to-r from-gray-900 to-gray-700",
+    bodyClassName: "bg-white",
+    blockClassName: "bg-gray-100 border border-gray-300",
+    lineClassName: "bg-gray-500",
+  },
+];
+
+function ThemeStyleWireframe({ option }: { option: ThemeStyleOption }) {
+  const heroTextClass = option.theme === "minimal" ? "text-gray-700" : "text-white/90";
+  const bodyMutedClass = option.theme === "dark" ? "bg-white/10" : "bg-black/10";
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-gray-200">
+      <div className={cn("flex h-8 items-center justify-between px-2.5", option.heroClassName)}>
+        <div className={cn("h-1.5 w-10 rounded-full", bodyMutedClass)} />
+        <div className="flex items-center gap-1">
+          <div className={cn("h-1.5 w-6 rounded-full", bodyMutedClass)} />
+          <div className={cn("h-1.5 w-6 rounded-full", bodyMutedClass)} />
+          <div className={cn("h-1.5 w-6 rounded-full", bodyMutedClass)} />
+        </div>
+      </div>
+
+      <div className={cn("space-y-2 p-2.5", option.bodyClassName)}>
+        <div className="space-y-1">
+          <div className={cn("h-2.5 w-4/5 rounded", option.lineClassName)} />
+          <div className={cn("h-2 w-3/5 rounded", bodyMutedClass)} />
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <div className={cn("h-4 w-14 rounded-sm", option.blockClassName)} />
+          <div className={cn("h-4 w-10 rounded-sm", option.blockClassName)} />
+          <div className={cn("h-4 w-12 rounded-sm", option.blockClassName)} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-1.5">
+          <div className={cn("h-8 rounded-sm", option.blockClassName)} />
+          <div className={cn("h-8 rounded-sm", option.blockClassName)} />
+          <div className={cn("h-8 rounded-sm", option.blockClassName)} />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className={cn("h-2 w-10 rounded", bodyMutedClass)} />
+          <div className={cn("h-2 w-8 rounded", bodyMutedClass)} />
+        </div>
+      </div>
+
+      <div className={cn("flex h-6 items-center justify-center", option.heroClassName)}>
+        <div className={cn("h-px w-7", option.lineClassName)} />
+        <span className={cn("mx-2 text-[7px] font-semibold uppercase tracking-wider", heroTextClass)}>
+          wireframe
+        </span>
+        <div className={cn("h-px w-7", option.lineClassName)} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Default data ─────────────────────────────────────────────────────────────
 
 const DEFAULT_CONFIG: LandingPageConfig = {
   theme: "rose",
+  themeStyleId: "rose-bloom",
   showOnlyServicesWithPhotos: false,
   businessInfo: {
     salonName: "Studio Belle",
@@ -181,9 +337,13 @@ function loadConfig(): LandingPageConfig {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as LandingPageConfig;
+      const fallbackStyleId =
+        THEME_STYLE_OPTIONS.find((option) => option.theme === parsed.theme)?.id ??
+        DEFAULT_CONFIG.themeStyleId;
       return {
         ...DEFAULT_CONFIG,
         ...parsed,
+        themeStyleId: parsed.themeStyleId ?? fallbackStyleId,
         showOnlyServicesWithPhotos: parsed.showOnlyServicesWithPhotos ?? false,
       };
     }
@@ -272,6 +432,27 @@ function Field({
 
 export function LandingPageConfigPage() {
   const [config, setConfig] = useState<LandingPageConfig>(loadConfig);
+  const [selectedThemeStyleId, setSelectedThemeStyleId] = useState<string>(() => {
+    const initialTheme = loadConfig().theme;
+    return (
+      THEME_STYLE_OPTIONS.find((option) => option.theme === initialTheme)?.id ??
+      THEME_STYLE_OPTIONS[0].id
+    );
+  });
+  const [themeDesktopPage, setThemeDesktopPage] = useState(() => {
+    const initialTheme = loadConfig().theme;
+    const optionIndex = THEME_STYLE_OPTIONS.findIndex(
+      (option) => option.theme === initialTheme,
+    );
+    return optionIndex >= 0 ? Math.floor(optionIndex / 2) : 0;
+  });
+  const [themeMobileIndex, setThemeMobileIndex] = useState(() => {
+    const initialTheme = loadConfig().theme;
+    const optionIndex = THEME_STYLE_OPTIONS.findIndex(
+      (option) => option.theme === initialTheme,
+    );
+    return optionIndex >= 0 ? optionIndex : 0;
+  });
   const [activeTab, setActiveTab] = useState<"info" | "slides" | "services">(
     "info",
   );
@@ -343,8 +524,8 @@ export function LandingPageConfigPage() {
       availableTypes: "SERVICE",
     });
   const createCategoryMutation = useCreateItemCategory();
-  const updateCategoryMutation = useUpdateItemCategory();
-  const reorderCategoryMutation = useUpdateItemCategory();
+  const updateCategoryMutation = usePatchItemCategory();
+  const reorderCategoryMutation = usePatchItemCategory();
 
   const { data: allCategories = [], refetch: refetchCategoriesCatalog } =
     useItemCategoriesCatalog();
@@ -395,9 +576,33 @@ export function LandingPageConfigPage() {
     setServiceRows(serviceListData?.content ?? []);
   }, [serviceListData?.content]);
 
-  // ── Theme ──
-  function setTheme(theme: LandingPageTheme) {
-    setConfig((prev) => ({ ...prev, theme }));
+  function applyThemeStyle(option: ThemeStyleOption) {
+    setSelectedThemeStyleId(option.id);
+    setConfig((prev) => ({
+      ...prev,
+      theme: option.theme,
+      themeStyleId: option.id,
+    }));
+  }
+
+  function nextDesktopThemePage() {
+    const totalPages = Math.ceil(THEME_STYLE_OPTIONS.length / 2);
+    setThemeDesktopPage((prev) => (prev + 1) % totalPages);
+  }
+
+  function prevDesktopThemePage() {
+    const totalPages = Math.ceil(THEME_STYLE_OPTIONS.length / 2);
+    setThemeDesktopPage((prev) => (prev - 1 + totalPages) % totalPages);
+  }
+
+  function nextMobileTheme() {
+    setThemeMobileIndex((prev) => (prev + 1) % THEME_STYLE_OPTIONS.length);
+  }
+
+  function prevMobileTheme() {
+    setThemeMobileIndex((prev) =>
+      (prev - 1 + THEME_STYLE_OPTIONS.length) % THEME_STYLE_OPTIONS.length,
+    );
   }
 
   // ── Business info updaters ──
@@ -936,6 +1141,13 @@ export function LandingPageConfigPage() {
     },
     { key: "services" as const, label: "Serviços", icon: <Globe size={14} /> },
   ];
+  const themeDesktopStartIndex = themeDesktopPage * 2;
+  const themeDesktopOptions = THEME_STYLE_OPTIONS.slice(
+    themeDesktopStartIndex,
+    themeDesktopStartIndex + 2,
+  );
+  const themeMobileOption = THEME_STYLE_OPTIONS[themeMobileIndex] ?? THEME_STYLE_OPTIONS[0];
+  const totalThemeDesktopPages = Math.ceil(THEME_STYLE_OPTIONS.length / 2);
 
   return (
     <div className="space-y-6">
@@ -994,93 +1206,130 @@ export function LandingPageConfigPage() {
             <p className="text-xs text-muted-foreground -mt-1">
               Escolha o estilo visual da sua landing page pública.
             </p>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {(
-                [
-                  {
-                    key: "rose" as LandingPageTheme,
-                    label: "Rose",
-                    description: "Alegre e feminino",
-                    preview: (
-                      <div className="h-20 rounded-lg overflow-hidden border border-gray-100">
-                        <div className="h-10 bg-gradient-to-r from-rose-400 to-pink-500 flex items-center justify-center">
-                          <span className="text-[8px] font-bold text-white tracking-wide uppercase">
-                            Hero
-                          </span>
-                        </div>
-                        <div className="h-10 bg-white flex items-center justify-center gap-1">
-                          <div className="h-5 w-5 rounded-sm bg-rose-100 border border-rose-200" />
-                          <div className="h-5 w-5 rounded-sm bg-rose-100 border border-rose-200" />
-                          <div className="h-5 w-5 rounded-sm bg-rose-100 border border-rose-200" />
-                        </div>
+            <div className="relative mx-auto hidden w-full max-w-4xl sm:block">
+              <button
+                type="button"
+                onClick={prevDesktopThemePage}
+                className="absolute left-0 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Estilos anteriores"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <div className="mx-14 grid grid-cols-2 gap-4">
+                {themeDesktopOptions.map((option) => {
+                  const isActive = selectedThemeStyleId === option.id;
+
+                  return (
+                    <div
+                      key={option.id}
+                      className={cn(
+                        "relative flex flex-col gap-3 rounded-xl border-2 p-3 text-left",
+                        isActive ? "border-primary bg-primary/5" : "border-border bg-card",
+                      )}
+                    >
+                      <ThemeStyleWireframe option={option} />
+
+                      <div>
+                        <p className="text-sm font-semibold">{option.label}</p>
+                        <p className="text-xs text-muted-foreground">{option.description}</p>
                       </div>
-                    ),
-                  },
-                  {
-                    key: "dark" as LandingPageTheme,
-                    label: "Dark Luxo",
-                    description: "Elegante e sofisticado",
-                    preview: (
-                      <div className="h-20 rounded-lg overflow-hidden border border-neutral-700">
-                        <div className="h-10 bg-neutral-950 flex items-center justify-center gap-1">
-                          <div className="h-px w-6 bg-yellow-400/50" />
-                          <Sparkles size={8} className="text-yellow-400/70" />
-                          <div className="h-px w-6 bg-yellow-400/50" />
-                        </div>
-                        <div className="h-10 bg-neutral-900 flex items-center justify-center gap-1">
-                          <div className="h-5 w-5 bg-neutral-800 border border-neutral-700" />
-                          <div className="h-5 w-5 bg-neutral-800 border border-neutral-700" />
-                          <div className="h-5 w-5 bg-neutral-800 border border-neutral-700" />
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: "minimal" as LandingPageTheme,
-                    label: "Minimal",
-                    description: "Limpo e moderno",
-                    preview: (
-                      <div className="h-20 rounded-lg overflow-hidden border border-gray-200">
-                        <div className="h-10 bg-white flex items-end px-3 pb-1">
-                          <span className="text-[9px] font-black text-gray-900 tracking-tight uppercase">
-                            Studio
-                          </span>
-                        </div>
-                        <div className="h-10 bg-gray-50 flex items-center justify-center gap-px border-t border-gray-200">
-                          <div className="h-5 w-5 bg-white border border-gray-200" />
-                          <div className="h-5 w-5 bg-white border border-gray-200" />
-                          <div className="h-5 w-5 bg-white border border-gray-200" />
-                        </div>
-                      </div>
-                    ),
-                  },
-                ] as const
-              ).map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setTheme(t.key)}
-                  className={cn(
-                    "relative flex flex-col gap-3 rounded-xl border-2 p-3 text-left transition-colors hover:border-primary/50",
-                    config.theme === t.key
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card",
-                  )}
-                >
-                  {config.theme === t.key && (
-                    <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                      <Check size={11} className="text-primary-foreground" />
+                      <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={isActive}
+                          onChange={() => applyThemeStyle(option)}
+                          className="h-4 w-4 rounded border-input accent-primary"
+                        />
+                        Habilitar este estilo
+                      </label>
                     </div>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={nextDesktopThemePage}
+                className="absolute right-0 top-1/2 z-10 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="Próximos estilos"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="hidden items-center justify-center gap-1.5 sm:flex">
+              {Array.from({ length: totalThemeDesktopPages }).map((_, index) => (
+                <span
+                  key={`theme-desktop-dot-${index}`}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    index === themeDesktopPage
+                      ? "w-6 bg-primary"
+                      : "w-2 bg-muted-foreground/35",
                   )}
-                  {t.preview}
-                  <div>
-                    <p className="text-sm font-semibold">{t.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.description}
-                    </p>
-                  </div>
-                </button>
+                />
               ))}
+            </div>
+
+            <div className="space-y-3 sm:hidden">
+              <div
+                key={themeMobileOption.id}
+                className={cn(
+                  "relative flex w-full flex-col gap-3 rounded-xl border-2 p-3 text-left",
+                  selectedThemeStyleId === themeMobileOption.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card",
+                )}
+              >
+                <ThemeStyleWireframe option={themeMobileOption} />
+
+                <div>
+                  <p className="text-sm font-semibold">{themeMobileOption.label}</p>
+                  <p className="text-xs text-muted-foreground">{themeMobileOption.description}</p>
+                </div>
+                <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={selectedThemeStyleId === themeMobileOption.id}
+                    onChange={() => applyThemeStyle(themeMobileOption)}
+                    className="h-4 w-4 rounded border-input accent-primary"
+                  />
+                  Habilitar este estilo
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={prevMobileTheme}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                  title="Estilo anterior"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {THEME_STYLE_OPTIONS.map((option, index) => (
+                    <span
+                      key={option.id}
+                      className={cn(
+                        "h-2 rounded-full transition-all",
+                        index === themeMobileIndex
+                          ? "w-5 bg-primary"
+                          : "w-2 bg-muted-foreground/35",
+                      )}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={nextMobileTheme}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
+                  title="Próximo estilo"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </Section>
           <Section title="Dados do Negócio" icon={<Store size={16} />}>

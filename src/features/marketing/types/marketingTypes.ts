@@ -150,6 +150,17 @@ export interface MarketingAutomation {
 
 export type LandingPageTheme = "rose" | "dark" | "minimal";
 
+export type LandingPageThemeStyleId =
+  | "rose-bloom"
+  | "rose-sunset"
+  | "rose-coral"
+  | "dark-gold"
+  | "dark-slate"
+  | "dark-emerald"
+  | "minimal-clean"
+  | "minimal-soft"
+  | "minimal-contrast";
+
 export interface LandingPageSlide {
   id: string;
   imageUrl: string;
@@ -184,6 +195,7 @@ export interface LandingPageBusinessInfo {
 
 export interface LandingPageConfig {
   theme: LandingPageTheme;
+  themeStyleId?: LandingPageThemeStyleId;
   businessInfo: LandingPageBusinessInfo;
   slides: LandingPageSlide[];
   services: LandingPageService[];

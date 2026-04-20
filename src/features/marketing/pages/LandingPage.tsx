@@ -18,12 +18,19 @@ import type {
   LandingPageConfig,
   LandingPageSlide,
   LandingPageTheme,
+  LandingPageThemeStyleId,
 } from "@/features/marketing/types/marketingTypes";
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "crm_landing_page_config";
 const LANDING_SERVICE_CATEGORIES_KEY = "crm_landing_service_categories";
+
+const DEFAULT_THEME_STYLE_BY_THEME: Record<LandingPageTheme, LandingPageThemeStyleId> = {
+  rose: "rose-bloom",
+  dark: "dark-gold",
+  minimal: "minimal-clean",
+};
 
 interface LandingServiceCategory {
   id: number;
@@ -54,6 +61,113 @@ function loadServiceCategories(): LandingServiceCategory[] {
   return [];
 }
 
+function getThemeStyleId(config: LandingPageConfig): LandingPageThemeStyleId {
+  const fallback = DEFAULT_THEME_STYLE_BY_THEME[config.theme];
+  const styleId = config.themeStyleId;
+  if (!styleId) return fallback;
+
+  if (config.theme === "rose" && styleId.startsWith("rose-")) return styleId;
+  if (config.theme === "dark" && styleId.startsWith("dark-")) return styleId;
+  if (config.theme === "minimal" && styleId.startsWith("minimal-")) return styleId;
+
+  return fallback;
+}
+
+const ROSE_STYLE_CLASSES: Record<
+  "rose-bloom" | "rose-sunset" | "rose-coral",
+  {
+    overlay: string;
+    ctaButton: string;
+    ctaSection: string;
+    ctaText: string;
+  }
+> = {
+  "rose-bloom": {
+    overlay: "bg-gradient-to-b from-black/60 via-black/40 to-black/70",
+    ctaButton: "bg-emerald-500 hover:bg-emerald-600",
+    ctaSection: "bg-gradient-to-r from-rose-500 to-pink-600",
+    ctaText: "text-rose-600",
+  },
+  "rose-sunset": {
+    overlay: "bg-gradient-to-b from-black/55 via-orange-900/30 to-black/75",
+    ctaButton: "bg-orange-500 hover:bg-orange-600",
+    ctaSection: "bg-gradient-to-r from-orange-500 to-rose-500",
+    ctaText: "text-orange-600",
+  },
+  "rose-coral": {
+    overlay: "bg-gradient-to-b from-black/55 via-fuchsia-900/30 to-black/75",
+    ctaButton: "bg-fuchsia-500 hover:bg-fuchsia-600",
+    ctaSection: "bg-gradient-to-r from-pink-600 to-fuchsia-600",
+    ctaText: "text-fuchsia-600",
+  },
+};
+
+const DARK_STYLE_CLASSES: Record<
+  "dark-gold" | "dark-slate" | "dark-emerald",
+  {
+    overlay: string;
+    accent: string;
+    accentText: string;
+    ctaBorder: string;
+    ctaHover: string;
+  }
+> = {
+  "dark-gold": {
+    overlay: "bg-gradient-to-b from-black/80 via-black/60 to-black/90",
+    accent: "bg-yellow-400/60",
+    accentText: "text-yellow-300",
+    ctaBorder: "border-yellow-400/60",
+    ctaHover: "hover:bg-yellow-400/10",
+  },
+  "dark-slate": {
+    overlay: "bg-gradient-to-b from-black/85 via-slate-900/65 to-black/90",
+    accent: "bg-slate-300/60",
+    accentText: "text-slate-200",
+    ctaBorder: "border-slate-300/60",
+    ctaHover: "hover:bg-slate-300/10",
+  },
+  "dark-emerald": {
+    overlay: "bg-gradient-to-b from-black/80 via-emerald-950/65 to-black/90",
+    accent: "bg-emerald-300/60",
+    accentText: "text-emerald-200",
+    ctaBorder: "border-emerald-300/60",
+    ctaHover: "hover:bg-emerald-300/10",
+  },
+};
+
+const MINIMAL_STYLE_CLASSES: Record<
+  "minimal-clean" | "minimal-soft" | "minimal-contrast",
+  {
+    heroBackground: string;
+    primaryButton: string;
+    ctaSection: string;
+    ctaButton: string;
+    ctaSub: string;
+  }
+> = {
+  "minimal-clean": {
+    heroBackground: "bg-white",
+    primaryButton: "bg-gray-900 hover:bg-black text-white",
+    ctaSection: "bg-gray-900",
+    ctaButton: "bg-white text-gray-900 hover:bg-gray-100",
+    ctaSub: "text-gray-500",
+  },
+  "minimal-soft": {
+    heroBackground: "bg-slate-50",
+    primaryButton: "bg-slate-700 hover:bg-slate-800 text-white",
+    ctaSection: "bg-slate-800",
+    ctaButton: "bg-slate-100 text-slate-900 hover:bg-white",
+    ctaSub: "text-slate-400",
+  },
+  "minimal-contrast": {
+    heroBackground: "bg-white",
+    primaryButton: "bg-black hover:bg-zinc-800 text-white",
+    ctaSection: "bg-black",
+    ctaButton: "bg-zinc-100 text-black hover:bg-white",
+    ctaSub: "text-zinc-500",
+  },
+};
+
 // ─── WhatsApp helper ──────────────────────────────────────────────────────────
 
 function whatsappUrl(number: string, message: string) {
@@ -67,9 +181,11 @@ function whatsappUrl(number: string, message: string) {
 function RoseHeroSlider({
   slides,
   whatsappHref,
+  styleId,
 }: {
   slides: LandingPageSlide[];
   whatsappHref: string;
+  styleId: "rose-bloom" | "rose-sunset" | "rose-coral";
 }) {
   const [current, setCurrent] = useState(0);
   const count = slides.length;
@@ -87,6 +203,7 @@ function RoseHeroSlider({
 
   if (count === 0) return null;
   const slide = slides[current];
+  const style = ROSE_STYLE_CLASSES[styleId];
 
   return (
     <section className="relative w-full h-[85vh] min-h-[500px] overflow-hidden">
@@ -100,7 +217,7 @@ function RoseHeroSlider({
           style={{ backgroundImage: `url(${s.imageUrl})` }}
         />
       ))}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+      <div className={cn("absolute inset-0", style.overlay)} />
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl max-w-3xl leading-tight">
           {slide.title}
@@ -114,7 +231,10 @@ function RoseHeroSlider({
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg hover:bg-emerald-600 transition-colors"
+          className={cn(
+            "mt-8 inline-flex items-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold text-white shadow-lg transition-colors",
+            style.ctaButton,
+          )}
         >
           <MessageCircle size={20} />
           Agendar pelo WhatsApp
@@ -224,9 +344,16 @@ function RoseServicesSection({
   );
 }
 
-function RoseCtaBanner({ whatsappHref }: { whatsappHref: string }) {
+function RoseCtaBanner({
+  whatsappHref,
+  styleId,
+}: {
+  whatsappHref: string;
+  styleId: "rose-bloom" | "rose-sunset" | "rose-coral";
+}) {
+  const style = ROSE_STYLE_CLASSES[styleId];
   return (
-    <section className="py-16 bg-gradient-to-r from-rose-500 to-pink-600">
+    <section className={cn("py-16", style.ctaSection)}>
       <div className="mx-auto max-w-3xl px-6 text-center text-white">
         <h2 className="text-3xl font-bold sm:text-4xl">
           Pronta para transformar seu visual?
@@ -238,7 +365,10 @@ function RoseCtaBanner({ whatsappHref }: { whatsappHref: string }) {
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-base font-bold text-rose-600 shadow-lg hover:bg-gray-50 transition-colors"
+          className={cn(
+            "mt-8 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-base font-bold shadow-lg hover:bg-gray-50 transition-colors",
+            style.ctaText,
+          )}
         >
           <MessageCircle size={20} />
           Agendar pelo WhatsApp
@@ -439,9 +569,11 @@ function RoseNavbar({
 function DarkHeroSlider({
   slides,
   whatsappHref,
+  styleId,
 }: {
   slides: LandingPageSlide[];
   whatsappHref: string;
+  styleId: "dark-gold" | "dark-slate" | "dark-emerald";
 }) {
   const [current, setCurrent] = useState(0);
   const count = slides.length;
@@ -459,6 +591,7 @@ function DarkHeroSlider({
 
   if (count === 0) return null;
   const slide = slides[current];
+  const style = DARK_STYLE_CLASSES[styleId];
 
   return (
     <section className="relative w-full h-screen min-h-[600px] overflow-hidden">
@@ -473,10 +606,10 @@ function DarkHeroSlider({
         />
       ))}
       {/* Dark overlay with slight color tint */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/90" />
+      <div className={cn("absolute inset-0", style.overlay)} />
       {/* Decorative gold horizontal lines */}
-      <div className="absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent" />
-      <div className="absolute bottom-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-yellow-400/20 to-transparent" />
+      <div className={cn("absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent to-transparent", style.accent)} />
+      <div className={cn("absolute bottom-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent to-transparent", style.accent)} />
 
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
         <div className="flex items-center gap-3 mb-6">
@@ -501,7 +634,12 @@ function DarkHeroSlider({
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 border border-yellow-400/70 px-10 py-3.5 text-sm font-semibold tracking-widest uppercase text-yellow-300 hover:bg-yellow-400/10 transition-colors"
+          className={cn(
+            "inline-flex items-center gap-2 border px-10 py-3.5 text-sm font-semibold tracking-widest uppercase transition-colors",
+            style.accentText,
+            style.ctaBorder,
+            style.ctaHover,
+          )}
         >
           <MessageCircle size={16} />
           Agendar Agora
@@ -615,7 +753,14 @@ function DarkServicesSection({
   );
 }
 
-function DarkCtaBanner({ whatsappHref }: { whatsappHref: string }) {
+function DarkCtaBanner({
+  whatsappHref,
+  styleId,
+}: {
+  whatsappHref: string;
+  styleId: "dark-gold" | "dark-slate" | "dark-emerald";
+}) {
+  const style = DARK_STYLE_CLASSES[styleId];
   return (
     <section className="py-20 bg-neutral-900 border-y border-neutral-800">
       <div className="mx-auto max-w-3xl px-6 text-center">
@@ -634,7 +779,12 @@ function DarkCtaBanner({ whatsappHref }: { whatsappHref: string }) {
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-10 inline-flex items-center gap-2 border border-yellow-400/60 px-10 py-3.5 text-sm font-semibold tracking-widest uppercase text-yellow-300 hover:bg-yellow-400/10 transition-colors"
+          className={cn(
+            "mt-10 inline-flex items-center gap-2 border px-10 py-3.5 text-sm font-semibold tracking-widest uppercase transition-colors",
+            style.accentText,
+            style.ctaBorder,
+            style.ctaHover,
+          )}
         >
           <MessageCircle size={16} />
           Agendar pelo WhatsApp
@@ -819,11 +969,13 @@ function MinimalHeroSlider({
   whatsappHref,
   salonName,
   tagline,
+  styleId,
 }: {
   slides: LandingPageSlide[];
   whatsappHref: string;
   salonName: string;
   tagline: string;
+  styleId: "minimal-clean" | "minimal-soft" | "minimal-contrast";
 }) {
   const [current, setCurrent] = useState(0);
   const count = slides.length;
@@ -840,9 +992,15 @@ function MinimalHeroSlider({
   }, [count, next]);
 
   const slide = slides[current];
+  const style = MINIMAL_STYLE_CLASSES[styleId];
 
   return (
-    <section className="relative min-h-screen flex flex-col lg:flex-row overflow-hidden bg-white">
+    <section
+      className={cn(
+        "relative min-h-screen flex flex-col lg:flex-row overflow-hidden",
+        style.heroBackground,
+      )}
+    >
       {/* Left: text half */}
       <div className="relative z-10 flex flex-col justify-center px-10 py-24 lg:w-1/2 lg:px-20">
         <div className="space-y-8 max-w-lg">
@@ -862,7 +1020,10 @@ function MinimalHeroSlider({
               href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-gray-900 px-8 py-3.5 text-sm font-semibold text-white hover:bg-black transition-colors"
+              className={cn(
+                "inline-flex items-center gap-2 px-8 py-3.5 text-sm font-semibold transition-colors",
+                style.primaryButton,
+              )}
             >
               <MessageCircle size={16} />
               Agendar pelo WhatsApp
@@ -1002,9 +1163,16 @@ function MinimalServicesSection({
   );
 }
 
-function MinimalCtaBanner({ whatsappHref }: { whatsappHref: string }) {
+function MinimalCtaBanner({
+  whatsappHref,
+  styleId,
+}: {
+  whatsappHref: string;
+  styleId: "minimal-clean" | "minimal-soft" | "minimal-contrast";
+}) {
+  const style = MINIMAL_STYLE_CLASSES[styleId];
   return (
-    <section className="py-20 bg-gray-900">
+    <section className={cn("py-20", style.ctaSection)}>
       <div className="mx-auto max-w-3xl px-6 lg:px-10 text-center">
         <p className="text-xs font-semibold tracking-[0.4em] text-gray-500 uppercase mb-6">
           Pronto para começar?
@@ -1012,13 +1180,16 @@ function MinimalCtaBanner({ whatsappHref }: { whatsappHref: string }) {
         <h2 className="text-4xl font-black text-white leading-tight sm:text-5xl">
           Agende hoje.
           <br />
-          <span className="text-gray-500">Transforme amanhã.</span>
+          <span className={style.ctaSub}>Transforme amanhã.</span>
         </h2>
         <a
           href={whatsappHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-10 inline-flex items-center gap-2 bg-white px-10 py-3.5 text-sm font-bold text-gray-900 hover:bg-gray-100 transition-colors"
+          className={cn(
+            "mt-10 inline-flex items-center gap-2 px-10 py-3.5 text-sm font-bold transition-colors",
+            style.ctaButton,
+          )}
         >
           <MessageCircle size={16} />
           Agendar pelo WhatsApp
@@ -1386,6 +1557,19 @@ export function LandingPage() {
       price: "",
     }));
   const theme: LandingPageTheme = config.theme ?? "rose";
+  const themeStyleId = getThemeStyleId(config);
+  const roseStyleId =
+    themeStyleId.startsWith("rose-")
+      ? (themeStyleId as "rose-bloom" | "rose-sunset" | "rose-coral")
+      : "rose-bloom";
+  const darkStyleId =
+    themeStyleId.startsWith("dark-")
+      ? (themeStyleId as "dark-gold" | "dark-slate" | "dark-emerald")
+      : "dark-gold";
+  const minimalStyleId =
+    themeStyleId.startsWith("minimal-")
+      ? (themeStyleId as "minimal-clean" | "minimal-soft" | "minimal-contrast")
+      : "minimal-clean";
   const wpHref = whatsappUrl(
     businessInfo.whatsappNumber,
     businessInfo.whatsappMessage,
@@ -1408,9 +1592,9 @@ export function LandingPage() {
             logoUrl={businessInfo.logoUrl}
             whatsappHref={wpHref}
           />
-          <RoseHeroSlider slides={slides} whatsappHref={wpHref} />
+          <RoseHeroSlider slides={slides} whatsappHref={wpHref} styleId={roseStyleId} />
           <RoseServicesSection services={services} whatsappHref={wpHref} />
-          <RoseCtaBanner whatsappHref={wpHref} />
+          <RoseCtaBanner whatsappHref={wpHref} styleId={roseStyleId} />
           <RoseAboutSection info={businessInfo} />
         </>
       )}
@@ -1423,9 +1607,9 @@ export function LandingPage() {
             logoUrl={businessInfo.logoUrl}
             whatsappHref={wpHref}
           />
-          <DarkHeroSlider slides={slides} whatsappHref={wpHref} />
+          <DarkHeroSlider slides={slides} whatsappHref={wpHref} styleId={darkStyleId} />
           <DarkServicesSection services={services} whatsappHref={wpHref} />
-          <DarkCtaBanner whatsappHref={wpHref} />
+          <DarkCtaBanner whatsappHref={wpHref} styleId={darkStyleId} />
           <DarkAboutSection info={businessInfo} />
         </>
       )}
@@ -1443,9 +1627,10 @@ export function LandingPage() {
             whatsappHref={wpHref}
             salonName={businessInfo.salonName}
             tagline={businessInfo.tagline}
+            styleId={minimalStyleId}
           />
           <MinimalServicesSection services={services} whatsappHref={wpHref} />
-          <MinimalCtaBanner whatsappHref={wpHref} />
+          <MinimalCtaBanner whatsappHref={wpHref} styleId={minimalStyleId} />
           <MinimalAboutSection info={businessInfo} />
         </>
       )}
