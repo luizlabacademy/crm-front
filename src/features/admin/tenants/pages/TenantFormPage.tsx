@@ -16,7 +16,6 @@ import {
   Label,
   FieldError,
   inputCls,
-  SectionTitle,
   PersonTypeSwitch,
   PhysicalFields,
   LegalFields,
@@ -26,6 +25,29 @@ import {
   type ContactRow,
   type AddressRow,
 } from "@/components/shared/PersonFields";
+import { PhotoUploader } from "@/components/shared/PhotoUploader";
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <div>
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        {description && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 const physicalSchema = z.object({
   fullName: z.string().optional(),
@@ -206,8 +228,16 @@ export function TenantFormPage() {
     (t) => t.id !== tenantId,
   );
 
+  const displayName =
+    tenant?.name ||
+    tenant?.legal?.tradeName ||
+    tenant?.legal?.corporateName ||
+    tenant?.physical?.fullName ||
+    "Novo tenant";
+  const subtitle = tenant?.category ?? tenant?.legal?.cnpj ?? null;
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -229,11 +259,23 @@ export function TenantFormPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-        {/* ── Dados básicos ── */}
-        <div className="space-y-4">
-          <SectionTitle>Dados básicos</SectionTitle>
+      {isEdit && tenantId && tenant && (
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <PhotoUploader
+            fileType="TENANT"
+            tenantId={tenantId}
+            entityId={tenantId}
+            fallbackUrl={tenant.photo ?? null}
+            disabled={isSaving}
+            displayName={displayName}
+            subtitle={subtitle}
+            shape="square"
+          />
+        </div>
+      )}
 
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+        <SectionCard title="Dados basicos">
           <div className="space-y-1.5">
             <Label htmlFor="name" required>
               Nome
@@ -291,11 +333,9 @@ export function TenantFormPage() {
               Tenant ativo
             </label>
           </div>
-        </div>
+        </SectionCard>
 
-        {/* ── Dados de pessoa ── */}
-        <div className="space-y-4">
-          <SectionTitle>Dados de pessoa jurídica / física</SectionTitle>
+        <SectionCard title="Dados de pessoa juridica / fisica">
           <PersonTypeSwitch
             value={personType}
             onChange={setPersonType}
@@ -315,43 +355,38 @@ export function TenantFormPage() {
               disabled={isSaving}
             />
           )}
-        </div>
+        </SectionCard>
 
-        {/* ── Contatos ── */}
-        <div className="space-y-4">
-          <SectionTitle>Contatos</SectionTitle>
+        <SectionCard title="Contatos">
           <ContactsField
             contacts={contacts}
             onChange={setContacts}
             disabled={isSaving}
           />
-        </div>
+        </SectionCard>
 
-        {/* ── Endereços ── */}
-        <div className="space-y-4">
-          <SectionTitle>Endereços</SectionTitle>
+        <SectionCard title="Enderecos">
           <AddressesField
             addresses={addresses}
             onChange={setAddresses}
             disabled={isSaving}
           />
-        </div>
+        </SectionCard>
 
-        {/* ── Actions ── */}
-        <div className="flex items-center gap-3 pt-2 border-t border-border">
+        <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {isSaving && <Loader2 size={14} className="animate-spin" />}
-            {isEdit ? "Salvar alterações" : "Cadastrar tenant"}
+            {isEdit ? "Salvar alteracoes" : "Cadastrar tenant"}
           </button>
           <button
             type="button"
             onClick={() => void navigate("/tenants")}
             disabled={isSaving}
-            className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-50"
+            className="rounded-lg border border-border bg-background px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>

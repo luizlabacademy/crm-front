@@ -12,6 +12,7 @@ import {
   useUpdateItemCategory,
 } from "@/features/catalog/categories/api/useItemCategories";
 import type { ItemCategoryAvailableType } from "@/features/catalog/categories/types/itemCategoryTypes";
+import { PhotoUploader } from "@/components/shared/PhotoUploader";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,13 @@ export function ItemCategoryFormPage() {
     );
   }
 
+  const isSaving =
+    isSubmitting || createMutation.isPending || updateMutation.isPending;
+
+  const subtitle = (existing?.availableTypes ?? [])
+    .map((type) => (type === "PRODUCT" ? "Produto" : "Servico"))
+    .join(" • ");
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
@@ -114,6 +122,27 @@ export function ItemCategoryFormPage() {
           </p>
         </div>
       </div>
+
+      {isEditing && categoryId && existing && (
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <PhotoUploader
+            fileType="CATEGORY"
+            tenantId={existing.tenantId}
+            entityId={categoryId}
+            fallbackUrl={existing.photo ?? null}
+            disabled={isSaving}
+            displayName={existing.name}
+            subtitle={subtitle || null}
+            shape="square"
+          />
+        </div>
+      )}
+
+      {!isEditing && (
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-5 text-sm text-muted-foreground">
+          Salve a categoria para habilitar o envio de foto.
+        </div>
+      )}
 
       <form
         onSubmit={(e) => void handleSubmit(onSubmit)(e)}
@@ -187,10 +216,10 @@ export function ItemCategoryFormPage() {
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSaving}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {isSubmitting
+            {isSaving
               ? "Salvando..."
               : isEditing
                 ? "Salvar Alteracoes"

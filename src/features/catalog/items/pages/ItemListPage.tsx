@@ -290,7 +290,9 @@ export function ItemListPage() {
                         type="button"
                         onClick={() =>
                           void navigate(
-                            `/catalog/items/${item.id}/edit${typeFilter ? `?type=${typeFilter}` : ""}`,
+                            typeFilter
+                              ? `${basePath}/${item.id}/edit`
+                              : `/catalog/items/${item.id}/edit`,
                           )
                         }
                         className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"

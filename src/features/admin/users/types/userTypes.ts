@@ -33,6 +33,7 @@ export interface UserResponse {
   active: boolean;
   createdAt: string;
   updatedAt?: string | null;
+  photo?: string | null;
   physical?: PersonPhysicalResponse | null;
   legal?: PersonLegalResponse | null;
   contacts?: ContactResponse[];

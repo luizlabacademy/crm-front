@@ -28,8 +28,29 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/shared/Button";
 import { Grid } from "@/components/shared/Grid";
-import { Fieldset } from "@/components/shared/Fieldset";
-import { Divider } from "@/components/shared/Divider";
+import { PhotoUploader } from "@/components/shared/PhotoUploader";
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <div>
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        {description && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -231,9 +252,16 @@ export function CustomerFormPage() {
   const isSaving =
     isSubmitting || createMutation.isPending || updateMutation.isPending;
 
+  const displayName =
+    customer?.fullName ||
+    customer?.physical?.fullName ||
+    customer?.legal?.tradeName ||
+    customer?.legal?.corporateName ||
+    "Novo cliente";
+  const subtitle = customer?.email ?? customer?.phone ?? customer?.document ?? null;
+
   return (
-    <div className="space-y-6 max-w-2xl">
-      {/* Header */}
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
         <Button
           type="button"
@@ -256,9 +284,22 @@ export function CustomerFormPage() {
         </div>
       </div>
 
+      {isEdit && customerId && customer && (
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <PhotoUploader
+            fileType="CUSTOMER"
+            tenantId={customer.tenantId}
+            entityId={customerId}
+            fallbackUrl={customer.photo ?? null}
+            disabled={isSaving}
+            displayName={displayName}
+            subtitle={subtitle}
+          />
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-        {/* ── Dados básicos ── */}
-        <Fieldset legend="Dados básicos" className="space-y-4">
+        <SectionCard title="Dados basicos">
           <div className="space-y-1.5">
             <Label htmlFor="tenantId" required>
               Tenant
@@ -355,10 +396,9 @@ export function CustomerFormPage() {
               Cliente ativo
             </label>
           </div>
-        </Fieldset>
+        </SectionCard>
 
-        {/* ── Dados de pessoa ── */}
-        <Fieldset legend="Dados de pessoa" className="space-y-4">
+        <SectionCard title="Dados de pessoa">
           <PersonTypeSwitch
             value={personType}
             onChange={setPersonType}
@@ -378,32 +418,28 @@ export function CustomerFormPage() {
               disabled={isSaving}
             />
           )}
-        </Fieldset>
+        </SectionCard>
 
-        {/* ── Contatos ── */}
-        <Fieldset legend="Contatos" className="space-y-4">
+        <SectionCard title="Contatos">
           <ContactsField
             contacts={contacts}
             onChange={setContacts}
             disabled={isSaving}
           />
-        </Fieldset>
+        </SectionCard>
 
-        {/* ── Endereços ── */}
-        <Fieldset legend="Endereços" className="space-y-4">
+        <SectionCard title="Enderecos">
           <AddressesField
             addresses={addresses}
             onChange={setAddresses}
             disabled={isSaving}
           />
-        </Fieldset>
+        </SectionCard>
 
-        {/* ── Actions ── */}
-        <Divider />
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-center gap-3 pt-1">
           <Button type="submit" disabled={isSaving}>
             {isSaving && <Loader2 size={14} className="animate-spin" />}
-            {isEdit ? "Salvar alterações" : "Cadastrar cliente"}
+            {isEdit ? "Salvar alteracoes" : "Cadastrar cliente"}
           </Button>
           <Button
             type="button"

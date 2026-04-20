@@ -25,6 +25,7 @@ import type {
   OptionRequest,
   AdditionalRequest,
 } from "@/features/catalog/items/types/itemTypes";
+import { PhotoGallery } from "@/components/shared/PhotoGallery";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -672,29 +673,24 @@ export function ItemFormPage() {
           </div>
         )}
 
-        {/* ── Photos (read-only for now) ─────────────────────────────── */}
-        {isEditing && existing?.photos && existing.photos.length > 0 && (
+        {/* ── Photos ─────────────────────────────────────────────────── */}
+        {isEditing && existing && (
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <SectionHeader title="Fotos" />
-            <div className="flex flex-wrap gap-3">
-              {existing.photos.map((url, i) => (
-                <div
-                  key={i}
-                  className="relative h-24 w-24 overflow-hidden rounded-lg border border-border bg-muted"
-                >
-                  <img
-                    src={url}
-                    alt={`Foto ${i + 1}`}
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Fotos gerenciadas via upload de imagens
+            <PhotoGallery
+              fileType={resolvedType}
+              tenantId={existing.tenantId}
+              entityId={itemId}
+              fallbackUrls={existing.photos ?? []}
+              disabled={isSubmitting}
+            />
+          </div>
+        )}
+
+        {!isEditing && (
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Salve o {resolvedTypeLabel.toLowerCase()} para enviar fotos.
             </p>
           </div>
         )}

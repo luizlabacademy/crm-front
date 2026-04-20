@@ -78,6 +78,7 @@ export function useUploadFile() {
             ...(params.height != null ? { height: params.height } : {}),
             ...(params.quality != null ? { quality: params.quality } : {}),
             ...(params.legend != null ? { legend: params.legend } : {}),
+            ...(params.sortOrder != null ? { sortOrder: params.sortOrder } : {}),
           },
         },
       );

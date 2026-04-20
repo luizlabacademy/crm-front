@@ -37,6 +37,7 @@ export interface CustomerResponse {
   notes?: string | null;
   createdAt: string;
   updatedAt?: string | null;
+  photo?: string | null;
   physical?: PersonPhysicalResponse | null;
   legal?: PersonLegalResponse | null;
   contacts?: ContactResponse[];

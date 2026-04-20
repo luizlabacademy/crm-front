@@ -23,7 +23,6 @@ import {
   LegalFields,
   ContactsField,
   AddressesField,
-  SectionTitle,
   Label,
   FieldError,
   inputCls,
@@ -33,8 +32,31 @@ import type {
   ContactRow,
   AddressRow,
 } from "@/components/shared/PersonFields";
+import { PhotoUploader } from "@/components/shared/PhotoUploader";
 import { formatDateTime } from "@/lib/utils/formatDate";
 import { cn } from "@/lib/utils";
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <div>
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        {description && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 const physicalSchema = z
   .object({
@@ -514,8 +536,15 @@ export function UserFormPage() {
     updateMutation.isPending ||
     updateRolesMutation.isPending;
 
+  const displayName =
+    user?.physical?.fullName ||
+    user?.legal?.tradeName ||
+    user?.legal?.corporateName ||
+    user?.email ||
+    "Novo usuario";
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="mx-auto w-full max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -525,60 +554,90 @@ export function UserFormPage() {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-2xl font-semibold">Cadastro de Usuário</h1>
+          <h1 className="text-2xl font-semibold">
+            {isEdit ? "Editar usuario" : "Novo usuario"}
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Preencha os dados do usuário e os perfis vinculados.
+            Preencha os dados do usuario e os perfis vinculados.
           </p>
         </div>
       </div>
 
       {isAdmin && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-          Este é o usuário administrador do sistema. Alterações devem ser feitas
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          Este e o usuario administrador do sistema. Alteracoes devem ser feitas
           com cuidado.
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-        {/* Tenant */}
-        <div className="space-y-1.5">
-          <Label htmlFor="tenantId" required>
-            Tenant
-          </Label>
-          <select
-            id="tenantId"
-            {...register("tenantId", { valueAsNumber: true })}
+      {isEdit && userId && user && (
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <PhotoUploader
+            fileType="USER"
+            tenantId={user.tenantId}
+            entityId={userId}
+            fallbackUrl={user.photo ?? null}
             disabled={saving}
-            className={inputCls(Boolean(errors.tenantId))}
-          >
-            <option value={0}>Selecione um tenant</option>
-            {(tenantsData?.content ?? []).map((tenant) => (
-              <option key={tenant.id} value={tenant.id}>
-                {tenant.name}
-              </option>
-            ))}
-          </select>
-          <FieldError message={errors.tenantId?.message} />
-        </div>
-
-        {/* E-mail */}
-        <div className="space-y-1.5">
-          <Label htmlFor="email" required>
-            E-mail
-          </Label>
-          <input
-            id="email"
-            type="email"
-            {...register("email")}
-            disabled={saving}
-            className={inputCls(Boolean(errors.email))}
+            displayName={displayName}
+            subtitle={user.email}
           />
-          <FieldError message={errors.email?.message} />
         </div>
+      )}
 
-        {/* Pessoa */}
-        <div className="space-y-3">
-          <SectionTitle>Dados de Pessoa</SectionTitle>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+        <SectionCard
+          title="Dados basicos"
+          description="Informacoes de acesso e vinculo do usuario."
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="tenantId" required>
+              Tenant
+            </Label>
+            <select
+              id="tenantId"
+              {...register("tenantId", { valueAsNumber: true })}
+              disabled={saving}
+              className={inputCls(Boolean(errors.tenantId))}
+            >
+              <option value={0}>Selecione um tenant</option>
+              {(tenantsData?.content ?? []).map((tenant) => (
+                <option key={tenant.id} value={tenant.id}>
+                  {tenant.name}
+                </option>
+              ))}
+            </select>
+            <FieldError message={errors.tenantId?.message} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="email" required>
+              E-mail
+            </Label>
+            <input
+              id="email"
+              type="email"
+              {...register("email")}
+              disabled={saving}
+              className={inputCls(Boolean(errors.email))}
+            />
+            <FieldError message={errors.email?.message} />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              id="active"
+              type="checkbox"
+              {...register("active")}
+              disabled={saving}
+              className="accent-primary h-4 w-4"
+            />
+            <label htmlFor="active" className="text-sm">
+              Usuario ativo
+            </label>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Dados de pessoa">
           <PersonTypeSwitch
             value={personType}
             onChange={setPersonType}
@@ -598,31 +657,28 @@ export function UserFormPage() {
               disabled={saving}
             />
           )}
-        </div>
+        </SectionCard>
 
-        {/* Contatos */}
-        <div className="space-y-3">
-          <SectionTitle>Contatos</SectionTitle>
+        <SectionCard title="Contatos">
           <ContactsField
             contacts={contacts}
             onChange={setContacts}
             disabled={saving}
           />
-        </div>
+        </SectionCard>
 
-        {/* Endereços */}
-        <div className="space-y-3">
-          <SectionTitle>Endereços</SectionTitle>
+        <SectionCard title="Enderecos">
           <AddressesField
             addresses={addresses}
             onChange={setAddresses}
             disabled={saving}
           />
-        </div>
+        </SectionCard>
 
-        {/* Perfis */}
-        <div className="space-y-1.5">
-          <Label htmlFor="profiles">Perfis</Label>
+        <SectionCard
+          title="Perfis de acesso"
+          description="Defina os perfis vinculados ao usuario."
+        >
           <RoleMultiSelect
             options={roles}
             selectedIds={selectedRoleIds}
@@ -632,67 +688,51 @@ export function UserFormPage() {
           <p className="text-xs text-muted-foreground">
             Selecionados: {selectedRoleIds.length}
           </p>
-        </div>
+        </SectionCard>
 
-        {/* Senha */}
         {isEdit && userId != null && (
-          <div className="space-y-1.5">
-            <Label htmlFor="changePassword">Senha</Label>
+          <SectionCard title="Seguranca">
             <button
-              id="changePassword"
               type="button"
               onClick={() => setPasswordModalOpen(true)}
               disabled={saving}
               className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-accent disabled:opacity-50"
             >
-              Alterar Senha
+              Alterar senha
             </button>
-          </div>
+          </SectionCard>
         )}
 
-        {/* Ativo */}
-        <div className="flex items-center gap-3">
-          <input
-            id="active"
-            type="checkbox"
-            {...register("active")}
-            disabled={saving}
-            className="accent-primary h-4 w-4"
-          />
-          <label htmlFor="active" className="text-sm">
-            Usuário ativo
-          </label>
-        </div>
-
-        {/* Timestamps */}
         {isEdit && user && (
-          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="createdAt">Criado em</Label>
-              <input
-                id="createdAt"
-                readOnly
-                value={formatDateTime(user.createdAt)}
-                className={cn(inputCls(), "bg-muted/40")}
-              />
+          <SectionCard title="Metadados">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="createdAt">Criado em</Label>
+                <input
+                  id="createdAt"
+                  readOnly
+                  value={formatDateTime(user.createdAt)}
+                  className={cn(inputCls(), "bg-muted/40")}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="updatedAt">Alterado em</Label>
+                <input
+                  id="updatedAt"
+                  readOnly
+                  value={user.updatedAt ? formatDateTime(user.updatedAt) : "—"}
+                  className={cn(inputCls(), "bg-muted/40")}
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="updatedAt">Alterado em</Label>
-              <input
-                id="updatedAt"
-                readOnly
-                value={user.updatedAt ? formatDateTime(user.updatedAt) : "—"}
-                className={cn(inputCls(), "bg-muted/40")}
-              />
-            </div>
-          </div>
+          </SectionCard>
         )}
 
-        <div className="flex items-center gap-3 border-t border-border pt-2">
+        <div className="flex items-center gap-3 pt-1">
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             Salvar
@@ -701,7 +741,7 @@ export function UserFormPage() {
             type="button"
             onClick={() => void navigate("/users")}
             disabled={saving}
-            className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-accent disabled:opacity-50"
+            className="rounded-lg border border-border bg-background px-4 py-2 text-sm hover:bg-accent disabled:opacity-50"
           >
             Cancelar
           </button>

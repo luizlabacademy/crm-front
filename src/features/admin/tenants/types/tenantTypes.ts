@@ -33,6 +33,7 @@ export interface TenantResponse {
   createdAt?: string;
   updatedAt?: string | null;
   active: boolean;
+  photo?: string | null;
   physical?: PersonPhysicalResponse | null;
   legal?: PersonLegalResponse | null;
   contacts?: ContactResponse[];

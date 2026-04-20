@@ -4,6 +4,7 @@ export type UploadFileType =
   | "CUSTOMER"
   | "WORKER"
   | "TENANT"
+  | "USER"
   | "CATEGORY"
   | "SLIDE"
   | "BANNER"
@@ -24,6 +25,7 @@ export interface UploadResponse {
   size: number;
   width?: number | null;
   height?: number | null;
+  sortOrder?: number | null;
   legend?: string | null;
   viewUrl?: string | null;
   downloadUrl?: string | null;
@@ -54,6 +56,7 @@ export interface UploadFileParams {
   height?: number;
   quality?: number;
   legend?: string;
+  sortOrder?: number;
 }
 
 // ─── Helper: build view URL from upload ───────────────────────────────────────

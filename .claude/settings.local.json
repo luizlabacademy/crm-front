@@ -8,7 +8,10 @@
       "Bash(grep -E '^\\\\./[^/]+\\(/[^/]+\\)?\\(/[^/]+\\)?$')",
       "Bash(pnpm tsc *)",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "WebFetch(domain:api-crm.luizlab.com)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)"
     ]
   }
 }
