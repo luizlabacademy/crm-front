@@ -5,6 +5,7 @@ import type {
   UploadRulesResponse,
   UploadFileParams,
   UploadFileType,
+  UploadPatchRequest,
 } from "@/features/uploads/types/uploadTypes";
 
 // ─── Rules ────────────────────────────────────────────────────────────────────
@@ -79,6 +80,67 @@ export function useUpload(id: string | null) {
   });
 }
 
+// ─── Delete upload ─────────────────────────────────────────────────────────────
+
+export function useDeleteUpload() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { id: string; fileType?: UploadFileType; entityId?: number }>(
+    {
+      mutationFn: async ({ id }) => {
+        await api.delete(`/api/v1/uploads/${id}`);
+      },
+      onSuccess: (_data, params) => {
+        if (params.fileType && params.entityId != null) {
+          void queryClient.invalidateQueries({
+            queryKey: ["uploads", params.fileType, params.entityId],
+          });
+        }
+
+        if (params.fileType) {
+          void queryClient.invalidateQueries({
+            queryKey: ["uploads", "by-type", params.fileType],
+          });
+        } else {
+          void queryClient.invalidateQueries({ queryKey: ["uploads"] });
+        }
+      },
+    },
+  );
+}
+
+// ─── Patch upload ──────────────────────────────────────────────────────────────
+
+export function usePatchUpload() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    UploadResponse,
+    Error,
+    { id: string; body: UploadPatchRequest; fileType?: UploadFileType; entityId?: number }
+  >({
+    mutationFn: async ({ id, body }) => {
+      const { data } = await api.patch<UploadResponse>(`/api/v1/uploads/${id}`, body);
+      return data;
+    },
+    onSuccess: (_data, params) => {
+      if (params.fileType && params.entityId != null) {
+        void queryClient.invalidateQueries({
+          queryKey: ["uploads", params.fileType, params.entityId],
+        });
+      }
+
+      if (params.fileType) {
+        void queryClient.invalidateQueries({
+          queryKey: ["uploads", "by-type", params.fileType],
+        });
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ["uploads"] });
+      }
+    },
+  });
+}
+
 // ─── Upload file ──────────────────────────────────────────────────────────────
 
 export function useUploadFile() {
@@ -110,6 +172,9 @@ export function useUploadFile() {
     onSuccess: (_data, params) => {
       void queryClient.invalidateQueries({
         queryKey: ["uploads", params.fileType, params.entityId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["uploads", "by-type", params.fileType],
       });
     },
   });

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, Loader2, Trash2, Upload, X } from "lucide-react";
+import { Camera, Eye, Loader2, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { cn } from "@/lib/utils";
@@ -130,7 +130,7 @@ export function PhotoUploader({
           }}
           aria-label="Abrir foto"
           className={cn(
-            "overflow-hidden border border-border bg-muted",
+            "group relative overflow-hidden border border-border bg-muted",
             dimensions,
             shapeClass,
             "flex items-center justify-center",
@@ -138,14 +138,22 @@ export function PhotoUploader({
           )}
         >
           {displayUrl ? (
-            <img
-              src={displayUrl}
-              alt="Foto"
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
+            <>
+              <img
+                src={displayUrl}
+                alt="Foto"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/60 bg-black/50 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <Eye size={12} />
+                  Visualizar
+                </span>
+              </span>
+            </>
           ) : (
             <Camera size={26} className="text-muted-foreground/60" />
           )}

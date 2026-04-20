@@ -182,5 +182,3 @@ export function PlanPage() {
     </div>
   );
 }
-
-export default null as any;

@@ -29,9 +29,19 @@ export interface UploadResponse {
   height?: number | null;
   sortOrder?: number | null;
   legend?: string | null;
+  title?: string | null;
+  subtitle?: string | null;
   viewUrl?: string | null;
   downloadUrl?: string | null;
   createdAt: string;
+}
+
+export interface UploadPatchRequest {
+  fileType?: UploadFileType;
+  entityId?: number;
+  sortOrder?: number;
+  title?: string;
+  subtitle?: string;
 }
 
 export interface FileTypeRuleResponse {

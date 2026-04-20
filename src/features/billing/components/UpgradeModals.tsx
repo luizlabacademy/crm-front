@@ -114,5 +114,3 @@ export function UpgradeNeededModal({ open, onClose, onViewPlans }: { open: boole
     </div>
   );
 }
-
-export default null as any;

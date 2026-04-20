@@ -10,29 +10,40 @@ import {
   MapPin,
   Instagram,
   MessageCircle,
-  GripVertical,
+  Pencil,
+  Eye,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   Globe,
   Sparkles,
   Palette,
   Check,
-  Upload,
   Loader2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { UpgradeNeededModal, PriceTableModal } from "@/features/billing/components/UpgradeModals";
 import { PhotoUploader } from "@/components/shared/PhotoUploader";
 import { SlideGalleryModal } from "@/features/marketing/components/SlideGalleryModal";
+import { SlideSourcePickerPanel } from "@/features/marketing/components/SlideSourcePickerPanel";
 import {
   useItemCategories,
   useCreateItemCategory,
   useItemCategoriesCatalog,
   useUpdateItemCategory,
 } from "@/features/catalog/categories/api/useItemCategories";
-import { useUploadFile } from "@/features/uploads/api/useUploads";
-import { getUploadViewUrl } from "@/features/uploads/types/uploadTypes";
+import {
+  useDeleteUpload,
+  usePatchUpload,
+  useUploadFile,
+  useUploadsByType,
+} from "@/features/uploads/api/useUploads";
+import {
+  getUploadViewUrl,
+  type UploadResponse,
+} from "@/features/uploads/types/uploadTypes";
 import type {
   ItemCategoryAvailableType,
   ItemCategoryRequest,
@@ -45,7 +56,6 @@ import {
 } from "@/lib/pagination/pageSizePreference";
 import type {
   LandingPageConfig,
-  LandingPageSlide,
   LandingPageTheme,
 } from "@/features/marketing/types/marketingTypes";
 
@@ -272,6 +282,11 @@ export function LandingPageConfigPage() {
   const [serviceSearch, setServiceSearch] = useState("");
   const [servicePage, setServicePage] = useState(0);
   const [servicePageSize, setServicePageSize] = useState(() => getDefaultPageSize());
+  const [serviceRows, setServiceRows] = useState<ItemCategoryResponse[]>([]);
+  const [serviceReorderingAction, setServiceReorderingAction] = useState<{
+    id: number;
+    direction: "up" | "down";
+  } | null>(null);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [serviceModalMode, setServiceModalMode] = useState<"create" | "edit">(
     "create",
@@ -286,9 +301,41 @@ export function LandingPageConfigPage() {
   const [sourcePickerTarget, setSourcePickerTarget] =
     useState<SlideSourceTarget | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [previewSlideUrl, setPreviewSlideUrl] = useState<string | null>(null);
   const [isUploadingSlide, setIsUploadingSlide] = useState(false);
+  const [slideUploads, setSlideUploads] = useState<UploadResponse[]>([]);
+  const [slideDrafts, setSlideDrafts] = useState<
+    Record<string, { title: string; subtitle: string }>
+  >({});
+  const [savingSlideIds, setSavingSlideIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [reorderingSlideAction, setReorderingSlideAction] = useState<{
+    id: string;
+    direction: "up" | "down";
+  } | null>(null);
+  const [removedSlideIds, setRemovedSlideIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [removingSlideIds, setRemovingSlideIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [collapsingSlideIds, setCollapsingSlideIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const slideFileInputRef = useRef<HTMLInputElement>(null);
   const uploadSlideMutation = useUploadFile();
+  const deleteUploadMutation = useDeleteUpload();
+  const patchUploadMutation = usePatchUpload();
+  const {
+    data: slidesFromApi = [],
+    isLoading: isLoadingSlides,
+    isError: isErrorSlides,
+    refetch: refetchSlides,
+  } = useUploadsByType({
+    fileType: "SLIDE_OWN",
+    enabled: activeTab === "slides",
+  });
 
   const { data: serviceListData, isLoading: isLoadingServices, isError: isErrorServices, refetch: refetchServiceList } =
     useItemCategories({
@@ -299,6 +346,7 @@ export function LandingPageConfigPage() {
     });
   const createCategoryMutation = useCreateItemCategory();
   const updateCategoryMutation = useUpdateItemCategory();
+  const reorderCategoryMutation = useUpdateItemCategory();
 
   const { data: allCategories = [], refetch: refetchCategoriesCatalog } =
     useItemCategoriesCatalog();
@@ -345,6 +393,10 @@ export function LandingPageConfigPage() {
     saveServiceCategories(landingServiceCategories);
   }, [landingServiceCategories]);
 
+  useEffect(() => {
+    setServiceRows(serviceListData?.content ?? []);
+  }, [serviceListData?.content]);
+
   // ── Theme ──
   function setTheme(theme: LandingPageTheme) {
     setConfig((prev) => ({ ...prev, theme }));
@@ -361,39 +413,236 @@ export function LandingPageConfigPage() {
     }));
   }
 
-  // ── Slides ──
-  function updateSlide(
+  const orderedSlidesFromApi = useMemo(() => {
+    const visibleSlides = slidesFromApi.filter(
+      (slide) => !removedSlideIds.has(slide.id),
+    );
+
+    return [...visibleSlides].sort((a, b) => {
+      const aOrder = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+      const bOrder = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return (
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    });
+  }, [removedSlideIds, slidesFromApi]);
+
+  useEffect(() => {
+    setSlideUploads((prev) => {
+      const apiIds = new Set(orderedSlidesFromApi.map((slide) => slide.id));
+      const optimistic = prev.filter(
+        (slide) => !apiIds.has(slide.id) && !removedSlideIds.has(slide.id),
+      );
+      return [...optimistic, ...orderedSlidesFromApi];
+    });
+  }, [orderedSlidesFromApi, removedSlideIds]);
+
+  useEffect(() => {
+    setSlideDrafts((prev) => {
+      const next = { ...prev };
+
+      for (const slide of slideUploads) {
+        if (next[slide.id]) continue;
+
+        const existing = config.slides.find((item) => item.id === slide.id);
+        next[slide.id] = {
+          title: slide.title ?? existing?.title ?? "",
+          subtitle: slide.subtitle ?? existing?.subtitle ?? "",
+        };
+      }
+
+      return next;
+    });
+  }, [config.slides, slideUploads]);
+
+  async function removeSlide(id: string) {
+    if (removingSlideIds.has(id)) return;
+
+    setRemovingSlideIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
+    try {
+      await deleteUploadMutation.mutateAsync({ id, fileType: "SLIDE_OWN" });
+
+      setCollapsingSlideIds((prev) => {
+        const next = new Set(prev);
+        next.add(id);
+        return next;
+      });
+
+      window.setTimeout(() => {
+        setSlideUploads((prev) => prev.filter((slide) => slide.id !== id));
+        setRemovedSlideIds((prev) => {
+          const next = new Set(prev);
+          next.add(id);
+          return next;
+        });
+        setSlideDrafts((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setConfig((prev) => ({
+          ...prev,
+          slides: prev.slides.filter((slide) => slide.id !== id),
+        }));
+        setCollapsingSlideIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        setRemovingSlideIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }, 260);
+    } catch {
+      toast.error("Não foi possível remover o slide. Tente novamente.");
+      setRemovingSlideIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function moveSlide(id: string, direction: "up" | "down") {
+    if (reorderingSlideAction) return;
+
+    const current = [...slideUploads];
+    const idx = current.findIndex((slide) => slide.id === id);
+    if (idx < 0) return;
+
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= current.length) return;
+
+    const reordered = [...current];
+    [reordered[idx], reordered[targetIdx]] = [reordered[targetIdx], reordered[idx]];
+    setSlideUploads(reordered);
+    setReorderingSlideAction({ id, direction });
+
+    try {
+      for (let i = 0; i < reordered.length; i += 1) {
+        const currentSlide = reordered[i];
+        const draft = slideDrafts[currentSlide.id];
+        await patchUploadMutation.mutateAsync({
+          id: currentSlide.id,
+          body: {
+            fileType: "SLIDE_OWN",
+            entityId: currentSlide.entityId,
+            sortOrder: i,
+            title: draft ? draft.title.trim() : (currentSlide.title ?? undefined),
+            subtitle: draft
+              ? draft.subtitle.trim()
+              : (currentSlide.subtitle ?? undefined),
+          },
+          fileType: "SLIDE_OWN",
+          entityId: currentSlide.entityId,
+        });
+      }
+
+      void refetchSlides();
+    } catch {
+      setSlideUploads(current);
+      toast.error("Não foi possível atualizar a ordem dos slides.");
+    } finally {
+      setReorderingSlideAction(null);
+    }
+  }
+
+  function updateSlideDraft(
     id: string,
-    field: keyof LandingPageSlide,
+    field: "title" | "subtitle",
     value: string,
   ) {
-    setConfig((prev) => ({
+    setSlideDrafts((prev) => ({
       ...prev,
-      slides: prev.slides.map((s) =>
-        s.id === id ? { ...s, [field]: value } : s,
-      ),
+      [id]: {
+        title: prev[id]?.title ?? "",
+        subtitle: prev[id]?.subtitle ?? "",
+        [field]: value,
+      },
     }));
   }
 
-  function removeSlide(id: string) {
-    setConfig((prev) => ({
-      ...prev,
-      slides: prev.slides.filter((s) => s.id !== id),
-    }));
+  async function saveSlideDetails(
+    slide: UploadResponse,
+    slideIndex: number,
+    imageUrl: string,
+  ) {
+    if (savingSlideIds.has(slide.id)) return;
+
+    setSavingSlideIds((prev) => {
+      const next = new Set(prev);
+      next.add(slide.id);
+      return next;
+    });
+
+    const draft = slideDrafts[slide.id] ?? { title: "", subtitle: "" };
+    const trimmedTitle = draft.title.trim();
+    const trimmedSubtitle = draft.subtitle.trim();
+
+    try {
+      await patchUploadMutation.mutateAsync({
+        id: slide.id,
+        body: {
+          fileType: "SLIDE_OWN",
+          entityId: slide.entityId,
+          sortOrder: slideIndex,
+          title: trimmedTitle || undefined,
+          subtitle: trimmedSubtitle || undefined,
+        },
+        fileType: "SLIDE_OWN",
+        entityId: slide.entityId,
+      });
+
+      upsertSlideConfigFromUpload(
+        slide.id,
+        imageUrl,
+        trimmedTitle,
+        trimmedSubtitle,
+      );
+
+      void refetchSlides();
+      toast.success("Slide salvo.");
+    } catch {
+      toast.error("Não foi possível salvar o slide.");
+    } finally {
+      setSavingSlideIds((prev) => {
+        const next = new Set(prev);
+        next.delete(slide.id);
+        return next;
+      });
+    }
   }
 
-  function moveSlide(id: string, direction: "up" | "down") {
+  // Keep local config list aligned for landing preview
+  function upsertSlideConfigFromUpload(
+    id: string,
+    imageUrl: string,
+    title: string,
+    subtitle: string,
+  ) {
     setConfig((prev) => {
-      const idx = prev.slides.findIndex((s) => s.id === id);
-      if (idx < 0) return prev;
-      const newSlides = [...prev.slides];
-      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (targetIdx < 0 || targetIdx >= newSlides.length) return prev;
-      [newSlides[idx], newSlides[targetIdx]] = [
-        newSlides[targetIdx],
-        newSlides[idx],
-      ];
-      return { ...prev, slides: newSlides };
+      const payload = {
+        id,
+        imageUrl,
+        title,
+        subtitle,
+      };
+      const exists = prev.slides.some((slide) => slide.id === id);
+
+      return {
+        ...prev,
+        slides: exists
+          ? prev.slides.map((slide) => (slide.id === id ? payload : slide))
+          : [payload, ...prev.slides],
+      };
     });
   }
 
@@ -408,46 +657,81 @@ export function LandingPageConfigPage() {
     setSourcePickerTarget({ mode: "replace", slideId });
   }
 
-  function applyImageUrl(url: string) {
+  function applyPickedSlide(upload: UploadResponse) {
+    const pickedUrl = getUploadViewUrl(upload);
+
     setSourcePickerTarget((current) => {
-      if (!current) return null;
+      if (!current) {
+        setRemovedSlideIds((prev) => {
+          const next = new Set(prev);
+          next.delete(upload.id);
+          return next;
+        });
+        setSlideUploads((prev) => [upload, ...prev.filter((s) => s.id !== upload.id)]);
+        setSlideDrafts((prev) => ({
+          ...prev,
+          [upload.id]: {
+            title: upload.title ?? "",
+            subtitle: upload.subtitle ?? "",
+          },
+        }));
+        return null;
+      }
+
       if (current.mode === "new") {
-        const slide: LandingPageSlide = {
-          id: `slide-${Date.now()}`,
-          imageUrl: url,
-          title: "",
-          subtitle: "",
-        };
-        setConfig((prev) => ({ ...prev, slides: [...prev.slides, slide] }));
+        setRemovedSlideIds((prev) => {
+          const next = new Set(prev);
+          next.delete(upload.id);
+          return next;
+        });
+        setSlideUploads((prev) => [upload, ...prev.filter((s) => s.id !== upload.id)]);
+        setSlideDrafts((prev) => ({
+          ...prev,
+          [upload.id]: {
+            title: upload.title ?? "",
+            subtitle: upload.subtitle ?? "",
+          },
+        }));
         requestAnimationFrame(() => {
-          document
-            .getElementById(`slide-card-${slide.id}`)
-            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+          document.getElementById(`slide-card-${upload.id}`)?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
         });
       } else {
-        setConfig((prev) => ({
-          ...prev,
-          slides: prev.slides.map((s) =>
-            s.id === current.slideId ? { ...s, imageUrl: url } : s,
+        setSlideUploads((prev) =>
+          prev.map((slide) =>
+            slide.id === current.slideId
+              ? {
+                  ...upload,
+                  sortOrder: slide.sortOrder ?? upload.sortOrder,
+                  legend: upload.legend ?? slide.legend,
+                  viewUrl: pickedUrl,
+                }
+              : slide,
           ),
-        }));
+        );
       }
+
+      void refetchSlides();
       return null;
     });
   }
 
   function chooseFromGallery() {
+    setSourcePickerTarget((current) => current ?? { mode: "new" });
     setGalleryOpen(true);
   }
 
   function triggerLocalUpload() {
+    setSourcePickerTarget((current) => current ?? { mode: "new" });
     slideFileInputRef.current?.click();
   }
 
   async function handleSlideFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || !sourcePickerTarget) return;
+    if (!file) return;
 
     if (!file.type.startsWith("image/")) {
       toast.error("Selecione um arquivo de imagem.");
@@ -465,8 +749,9 @@ export function LandingPageConfigPage() {
         fileType: "SLIDE_OWN",
         tenantId: defaultTenantId,
         entityId: defaultTenantId,
+        sortOrder: 0,
       });
-      applyImageUrl(getUploadViewUrl(uploaded));
+      applyPickedSlide(uploaded);
       toast.success("Slide enviado com sucesso.");
     } catch (err) {
       console.error(err);
@@ -548,6 +833,51 @@ export function LandingPageConfigPage() {
     setServiceModalOpen(true);
   }
 
+  async function moveServiceCategory(id: number, direction: "up" | "down") {
+    if (serviceReorderingAction) return;
+
+    const current = [...serviceRows];
+    const idx = current.findIndex((category) => category.id === id);
+    if (idx < 0) return;
+
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= current.length) return;
+
+    const reordered = [...current];
+    [reordered[idx], reordered[targetIdx]] = [reordered[targetIdx], reordered[idx]];
+    setServiceRows(reordered);
+    setServiceReorderingAction({ id, direction });
+
+    const pageOffset = servicePage * servicePageSize;
+
+    try {
+      for (let i = 0; i < reordered.length; i += 1) {
+        const category = reordered[i];
+        await reorderCategoryMutation.mutateAsync({
+          id: category.id,
+          body: {
+            tenantId: category.tenantId,
+            name: category.name,
+            description: category.description ?? null,
+            showOnSite: category.showOnSite ?? true,
+            availableTypes:
+              category.availableTypes?.length > 0
+                ? category.availableTypes
+                : ["SERVICE"],
+            sortOrder: pageOffset + i,
+          },
+        });
+      }
+
+      await Promise.all([refetchServiceList(), refetchCategoriesCatalog()]);
+    } catch {
+      setServiceRows(current);
+      toast.error("Não foi possível atualizar a ordem das categorias.");
+    } finally {
+      setServiceReorderingAction(null);
+    }
+  }
+
   // ── Landing page URL ──
   const landingPageUrl = `${window.location.origin}/landing`;
 
@@ -555,7 +885,7 @@ export function LandingPageConfigPage() {
     { key: "info" as const, label: "Informações", icon: <Store size={14} /> },
     {
       key: "slides" as const,
-      label: "Slides / Banner",
+      label: "Slides",
       icon: <Image size={14} />,
     },
     { key: "services" as const, label: "Serviços", icon: <Globe size={14} /> },
@@ -858,72 +1188,146 @@ export function LandingPageConfigPage() {
 
       {/* ─── Tab: Slides ─── */}
       {activeTab === "slides" && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Adicione imagens para o banner principal. Se houver mais de uma,
-              será exibido como slide automático.
+              Nesta área você gerencia os slides que aparecem no Site / Landing Page.
             </p>
             <button
               onClick={openSourcePickerForNew}
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
             >
-              <Plus size={13} />
+              <Plus size={16} />
               Novo Slide
             </button>
           </div>
 
-          {config.slides.length === 0 && (
-            <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
-              <Image size={32} className="opacity-30" />
-              <p className="text-sm">Nenhum slide adicionado.</p>
+          {isErrorSlides && (
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-10 text-center">
+              <p className="text-sm text-destructive">
+                Não foi possível carregar os slides do tenant.
+              </p>
+              <button
+                type="button"
+                onClick={() => void refetchSlides()}
+                className="rounded-lg border border-border bg-background px-4 py-2 text-sm hover:bg-accent"
+              >
+                Tentar novamente
+              </button>
             </div>
           )}
 
-          {config.slides.map((slide, idx) => (
+          {!isLoadingSlides && !isErrorSlides && slideUploads.length === 0 && (
+            <div className="space-y-4 rounded-xl border border-dashed border-border bg-muted/20 p-5">
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <Image size={32} className="opacity-30" />
+                <p className="text-sm">Nenhum slide próprio encontrado para este tenant.</p>
+              </div>
+
+              <SlideSourcePickerPanel
+                title="Adicionar primeiro slide"
+                description="Escolha da galeria SaaS ou faça upload para criar seus slides próprios."
+                onChooseFromGallery={chooseFromGallery}
+                onUpload={triggerLocalUpload}
+                isUploading={isUploadingSlide}
+              />
+            </div>
+          )}
+
+          {slideUploads.map((slide, idx) => {
+            const imageUrl = getUploadViewUrl(slide);
+            const isRemoving = removingSlideIds.has(slide.id);
+            const isCollapsing = collapsingSlideIds.has(slide.id);
+            const isSaving = savingSlideIds.has(slide.id);
+            const isMovingUp =
+              reorderingSlideAction?.id === slide.id &&
+              reorderingSlideAction.direction === "up";
+            const isMovingDown =
+              reorderingSlideAction?.id === slide.id &&
+              reorderingSlideAction.direction === "down";
+            const isReorderingAny = reorderingSlideAction !== null;
+            const draft = slideDrafts[slide.id] ?? { title: "", subtitle: "" };
+            return (
             <div
               key={slide.id}
               id={`slide-card-${slide.id}`}
-              className="rounded-xl border border-border bg-card p-4 space-y-3"
+              className={cn(
+                "space-y-4 rounded-xl border border-border bg-card p-4 transition-all duration-300 ease-out",
+                isCollapsing && "pointer-events-none -translate-y-1 scale-[0.98] opacity-0",
+              )}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <GripVertical size={14} className="text-muted-foreground" />
                   Slide {idx + 1}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
-                    onClick={() => moveSlide(slide.id, "up")}
-                    disabled={idx === 0}
-                    className="p-1 rounded hover:bg-accent disabled:opacity-30"
+                    type="button"
+                    onClick={() => openSourcePickerForSlide(slide.id)}
+                    className="rounded-md p-2 hover:bg-accent"
+                    title="Editar slide"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button
+                    onClick={() => void moveSlide(slide.id, "up")}
+                    disabled={idx === 0 || isReorderingAny}
+                    className="rounded-md p-2 hover:bg-accent disabled:opacity-30"
                     title="Mover para cima"
                   >
-                    <ChevronUp size={14} />
+                    {isMovingUp ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <ChevronUp size={18} />
+                    )}
                   </button>
                   <button
-                    onClick={() => moveSlide(slide.id, "down")}
-                    disabled={idx === config.slides.length - 1}
-                    className="p-1 rounded hover:bg-accent disabled:opacity-30"
+                    onClick={() => void moveSlide(slide.id, "down")}
+                    disabled={idx === slideUploads.length - 1 || isReorderingAny}
+                    className="rounded-md p-2 hover:bg-accent disabled:opacity-30"
                     title="Mover para baixo"
                   >
-                    <ChevronDown size={14} />
+                    {isMovingDown ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <ChevronDown size={18} />
+                    )}
                   </button>
                   <button
-                    onClick={() => removeSlide(slide.id)}
-                    className="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    onClick={() => void removeSlide(slide.id)}
+                    disabled={isRemoving}
+                    className="rounded-md p-2 text-red-500 hover:bg-red-50 disabled:opacity-60 dark:hover:bg-red-950/30"
                     title="Remover"
                   >
-                    <Trash2 size={14} />
+                    {isRemoving ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={18} />
+                    )}
                   </button>
                 </div>
               </div>
 
-              {slide.imageUrl ? (
-                <img
-                  src={slide.imageUrl}
-                  alt={`Slide ${idx + 1}`}
-                  className="h-40 w-full rounded-lg object-cover border border-border"
-                />
+              {imageUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setPreviewSlideUrl(imageUrl)}
+                  className="group relative block w-full overflow-hidden rounded-lg border border-border"
+                  title="Visualizar imagem"
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`Slide ${idx + 1}`}
+                    className="h-48 w-full object-cover"
+                  />
+
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/35">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-black/50 px-3 py-1.5 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                      <Eye size={15} />
+                      Clique para visualizar
+                    </div>
+                  </div>
+                </button>
               ) : (
                 <div className="flex h-40 w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 text-muted-foreground">
                   <div className="flex flex-col items-center gap-1">
@@ -933,40 +1337,45 @@ export function LandingPageConfigPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => openSourcePickerForSlide(slide.id)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
-                >
-                  <Image size={13} />
-                  {slide.imageUrl ? "Trocar imagem" : "Escolher imagem"}
-                </button>
-              </div>
-
-              <Field
-                label="URL da Imagem"
-                value={slide.imageUrl}
-                onChange={(v) => updateSlide(slide.id, "imageUrl", v)}
-                placeholder="https://..."
-              />
-
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
                   label="Título"
-                  value={slide.title}
-                  onChange={(v) => updateSlide(slide.id, "title", v)}
-                  placeholder="Ex: Transforme seu Visual"
+                  value={draft.title}
+                  onChange={(v) => updateSlideDraft(slide.id, "title", v)}
+                  placeholder="Digite o título..."
                 />
-                <Field
-                  label="Subtítulo"
-                  value={slide.subtitle}
-                  onChange={(v) => updateSlide(slide.id, "subtitle", v)}
-                  placeholder="Ex: Agende agora e ganhe 10% de desconto"
-                />
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Subtítulo
+                  </label>
+                  <textarea
+                    value={draft.subtitle}
+                    onChange={(e) => updateSlideDraft(slide.id, "subtitle", e.target.value)}
+                    placeholder="Digite a descrição..."
+                    rows={3}
+                    className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void saveSlideDetails(slide, idx, imageUrl)}
+                  disabled={isSaving || isRemoving}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-muted/60 px-4 text-sm font-medium text-foreground hover:bg-muted/80 transition-colors disabled:opacity-60"
+                >
+                  {isSaving ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  Salvar
+                </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -983,10 +1392,6 @@ export function LandingPageConfigPage() {
                         ? "Editar Categoria de Servico"
                         : "Nova Categoria de Servico"}
                     </h3>
-                    <p className="text-xs text-muted-foreground">
-                      O tipo SERVICE e mantido automaticamente para categorias
-                      criadas/editadas nesta aba.
-                    </p>
                   </div>
                   <button
                     type="button"
@@ -1009,7 +1414,6 @@ export function LandingPageConfigPage() {
                         updateCategoryMutation.isPending
                       }
                       displayName={editingCategory.name}
-                      subtitle="Servico"
                       shape="square"
                     />
                   </div>
@@ -1092,9 +1496,6 @@ export function LandingPageConfigPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">Categorias de Servico</p>
-                <p className="text-xs text-muted-foreground">
-                  Exibe somente categorias com tipo SERVICE.
-                </p>
               </div>
               <button
                 type="button"
@@ -1122,10 +1523,6 @@ export function LandingPageConfigPage() {
               Exibir no site / landing page apenas servicos com fotos
               </label>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Fonte de dados: categorias do catalogo com tipo SERVICE e exibir no
-              site habilitado.
-            </p>
           </div>
 
           <div className="relative max-w-sm">
@@ -1151,10 +1548,10 @@ export function LandingPageConfigPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Nome
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
                     Descricao
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
                     Exibir no site
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1180,7 +1577,7 @@ export function LandingPageConfigPage() {
                       Erro ao carregar categorias de servico.
                     </td>
                   </tr>
-                ) : (serviceListData?.content ?? []).length === 0 ? (
+                ) : serviceRows.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center gap-2">
@@ -1192,10 +1589,20 @@ export function LandingPageConfigPage() {
                     </td>
                   </tr>
                 ) : (
-                  (serviceListData?.content ?? []).map((category) => (
+                  serviceRows.map((category, index) => {
+                    const isMovingUp =
+                      serviceReorderingAction?.id === category.id &&
+                      serviceReorderingAction.direction === "up";
+                    const isMovingDown =
+                      serviceReorderingAction?.id === category.id &&
+                      serviceReorderingAction.direction === "down";
+                    const isReorderingService = serviceReorderingAction !== null;
+
+                    return (
                     <tr
                       key={category.id}
-                      className="hover:bg-muted/20 transition-colors"
+                      className="cursor-pointer hover:bg-muted/20 transition-colors"
+                      onClick={() => openEditServiceModal(category)}
                     >
                       <td className="px-4 py-3">
                         {category.photo ? (
@@ -1210,13 +1617,27 @@ export function LandingPageConfigPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium">{category.name}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{category.name}</div>
+                        <div className="mt-1 md:hidden">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+                              category.showOnSite
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
+                            {category.showOnSite ? "Exibir no site" : "Nao exibir no site"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
                         {category.description?.trim() || (
                           <span className="text-muted-foreground/50">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden px-4 py-3 md:table-cell">
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
@@ -1225,23 +1646,59 @@ export function LandingPageConfigPage() {
                               : "bg-muted text-muted-foreground",
                           )}
                         >
-                          {category.showOnSite ? "Sim" : "Nao"}
+                          {category.showOnSite ? "Exibir no site" : "Nao exibir no site"}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             type="button"
-                            onClick={() => openEditServiceModal(category)}
-                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                            title="Editar"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void moveServiceCategory(category.id, "up");
+                            }}
+                            disabled={index === 0 || isReorderingService}
+                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
+                            title="Mover para cima"
                           >
-                            <span className="text-xs">Editar</span>
+                            {isMovingUp ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <ChevronUp size={16} />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void moveServiceCategory(category.id, "down");
+                            }}
+                            disabled={index === serviceRows.length - 1 || isReorderingService}
+                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
+                            title="Mover para baixo"
+                          >
+                            {isMovingDown ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <ChevronDown size={16} />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditServiceModal(category);
+                            }}
+                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            title="Abrir"
+                          >
+                            <ChevronRight size={16} />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))
+                  );
+                  })
                 )}
               </tbody>
             </table>
@@ -1274,22 +1731,24 @@ export function LandingPageConfigPage() {
       )}
 
       {/* Bottom save bar */}
-      <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-5 py-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <MessageCircle size={14} />
-          <span>
-            O botão de agendamento direciona para o WhatsApp:{" "}
-            <strong>{config.businessInfo.whatsappNumber || "—"}</strong>
-          </span>
+      {activeTab === "info" && (
+        <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-5 py-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MessageCircle size={14} />
+            <span>
+              O botão de agendamento direciona para o WhatsApp:{" "}
+              <strong>{config.businessInfo.whatsappNumber || "—"}</strong>
+            </span>
+          </div>
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            <Save size={14} />
+            Salvar Alterações
+          </button>
         </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-        >
-          <Save size={14} />
-          Salvar Alterações
-        </button>
-      </div>
+      )}
 
       <UpgradeNeededModal
         open={upgradeModalOpen}
@@ -1312,71 +1771,59 @@ export function LandingPageConfigPage() {
 
       {sourcePickerTarget !== null && !galleryOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg">
-            <div className="mb-1 flex items-center justify-between">
-              <h3 className="text-base font-semibold">
-                {sourcePickerTarget.mode === "new"
+          <div className="w-full max-w-md">
+            <SlideSourcePickerPanel
+              title={
+                sourcePickerTarget.mode === "new"
                   ? "Adicionar novo slide"
-                  : "Trocar imagem do slide"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setSourcePickerTarget(null)}
-                className="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
-                disabled={isUploadingSlide}
-              >
-                Cancelar
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Como você quer adicionar a imagem?
-            </p>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={chooseFromGallery}
-                disabled={isUploadingSlide}
-                className="flex flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 text-center hover:bg-accent transition-colors disabled:opacity-50"
-              >
-                <Image size={24} className="text-primary" />
-                <span className="text-sm font-medium">Escolher da galeria</span>
-                <span className="text-xs text-muted-foreground">
-                  Slides prontos disponibilizados pela plataforma.
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={triggerLocalUpload}
-                disabled={isUploadingSlide}
-                className="flex flex-col items-center gap-2 rounded-xl border border-border bg-background p-4 text-center hover:bg-accent transition-colors disabled:opacity-50"
-              >
-                {isUploadingSlide ? (
-                  <Loader2 size={24} className="animate-spin text-primary" />
-                ) : (
-                  <Upload size={24} className="text-primary" />
-                )}
-                <span className="text-sm font-medium">
-                  {isUploadingSlide ? "Enviando..." : "Fazer upload"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Envie uma imagem do seu computador.
-                </span>
-              </button>
-            </div>
+                  : "Trocar imagem do slide"
+              }
+              description="Como você quer adicionar a imagem?"
+              onChooseFromGallery={chooseFromGallery}
+              onUpload={triggerLocalUpload}
+              isUploading={isUploadingSlide}
+              onCancel={() => setSourcePickerTarget(null)}
+            />
           </div>
         </div>
       )}
 
       <SlideGalleryModal
         open={galleryOpen}
-        onClose={() => setGalleryOpen(false)}
+        onClose={() => {
+          setGalleryOpen(false);
+          setSourcePickerTarget(null);
+        }}
         tenantId={defaultTenantId}
         entityId={defaultTenantId}
         onPicked={(upload) => {
-          applyImageUrl(getUploadViewUrl(upload));
+          applyPickedSlide(upload);
         }}
       />
+
+      {previewSlideUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+          <header className="flex items-center justify-end border-b border-border px-4 py-3 sm:px-6">
+            <button
+              type="button"
+              onClick={() => setPreviewSlideUrl(null)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent"
+              aria-label="Fechar visualização"
+            >
+              <X size={14} />
+              Fechar
+            </button>
+          </header>
+
+          <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
+            <img
+              src={previewSlideUrl}
+              alt="Visualização do slide"
+              className="max-h-full w-full max-w-6xl rounded-xl border border-border object-contain"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
