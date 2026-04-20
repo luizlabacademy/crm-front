@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Plus, Search, Pencil, Trash2, Tag, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -61,7 +61,7 @@ function SiteBadge({ showOnSite }: { showOnSite?: boolean | null }) {
 export function ItemCategoryListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(ALL_PAGE_SIZE);
+  const pageSize = ALL_PAGE_SIZE;
   const [draftFilters, setDraftFilters] = useState({
     name: "",
     showOnSite: "all" as "all" | "true" | "false",
@@ -83,7 +83,6 @@ export function ItemCategoryListPage() {
         : filters.showOnSite === "true",
   });
   const deleteMutation = useDeleteItemCategory();
-  const patchMutation = usePatchItemCategory();
   const sortMutation = useSortItemCategories();
 
   const [rows, setRows] = useState(() => data?.content ?? []);
@@ -95,7 +94,6 @@ export function ItemCategoryListPage() {
   const categories = data?.content ?? [];
   // use rows for optimistic reordering UI; fallback to categories from API
   const effectiveRows = rows.length > 0 ? rows : categories;
-  const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
 
   const activeFilterCount = [

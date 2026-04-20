@@ -48,12 +48,10 @@ import type {
   ItemCategoryRequest,
   ItemCategoryResponse,
 } from "@/features/catalog/categories/types/itemCategoryTypes";
-import { TablePagination } from "@/components/shared/TablePagination";
 import {
   getDefaultPageSize,
   setDefaultPageSize,
 } from "@/lib/pagination/pageSizePreference";
-
 // When showing services in admin config, load all to allow reordering without pagination
 const ALL_SERVICE_PAGE_SIZE = 10000;
 import type {
@@ -464,7 +462,7 @@ export function LandingPageConfigPage() {
   const [priceTableOpen, setPriceTableOpen] = useState(false);
   const [serviceSearch, setServiceSearch] = useState("");
   const [servicePage, setServicePage] = useState(0);
-  const [servicePageSize, setServicePageSize] = useState(ALL_SERVICE_PAGE_SIZE);
+  const [servicePageSize] = useState(ALL_SERVICE_PAGE_SIZE);
   const [serviceRows, setServiceRows] = useState<ItemCategoryResponse[]>([]);
   const [serviceReorderingAction, setServiceReorderingAction] = useState<{
     id: number;

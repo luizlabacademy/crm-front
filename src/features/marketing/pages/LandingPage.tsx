@@ -1538,10 +1538,10 @@ export function LandingPage() {
           params: { page: 0, size: 200, availableTypes: "SERVICE" },
         });
         const list = Array.isArray(data) ? data : data.content ?? [];
-        const sorted = list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        const sorted = list.sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         if (!mounted) return;
         setServiceCategories(
-          sorted.map((cat) => ({
+          sorted.map((cat: any) => ({
             id: cat.id,
             name: cat.name,
             description: cat.description ?? "",
