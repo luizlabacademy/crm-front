@@ -8,7 +8,6 @@ import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import {
   useItemCategories,
   useDeleteItemCategory,
-  usePatchItemCategory,
   useSortItemCategories,
 } from "@/features/catalog/categories/api/useItemCategories";
 

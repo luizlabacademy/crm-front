@@ -48,10 +48,6 @@ import type {
   ItemCategoryRequest,
   ItemCategoryResponse,
 } from "@/features/catalog/categories/types/itemCategoryTypes";
-import {
-  getDefaultPageSize,
-  setDefaultPageSize,
-} from "@/lib/pagination/pageSizePreference";
 // When showing services in admin config, load all to allow reordering without pagination
 const ALL_SERVICE_PAGE_SIZE = 10000;
 import type {
