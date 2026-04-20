@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Plus, Search, Pencil, Trash2, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { FilterBar } from "@/features/expenses/components/FilterBar";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { TablePagination } from "@/components/shared/TablePagination";
 import {
@@ -53,25 +54,51 @@ export function ItemCategoryListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
-  const [search, setSearch] = useState("");
-  const [showOnSiteFilter, setShowOnSiteFilter] = useState<"all" | "true" | "false">("all");
+  const [draftFilters, setDraftFilters] = useState({
+    name: "",
+    showOnSite: "all" as "all" | "true" | "false",
+  });
+  const [filters, setFilters] = useState({
+    name: "",
+    showOnSite: "all" as "all" | "true" | "false",
+  });
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteName, setDeleteName] = useState("");
 
   const { data, isLoading, isError } = useItemCategories({
     page,
     size: pageSize,
-    name: search.trim() || undefined,
+    name: filters.name.trim() || undefined,
     showOnSite:
-      showOnSiteFilter === "all"
+      filters.showOnSite === "all"
         ? undefined
-        : showOnSiteFilter === "true",
+        : filters.showOnSite === "true",
   });
   const deleteMutation = useDeleteItemCategory();
 
   const categories = data?.content ?? [];
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
+
+  const activeFilterCount = [
+    filters.name.trim() !== "",
+    filters.showOnSite !== "all",
+  ].filter(Boolean).length;
+
+  function handleApplyFilters() {
+    setFilters(draftFilters);
+    setPage(0);
+  }
+
+  function handleClearFilter() {
+    const cleared = {
+      name: "",
+      showOnSite: "all" as const,
+    };
+    setDraftFilters(cleared);
+    setFilters(cleared);
+    setPage(0);
+  }
 
   async function handleDelete() {
     if (deleteId === null) return;
@@ -125,43 +152,69 @@ export function ItemCategoryListPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            placeholder="Buscar categoria..."
-            className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
-          />
+      <FilterBar onClear={handleClearFilter} activeCount={activeFilterCount}>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Buscar por nome</label>
+            <input
+              type="text"
+              value={draftFilters.name}
+              onChange={(e) =>
+                setDraftFilters((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="Buscar categoria..."
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            />
+          </div>
         </div>
-
-        <select
-          value={showOnSiteFilter}
-          onChange={(e) => {
-            setShowOnSiteFilter(e.target.value as "all" | "true" | "false");
-            setPage(0);
-          }}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-        >
-          <option value="all">Exibir no site: todos</option>
-          <option value="true">Exibir no site: sim</option>
-          <option value="false">Exibir no site: nao</option>
-        </select>
-      </div>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Exibir no site</label>
+            <select
+              value={draftFilters.showOnSite}
+              onChange={(e) =>
+                setDraftFilters((prev) => ({
+                  ...prev,
+                  showOnSite: e.target.value as "all" | "true" | "false",
+                }))
+              }
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            >
+              <option value="all">Todos</option>
+              <option value="true">Sim</option>
+              <option value="false">Nao</option>
+            </select>
+          </div>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApplyFilters}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-sm hover:bg-accent transition-colors"
+            >
+              <Search size={16} />
+              Buscar
+            </button>
+            <button
+              type="button"
+              onClick={handleClearFilter}
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Limpar
+            </button>
+          </div>
+        </div>
+      </FilterBar>
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/40">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Thumb
+              </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Nome
               </th>
@@ -180,7 +233,7 @@ export function ItemCategoryListPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={4} className="px-4 py-3">
+                  <td colSpan={5} className="px-4 py-3">
                     <div className="h-4 w-full animate-pulse rounded bg-muted" />
                   </td>
                 </tr>
@@ -188,7 +241,7 @@ export function ItemCategoryListPage() {
             ) : isError ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-4 py-8 text-center text-sm text-destructive"
                 >
                   Erro ao carregar categorias.
@@ -196,7 +249,7 @@ export function ItemCategoryListPage() {
               </tr>
             ) : categories.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center">
+                <td colSpan={5} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Tag size={32} className="text-muted-foreground/30" />
                     <p className="text-sm text-muted-foreground">
@@ -218,6 +271,19 @@ export function ItemCategoryListPage() {
                   key={cat.id}
                   className="hover:bg-muted/20 transition-colors"
                 >
+                  <td className="px-4 py-3">
+                    {cat.photo ? (
+                      <img
+                        src={cat.photo}
+                        alt={cat.name}
+                        className="h-10 w-10 rounded-md border border-border object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-muted">
+                        <Tag size={14} className="text-muted-foreground" />
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-medium">{cat.name}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">

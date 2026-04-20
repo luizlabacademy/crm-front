@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router";
 import { Plus, Search, Pencil, Trash2, Package, Tag, Wrench } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { ActiveBadge } from "@/components/shared/ActiveBadge";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { TablePagination } from "@/components/shared/TablePagination";
+import { FilterBar } from "@/features/expenses/components/FilterBar";
 import { useItems, useDeleteItem } from "@/features/catalog/items/api/useItems";
 import { useItemCategoriesCatalog } from "@/features/catalog/categories/api/useItemCategories";
 import type { ItemType } from "@/features/catalog/items/types/itemTypes";
@@ -41,8 +41,14 @@ export function ItemListPage() {
 
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
+  const [draftFilters, setDraftFilters] = useState({
+    q: "",
+    categoryId: "",
+  });
+  const [filters, setFilters] = useState({
+    q: "",
+    categoryId: "",
+  });
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteName, setDeleteName] = useState("");
 
@@ -50,8 +56,8 @@ export function ItemListPage() {
     page,
     size: pageSize,
     type: typeFilter ?? undefined,
-    search: search || undefined,
-    categoryId: categoryFilter ?? undefined,
+    search: filters.q.trim() || undefined,
+    categoryId: filters.categoryId ? Number(filters.categoryId) : undefined,
   });
   const { data: allCategories = [] } = useItemCategoriesCatalog();
   // Filter categories by type
@@ -64,6 +70,11 @@ export function ItemListPage() {
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
 
+  const activeFilterCount = [
+    filters.q.trim() !== "",
+    filters.categoryId !== "",
+  ].filter(Boolean).length;
+
   const isService = typeFilter === "SERVICE";
   const isProduct = typeFilter === "PRODUCT";
   const itemLabel = isService ? "servicos" : isProduct ? "produtos" : "itens";
@@ -74,6 +85,149 @@ export function ItemListPage() {
       ? "Produtos do Catalogo"
       : "Itens do Catalogo";
   const ItemIcon = isService ? Wrench : Package;
+
+  function CategoryFilter({
+    value,
+    onChange,
+  }: {
+    value: number | null;
+    onChange: (id: number | null) => void;
+  }) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [open, setOpen] = useState(false);
+    const [searchValue, setSearchValue] = useState("");
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
+    const selected = value ? categories.find((c) => c.id === value) : null;
+    const filtered = searchValue
+      ? categories.filter((c) =>
+          c.name.toLowerCase().includes(searchValue.toLowerCase()),
+        )
+      : categories;
+
+    const options = [
+      {
+        id: null as number | null,
+        name: "Todas as categorias",
+        photo: null as string | null,
+      },
+      ...filtered.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        photo: cat.photo ?? null,
+      })),
+    ];
+
+    function selectOption(id: number | null) {
+      onChange(id);
+      setSearchValue("");
+      setOpen(false);
+      setHighlightedIndex(0);
+      inputRef.current?.focus();
+    }
+
+    return (
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={open ? searchValue : selected?.name ?? (value ? `ID ${value}` : "")}
+          onChange={(e) => {
+            setSearchValue(e.target.value);
+            setOpen(true);
+            setHighlightedIndex(0);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setHighlightedIndex(0);
+          }}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={(e) => {
+            if (!open) {
+              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                setOpen(true);
+                setHighlightedIndex(0);
+                e.preventDefault();
+              }
+              return;
+            }
+
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setHighlightedIndex((prev) => Math.min(prev + 1, options.length - 1));
+              return;
+            }
+
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+              return;
+            }
+
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const option = options[highlightedIndex];
+              if (option) {
+                selectOption(option.id);
+              }
+              return;
+            }
+
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setOpen(false);
+            }
+          }}
+          placeholder="Buscar categoria..."
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+        />
+        {open && (
+          <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+            {options.map((option, index) => (
+              <button
+                key={option.id ?? "all"}
+                type="button"
+                className={`w-full px-3 py-3 text-left text-sm transition-colors ${
+                  highlightedIndex === index ? "bg-accent" : "hover:bg-accent"
+                }`}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  selectOption(option.id);
+                }}
+              >
+                <span className="flex min-h-10 items-center gap-3">
+                  {option.photo ? (
+                    <img
+                      src={option.photo}
+                      alt={option.name}
+                      className="h-10 w-10 rounded-md border border-border object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-muted">
+                      <Tag size={14} className="text-muted-foreground" />
+                    </span>
+                  )}
+                  <span>{option.name}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function handleApplyFilters() {
+    setFilters(draftFilters);
+    setPage(0);
+  }
+
+  function handleClearFilter() {
+    const cleared = { q: "", categoryId: "" };
+    setDraftFilters(cleared);
+    setFilters(cleared);
+    setPage(0);
+  }
 
   async function handleDelete() {
     if (deleteId === null) return;
@@ -133,62 +287,68 @@ export function ItemListPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-48 max-w-sm">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-            placeholder={`Buscar ${itemLabelSingular}...`}
-            className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground"
-          />
+      <FilterBar onClear={handleClearFilter} activeCount={activeFilterCount}>
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Buscar por nome</label>
+            <input
+              type="text"
+              value={draftFilters.q}
+              onChange={(e) =>
+                setDraftFilters((prev) => ({ ...prev, q: e.target.value }))
+              }
+              placeholder={`Buscar ${itemLabelSingular}...`}
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 w-full"
+            />
+          </div>
         </div>
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                setCategoryFilter(null);
-                setPage(0);
-              }}
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                categoryFilter === null
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:bg-accent",
-              )}
-            >
-              Todas
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => {
-                  setCategoryFilter(cat.id === categoryFilter ? null : cat.id);
-                  setPage(0);
-                }}
-                className={cn(
-                  "flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                  categoryFilter === cat.id
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border text-muted-foreground hover:bg-accent",
-                )}
-              >
-                <Tag size={10} />
-                {cat.name}
-              </button>
-            ))}
+        <div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Categoria</label>
+            <CategoryFilter
+              value={draftFilters.categoryId ? Number(draftFilters.categoryId) : null}
+              onChange={(id) =>
+                setDraftFilters((prev) => ({
+                  ...prev,
+                  categoryId: id ? String(id) : "",
+                }))
+              }
+            />
+          </div>
+        </div>
+        {!typeFilter && (
+          <div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Tipo</label>
+              <input
+                type="text"
+                value={isProduct ? "Produto" : isService ? "Servico" : "Todos"}
+                readOnly
+                className="rounded-md border border-input bg-muted/40 px-3 py-2 text-sm w-full"
+              />
+            </div>
           </div>
         )}
-      </div>
+        <div className="sm:col-span-2 lg:col-span-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleApplyFilters}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-transparent px-3 py-2 text-sm hover:bg-accent transition-colors"
+            >
+              <Search size={16} />
+              Buscar
+            </button>
+            <button
+              type="button"
+              onClick={handleClearFilter}
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Limpar
+            </button>
+          </div>
+        </div>
+      </FilterBar>
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">

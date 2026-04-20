@@ -37,8 +37,10 @@ export function FilterBar({
 
       <div
         className={cn(
-          "overflow-hidden transition-all duration-200",
-          expanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0",
+          "transition-all duration-200",
+          expanded
+            ? "max-h-[500px] opacity-100 overflow-visible"
+            : "max-h-0 opacity-0 overflow-hidden",
         )}
       >
         <div className="border-t border-border px-4 py-4 space-y-3">
