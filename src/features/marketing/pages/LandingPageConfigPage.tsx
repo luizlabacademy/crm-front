@@ -31,6 +31,7 @@ import {
   useCreateItemCategory,
   useItemCategoriesCatalog,
   usePatchItemCategory,
+  useSortItemCategories,
 } from "@/features/catalog/categories/api/useItemCategories";
 import {
   useDeleteUpload,
@@ -52,6 +53,9 @@ import {
   getDefaultPageSize,
   setDefaultPageSize,
 } from "@/lib/pagination/pageSizePreference";
+
+// When showing services in admin config, load all to allow reordering without pagination
+const ALL_SERVICE_PAGE_SIZE = 10000;
 import type {
   LandingPageConfig,
   LandingPageTheme,
@@ -460,7 +464,7 @@ export function LandingPageConfigPage() {
   const [priceTableOpen, setPriceTableOpen] = useState(false);
   const [serviceSearch, setServiceSearch] = useState("");
   const [servicePage, setServicePage] = useState(0);
-  const [servicePageSize, setServicePageSize] = useState(() => getDefaultPageSize());
+  const [servicePageSize, setServicePageSize] = useState(ALL_SERVICE_PAGE_SIZE);
   const [serviceRows, setServiceRows] = useState<ItemCategoryResponse[]>([]);
   const [serviceReorderingAction, setServiceReorderingAction] = useState<{
     id: number;
@@ -525,15 +529,15 @@ export function LandingPageConfigPage() {
     });
   const createCategoryMutation = useCreateItemCategory();
   const updateCategoryMutation = usePatchItemCategory();
-  const reorderCategoryMutation = usePatchItemCategory();
+  const sortMutation = useSortItemCategories();
 
   const { data: allCategories = [], refetch: refetchCategoriesCatalog } =
     useItemCategoriesCatalog();
-  const serviceCategories = useMemo(
-    () =>
-      allCategories.filter((cat) => cat.availableTypes?.includes("SERVICE")),
-    [allCategories],
-  );
+  const serviceCategories = useMemo(() => {
+    // ensure consistent ordering by sortOrder so landing preview reflects backend order
+    const sorted = [...allCategories].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    return sorted.filter((cat) => cat.availableTypes?.includes("SERVICE"));
+  }, [allCategories]);
   const landingServiceCategories = useMemo(() => {
     const categories = serviceCategories
       .filter(
@@ -1105,25 +1109,23 @@ export function LandingPageConfigPage() {
     const pageOffset = servicePage * servicePageSize;
 
     try {
-      for (let i = 0; i < reordered.length; i += 1) {
-        const category = reordered[i];
-        await reorderCategoryMutation.mutateAsync({
-          id: category.id,
-          body: {
-            tenantId: resolveTenantId(category.tenantId),
-            name: category.name,
-            description: category.description?.trim() || null,
-            showOnSite: category.showOnSite ?? true,
-            availableTypes:
-              category.availableTypes?.length > 0
-                ? category.availableTypes
-                : ["SERVICE"],
-            sortOrder: pageOffset + i,
-          },
-        });
-      }
+      const items = reordered.map((category, i) => ({
+        id: category.id,
+        sortOrder: pageOffset + i,
+      }));
 
-      await Promise.all([refetchServiceList(), refetchCategoriesCatalog()]);
+      await sortMutation.mutateAsync({ items });
+
+      // persist preview order to localStorage so external landing updates immediately
+      const landingItems = reordered.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        description: cat.description ?? "",
+        imageUrl: cat.photo ?? "",
+        showOnSite: cat.showOnSite ?? true,
+        availableTypes: cat.availableTypes ?? [],
+      }));
+      saveServiceCategories(landingItems);
     } catch {
       setServiceRows(current);
       toast.error("Não foi possível atualizar a ordem das categorias.");
@@ -1960,23 +1962,7 @@ export function LandingPageConfigPage() {
               </tbody>
             </table>
 
-            <TablePagination
-              page={servicePage}
-              totalPages={serviceListData?.totalPages ?? 0}
-              totalElements={serviceListData?.totalElements ?? 0}
-              pageSize={servicePageSize}
-              onPageSizeChange={(size) => {
-                setDefaultPageSize(size);
-                setServicePageSize(size);
-                setServicePage(0);
-              }}
-              onFirst={() => setServicePage(0)}
-              onPrev={() => setServicePage((p) => Math.max(0, p - 1))}
-              onNext={() => setServicePage((p) => p + 1)}
-              onLast={() =>
-                setServicePage(Math.max((serviceListData?.totalPages ?? 1) - 1, 0))
-              }
-            />
+            {/* Pagination removed for services: always show all to ease reordering */}
           </div>
 
           {landingServiceCategories.length === 0 && (

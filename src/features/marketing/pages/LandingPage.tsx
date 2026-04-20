@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { api } from "@/lib/api/client";
 import {
   Phone,
   MapPin,
@@ -1525,6 +1526,39 @@ export function LandingPage() {
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
+
+  // If localStorage has no service categories (e.g. first load), fetch from API
+  useEffect(() => {
+    if (serviceCategories.length > 0) return;
+
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await api.get("/api/v1/item-categories", {
+          params: { page: 0, size: 200, availableTypes: "SERVICE" },
+        });
+        const list = Array.isArray(data) ? data : data.content ?? [];
+        const sorted = list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        if (!mounted) return;
+        setServiceCategories(
+          sorted.map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            description: cat.description ?? "",
+            imageUrl: cat.photo ?? "",
+            showOnSite: cat.showOnSite ?? true,
+            availableTypes: cat.availableTypes ?? [],
+          })),
+        );
+      } catch {
+        // ignore — keep empty
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [serviceCategories.length]);
 
   if (!config) {
     return (

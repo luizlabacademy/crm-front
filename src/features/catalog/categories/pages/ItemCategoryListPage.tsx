@@ -1,19 +1,19 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Plus, Search, Pencil, Trash2, Tag } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Tag, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { FilterBar } from "@/features/expenses/components/FilterBar";
 import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
-import { TablePagination } from "@/components/shared/TablePagination";
 import {
   useItemCategories,
   useDeleteItemCategory,
+  usePatchItemCategory,
+  useSortItemCategories,
 } from "@/features/catalog/categories/api/useItemCategories";
-import {
-  getDefaultPageSize,
-  setDefaultPageSize,
-} from "@/lib/pagination/pageSizePreference";
+
+// show all categories without pagination
+const ALL_PAGE_SIZE = 10000;
 
 // ─── Type Badge ───────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ function SiteBadge({ showOnSite }: { showOnSite?: boolean | null }) {
 export function ItemCategoryListPage() {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(() => getDefaultPageSize());
+  const [pageSize, setPageSize] = useState(ALL_PAGE_SIZE);
   const [draftFilters, setDraftFilters] = useState({
     name: "",
     showOnSite: "all" as "all" | "true" | "false",
@@ -83,8 +83,18 @@ export function ItemCategoryListPage() {
         : filters.showOnSite === "true",
   });
   const deleteMutation = useDeleteItemCategory();
+  const patchMutation = usePatchItemCategory();
+  const sortMutation = useSortItemCategories();
+
+  const [rows, setRows] = useState(() => data?.content ?? []);
+  const [reorderingAction, setReorderingAction] = useState<{
+    id: number;
+    direction: "up" | "down";
+  } | null>(null);
 
   const categories = data?.content ?? [];
+  // use rows for optimistic reordering UI; fallback to categories from API
+  const effectiveRows = rows.length > 0 ? rows : categories;
   const totalPages = data?.totalPages ?? 0;
   const totalElements = data?.totalElements ?? 0;
 
@@ -118,6 +128,38 @@ export function ItemCategoryListPage() {
     } finally {
       setDeleteId(null);
       setDeleteName("");
+    }
+  }
+
+  // Keep local rows in sync when API data changes
+  useEffect(() => {
+    setRows(data?.content ?? []);
+  }, [data?.content]);
+
+  async function moveCategory(id: number, direction: "up" | "down") {
+    if (reorderingAction) return;
+
+    const current = [...(rows.length > 0 ? rows : categories)];
+    const idx = current.findIndex((c) => c.id === id);
+    if (idx < 0) return;
+
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= current.length) return;
+
+    const reordered = [...current];
+    [reordered[idx], reordered[targetIdx]] = [reordered[targetIdx], reordered[idx]];
+    setRows(reordered);
+    setReorderingAction({ id, direction });
+
+    try {
+      const items = reordered.map((category, i) => ({ id: category.id, sortOrder: i }));
+      await sortMutation.mutateAsync({ items });
+      toast.success("Ordem das categorias atualizada.");
+    } catch (err) {
+      setRows(current);
+      toast.error("Não foi possível atualizar a ordem das categorias.");
+    } finally {
+      setReorderingAction(null);
     }
   }
 
@@ -226,13 +268,13 @@ export function ItemCategoryListPage() {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Nome
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
                 Descricao
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
                 Tipos
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
                 Exibir no site
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -241,26 +283,26 @@ export function ItemCategoryListPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}>
-                  <td colSpan={6} className="px-4 py-3">
-                    <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                  </td>
-                </tr>
-              ))
+               {isLoading ? (
+               Array.from({ length: 5 }).map((_, i) => (
+                 <tr key={i}>
+                   <td colSpan={5} className="px-4 py-3">
+                     <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                   </td>
+                 </tr>
+               ))
             ) : isError ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-8 text-center text-sm text-destructive"
-                >
-                  Erro ao carregar categorias.
-                </td>
-              </tr>
+               <tr>
+                 <td
+                   colSpan={5}
+                   className="px-4 py-8 text-center text-sm text-destructive"
+                 >
+                   Erro ao carregar categorias.
+                 </td>
+               </tr>
             ) : categories.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-12 text-center">
+               <tr>
+                 <td colSpan={5} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Tag size={32} className="text-muted-foreground/30" />
                     <p className="text-sm text-muted-foreground">
@@ -280,7 +322,8 @@ export function ItemCategoryListPage() {
               categories.map((cat) => (
                 <tr
                   key={cat.id}
-                  className="hover:bg-muted/20 transition-colors"
+                  className="cursor-pointer hover:bg-muted/20 transition-colors"
+                  onClick={() => void navigate(`/catalog/categories/${cat.id}/edit`)}
                 >
                   <td className="px-4 py-3">
                     {cat.photo ? (
@@ -295,13 +338,18 @@ export function ItemCategoryListPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-medium">{cat.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-4 py-3">
+                    <div className="font-medium">{cat.name}</div>
+                    <div className="mt-1 md:hidden text-xs text-muted-foreground">
+                      <SiteBadge showOnSite={cat.showOnSite} />
+                    </div>
+                  </td>
+                  <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
                     {cat.description?.trim() || (
                       <span className="text-muted-foreground/50">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden px-4 py-3 md:table-cell">
                     <div className="flex items-center gap-1.5">
                       {(cat.availableTypes ?? []).map((t) => (
                         <TypeBadge key={t} type={t} />
@@ -311,32 +359,67 @@ export function ItemCategoryListPage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden px-4 py-3 md:table-cell">
                     <SiteBadge showOnSite={cat.showOnSite} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void navigate(`/catalog/categories/${cat.id}/edit`)
-                        }
-                        className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDeleteId(cat.id);
-                          setDeleteName(cat.name);
-                        }}
-                        className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => void moveCategory(cat.id, "up")}
+                          disabled={reorderingAction !== null || effectiveRows[0]?.id === cat.id}
+                          className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
+                          title="Mover para cima"
+                        >
+                          {reorderingAction?.id === cat.id && reorderingAction.direction === "up" ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <ChevronUp size={16} />
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void moveCategory(cat.id, "down")}
+                          disabled={
+                            reorderingAction !== null ||
+                            effectiveRows[effectiveRows.length - 1]?.id === cat.id
+                          }
+                          className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
+                          title="Mover para baixo"
+                        >
+                          {reorderingAction?.id === cat.id && reorderingAction.direction === "down" ? (
+                            <Loader2 size={16} className="animate-spin" />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void navigate(`/catalog/categories/${cat.id}/edit`);
+                          }}
+                          className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteId(cat.id);
+                            setDeleteName(cat.name);
+                          }}
+                          className="rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -345,21 +428,7 @@ export function ItemCategoryListPage() {
           </tbody>
         </table>
 
-        <TablePagination
-          page={page}
-          totalPages={totalPages}
-          totalElements={totalElements}
-          pageSize={pageSize}
-          onPageSizeChange={(size) => {
-            setDefaultPageSize(size);
-            setPageSize(size);
-            setPage(0);
-          }}
-          onFirst={() => setPage(0)}
-          onPrev={() => setPage((p) => Math.max(0, p - 1))}
-          onNext={() => setPage((p) => p + 1)}
-          onLast={() => setPage(Math.max(totalPages - 1, 0))}
-        />
+        {/* Pagination removed: show all categories */}
       </div>
     </div>
   );

@@ -122,6 +122,24 @@ export function usePatchItemCategory() {
   });
 }
 
+// ─── Sort order (bulk) ───────────────────────────────────────────────────────
+
+export function useSortItemCategories() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { items: { id: number; sortOrder: number }[] }>(
+    {
+      mutationFn: async (body) => {
+        await api.patch("/api/v1/item-categories/sort-order", body);
+      },
+      onSuccess: () => {
+        // Invalidate catalog only; list views subscribe to their own query keys
+        // to avoid triggering multiple list refetches in different pages.
+        void queryClient.invalidateQueries({ queryKey: ["item-categories-catalog"] });
+      },
+    },
+  );
+}
+
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 export function useDeleteItemCategory() {
