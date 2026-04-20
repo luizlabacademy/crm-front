@@ -1332,25 +1332,28 @@ function BackToTop({ theme }: { theme: LandingPageTheme }) {
 // ─── Landing Page (external) ──────────────────────────────────────────────────
 
 export function LandingPage() {
-  const [config, setConfig] = useState<LandingPageConfig | null>(null);
-  const [serviceCategories, setServiceCategories] = useState<LandingServiceCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState<LandingPageConfig | null>(() => loadConfig());
+  const [serviceCategories, setServiceCategories] = useState<LandingServiceCategory[]>(
+    () => loadServiceCategories(),
+  );
 
   useEffect(() => {
-    const data = loadConfig();
-    const categories = loadServiceCategories();
-    setConfig(data);
-    setServiceCategories(categories);
-    setLoading(false);
-  }, []);
+    function handleStorage(event: StorageEvent) {
+      if (
+        event.key !== null &&
+        event.key !== STORAGE_KEY &&
+        event.key !== LANDING_SERVICE_CATEGORIES_KEY
+      ) {
+        return;
+      }
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
-      </div>
-    );
-  }
+      setConfig(loadConfig());
+      setServiceCategories(loadServiceCategories());
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   if (!config) {
     return (

@@ -9,12 +9,10 @@ import {
   Phone,
   MapPin,
   Instagram,
-  MessageCircle,
   Pencil,
   Eye,
   ChevronUp,
   ChevronDown,
-  ChevronRight,
   Globe,
   Sparkles,
   Palette,
@@ -413,6 +411,10 @@ export function LandingPageConfigPage() {
     }));
   }
 
+  function resolveTenantId(tenantId?: number | null) {
+    return tenantId ?? allCategories[0]?.tenantId ?? 1;
+  }
+
   const orderedSlidesFromApi = useMemo(() => {
     const visibleSlides = slidesFromApi.filter(
       (slide) => !removedSlideIds.has(slide.id),
@@ -455,6 +457,53 @@ export function LandingPageConfigPage() {
       return next;
     });
   }, [config.slides, slideUploads]);
+
+  useEffect(() => {
+    if (activeTab !== "slides" || isLoadingSlides || isErrorSlides) return;
+
+    setConfig((prev) => {
+      const nextSlides = slideUploads.map((slide) => {
+        const draft = slideDrafts[slide.id];
+
+        return {
+          id: slide.id,
+          imageUrl: getUploadViewUrl(slide),
+          title: draft ? draft.title : (slide.title ?? ""),
+          subtitle: draft ? draft.subtitle : (slide.subtitle ?? ""),
+        };
+      });
+
+      const isSameSlides =
+        prev.slides.length === nextSlides.length &&
+        prev.slides.every((slide, index) => {
+          const nextSlide = nextSlides[index];
+          if (!nextSlide) return false;
+
+          return (
+            slide.id === nextSlide.id &&
+            slide.imageUrl === nextSlide.imageUrl &&
+            slide.title === nextSlide.title &&
+            slide.subtitle === nextSlide.subtitle
+          );
+        });
+
+      if (isSameSlides) return prev;
+
+      const nextConfig = {
+        ...prev,
+        slides: nextSlides,
+      };
+      saveConfig(nextConfig);
+
+      return nextConfig;
+    });
+  }, [
+    activeTab,
+    isErrorSlides,
+    isLoadingSlides,
+    slideDrafts,
+    slideUploads,
+  ]);
 
   async function removeSlide(id: string) {
     if (removingSlideIds.has(id)) return;
@@ -523,7 +572,6 @@ export function LandingPageConfigPage() {
 
     const reordered = [...current];
     [reordered[idx], reordered[targetIdx]] = [reordered[targetIdx], reordered[idx]];
-    setSlideUploads(reordered);
     setReorderingSlideAction({ id, direction });
 
     try {
@@ -546,9 +594,10 @@ export function LandingPageConfigPage() {
         });
       }
 
+      setSlideUploads(reordered);
       void refetchSlides();
+      toast.success("Ordem dos slides atualizada.");
     } catch {
-      setSlideUploads(current);
       toast.error("Não foi possível atualizar a ordem dos slides.");
     } finally {
       setReorderingSlideAction(null);
@@ -764,6 +813,7 @@ export function LandingPageConfigPage() {
   async function handleSubmitServiceModal(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const name = modalName.trim();
+    const description = modalDescription.trim();
     if (!name) {
       toast.error("Nome da categoria obrigatorio.");
       return;
@@ -779,9 +829,9 @@ export function LandingPageConfigPage() {
         );
 
         const updateBody: ItemCategoryRequest = {
-          tenantId: editingCategory.tenantId,
+          tenantId: resolveTenantId(editingCategory.tenantId),
           name,
-          description: modalDescription.trim() || null,
+          description: description || null,
           availableTypes: mergedTypes,
           showOnSite: modalShowOnSite,
         };
@@ -792,11 +842,10 @@ export function LandingPageConfigPage() {
         });
         toast.success("Categoria de servico atualizada.");
       } else {
-        const defaultTenantId = allCategories[0]?.tenantId ?? 1;
         const createBody: ItemCategoryRequest = {
-          tenantId: defaultTenantId,
+          tenantId: resolveTenantId(),
           name,
-          description: modalDescription.trim() || null,
+          description: description || null,
           availableTypes: ["SERVICE"],
           showOnSite: modalShowOnSite,
         };
@@ -804,7 +853,7 @@ export function LandingPageConfigPage() {
         toast.success("Categoria de servico criada.");
       }
 
-      await Promise.all([refetchServiceList(), refetchCategoriesCatalog()]);
+      await Promise.allSettled([refetchServiceList(), refetchCategoriesCatalog()]);
       setServiceModalOpen(false);
       setEditingCategory(null);
       setModalName("");
@@ -856,9 +905,9 @@ export function LandingPageConfigPage() {
         await reorderCategoryMutation.mutateAsync({
           id: category.id,
           body: {
-            tenantId: category.tenantId,
+            tenantId: resolveTenantId(category.tenantId),
             name: category.name,
-            description: category.description ?? null,
+            description: category.description?.trim() || null,
             showOnSite: category.showOnSite ?? true,
             availableTypes:
               category.availableTypes?.length > 0
@@ -877,9 +926,6 @@ export function LandingPageConfigPage() {
       setServiceReorderingAction(null);
     }
   }
-
-  // ── Landing page URL ──
-  const landingPageUrl = `${window.location.origin}/landing`;
 
   const tabs = [
     { key: "info" as const, label: "Informações", icon: <Store size={14} /> },
@@ -919,20 +965,6 @@ export function LandingPageConfigPage() {
             Salvar
           </button>
         </div>
-      </div>
-
-      {/* Link to external page */}
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3">
-        <Globe size={14} className="text-muted-foreground shrink-0" />
-        <span className="text-xs text-muted-foreground">Link público:</span>
-        <a
-          href={landingPageUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-primary underline break-all"
-        >
-          {landingPageUrl}
-        </a>
       </div>
 
       {/* Tabs */}
@@ -1094,20 +1126,12 @@ export function LandingPageConfigPage() {
           </Section>
 
           <Section title="Contato & WhatsApp" icon={<Phone size={16} />}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Telefone"
-                value={config.businessInfo.phone}
-                onChange={(v) => updateBiz("phone", v)}
-                placeholder="(11) 99999-9999"
-              />
-              <Field
-                label="Número WhatsApp (com DDI, sem sinais)"
-                value={config.businessInfo.whatsappNumber}
-                onChange={(v) => updateBiz("whatsappNumber", v)}
-                placeholder="5511999999999"
-              />
-            </div>
+            <Field
+              label="Número WhatsApp (com DDI, sem sinais)"
+              value={config.businessInfo.whatsappNumber}
+              onChange={(v) => updateBiz("whatsappNumber", v)}
+              placeholder="5511999999999"
+            />
             <Field
               label="Mensagem padrão do WhatsApp"
               value={config.businessInfo.whatsappMessage}
@@ -1122,20 +1146,6 @@ export function LandingPageConfigPage() {
               placeholder="contato@seudominio.com.br"
               type="email"
             />
-            <div className="mt-4">
-              <label className="text-xs font-medium text-muted-foreground">
-                Landing Page Pública
-              </label>
-              <div className="mt-2 flex items-center gap-3">
-                <button
-                  onClick={() => setUpgradeModalOpen(true)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm hover:bg-accent"
-                >
-                  Habilitar landing page
-                </button>
-                <span className="text-xs text-muted-foreground">{landingPageUrl}</span>
-              </div>
-            </div>
           </Section>
 
           <Section title="Endereço" icon={<MapPin size={16} />}>
@@ -1198,7 +1208,8 @@ export function LandingPageConfigPage() {
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
             >
               <Plus size={16} />
-              Novo Slide
+              <span className="sm:hidden">Novo</span>
+              <span className="hidden sm:inline">Novo Slide</span>
             </button>
           </div>
 
@@ -1413,7 +1424,6 @@ export function LandingPageConfigPage() {
                         createCategoryMutation.isPending ||
                         updateCategoryMutation.isPending
                       }
-                      displayName={editingCategory.name}
                       shape="square"
                     />
                   </div>
@@ -1493,35 +1503,30 @@ export function LandingPageConfigPage() {
           )}
 
           <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">Categorias de Servico</p>
-              </div>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={config.showOnlyServicesWithPhotos ?? false}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      showOnlyServicesWithPhotos: e.target.checked,
+                    }))
+                  }
+                  className="h-4 w-4 rounded border-input accent-primary"
+                />
+                Exibir no site / landing page apenas servicos com fotos
+              </label>
+
               <button
                 type="button"
                 onClick={openCreateServiceModal}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs"
               >
                 <Plus size={13} />
                 Nova Categoria
               </button>
-            </div>
-
-            <div className="mt-4">
-              <label className="inline-flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={config.showOnlyServicesWithPhotos ?? false}
-                onChange={(e) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    showOnlyServicesWithPhotos: e.target.checked,
-                  }))
-                }
-                className="h-4 w-4 rounded border-input accent-primary"
-              />
-              Exibir no site / landing page apenas servicos com fotos
-              </label>
             </div>
           </div>
 
@@ -1650,49 +1655,52 @@ export function LandingPageConfigPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void moveServiceCategory(category.id, "up");
-                            }}
-                            disabled={index === 0 || isReorderingService}
-                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
-                            title="Mover para cima"
-                          >
-                            {isMovingUp ? (
-                              <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                              <ChevronUp size={16} />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void moveServiceCategory(category.id, "down");
-                            }}
-                            disabled={index === serviceRows.length - 1 || isReorderingService}
-                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
-                            title="Mover para baixo"
-                          >
-                            {isMovingDown ? (
-                              <Loader2 size={16} className="animate-spin" />
-                            ) : (
-                              <ChevronDown size={16} />
-                            )}
-                          </button>
+                        <div className="flex items-center justify-end gap-3">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void moveServiceCategory(category.id, "up");
+                              }}
+                              disabled={index === 0 || isReorderingService}
+                              className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
+                              title="Mover para cima"
+                            >
+                              {isMovingUp ? (
+                                <Loader2 size={20} className="animate-spin" />
+                              ) : (
+                                <ChevronUp size={20} />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void moveServiceCategory(category.id, "down");
+                              }}
+                              disabled={index === serviceRows.length - 1 || isReorderingService}
+                              className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
+                              title="Mover para baixo"
+                            >
+                              {isMovingDown ? (
+                                <Loader2 size={20} className="animate-spin" />
+                              ) : (
+                                <ChevronDown size={20} />
+                              )}
+                            </button>
+                          </div>
+
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               openEditServiceModal(category);
                             }}
-                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                            title="Abrir"
+                            className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            title="Editar"
                           >
-                            <ChevronRight size={16} />
+                            <Pencil size={20} />
                           </button>
                         </div>
                       </td>
@@ -1732,14 +1740,7 @@ export function LandingPageConfigPage() {
 
       {/* Bottom save bar */}
       {activeTab === "info" && (
-        <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-5 py-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <MessageCircle size={14} />
-            <span>
-              O botão de agendamento direciona para o WhatsApp:{" "}
-              <strong>{config.businessInfo.whatsappNumber || "—"}</strong>
-            </span>
-          </div>
+        <div className="flex items-center justify-end rounded-xl border border-border bg-muted/30 px-5 py-3">
           <button
             onClick={handleSave}
             className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
