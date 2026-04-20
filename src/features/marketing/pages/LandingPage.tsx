@@ -23,6 +23,16 @@ import type {
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "crm_landing_page_config";
+const LANDING_SERVICE_CATEGORIES_KEY = "crm_landing_service_categories";
+
+interface LandingServiceCategory {
+  id: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  showOnSite: boolean;
+  availableTypes: Array<"PRODUCT" | "SERVICE">;
+}
 
 function loadConfig(): LandingPageConfig | null {
   try {
@@ -32,6 +42,16 @@ function loadConfig(): LandingPageConfig | null {
     // ignore
   }
   return null;
+}
+
+function loadServiceCategories(): LandingServiceCategory[] {
+  try {
+    const raw = localStorage.getItem(LANDING_SERVICE_CATEGORIES_KEY);
+    if (raw) return JSON.parse(raw) as LandingServiceCategory[];
+  } catch {
+    // ignore
+  }
+  return [];
 }
 
 // ─── WhatsApp helper ──────────────────────────────────────────────────────────
@@ -1313,11 +1333,14 @@ function BackToTop({ theme }: { theme: LandingPageTheme }) {
 
 export function LandingPage() {
   const [config, setConfig] = useState<LandingPageConfig | null>(null);
+  const [serviceCategories, setServiceCategories] = useState<LandingServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const data = loadConfig();
+    const categories = loadServiceCategories();
     setConfig(data);
+    setServiceCategories(categories);
     setLoading(false);
   }, []);
 
@@ -1344,7 +1367,21 @@ export function LandingPage() {
     );
   }
 
-  const { businessInfo, slides, services } = config;
+  const { businessInfo, slides } = config;
+  const services = serviceCategories
+    .filter(
+      (category) =>
+        category.showOnSite &&
+        category.availableTypes.includes("SERVICE") &&
+        (!config.showOnlyServicesWithPhotos || Boolean(category.imageUrl?.trim())),
+    )
+    .map((category) => ({
+      id: String(category.id),
+      name: category.name,
+      description: category.description,
+      imageUrl: category.imageUrl,
+      price: "",
+    }));
   const theme: LandingPageTheme = config.theme ?? "rose";
   const wpHref = whatsappUrl(
     businessInfo.whatsappNumber,

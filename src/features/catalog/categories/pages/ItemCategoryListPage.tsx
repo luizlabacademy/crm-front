@@ -33,7 +33,15 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
-function SiteBadge({ showOnSite }: { showOnSite: boolean }) {
+function SiteBadge({ showOnSite }: { showOnSite?: boolean | null }) {
+  if (showOnSite == null) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        —
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(
@@ -219,6 +227,9 @@ export function ItemCategoryListPage() {
                 Nome
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Descricao
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Tipos
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -233,7 +244,7 @@ export function ItemCategoryListPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
-                  <td colSpan={5} className="px-4 py-3">
+                  <td colSpan={6} className="px-4 py-3">
                     <div className="h-4 w-full animate-pulse rounded bg-muted" />
                   </td>
                 </tr>
@@ -241,7 +252,7 @@ export function ItemCategoryListPage() {
             ) : isError ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-4 py-8 text-center text-sm text-destructive"
                 >
                   Erro ao carregar categorias.
@@ -249,7 +260,7 @@ export function ItemCategoryListPage() {
               </tr>
             ) : categories.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center">
+                <td colSpan={6} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <Tag size={32} className="text-muted-foreground/30" />
                     <p className="text-sm text-muted-foreground">
@@ -285,6 +296,11 @@ export function ItemCategoryListPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 font-medium">{cat.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {cat.description?.trim() || (
+                      <span className="text-muted-foreground/50">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
                       {(cat.availableTypes ?? []).map((t) => (

@@ -3,6 +3,7 @@ import { api } from "@/lib/api/client";
 import type {
   ItemCategoryResponse,
   ItemCategoryRequest,
+  ItemCategoryAvailableType,
   PageResponse,
 } from "@/features/catalog/categories/types/itemCategoryTypes";
 
@@ -14,12 +15,17 @@ interface UseItemCategoriesParams {
   tenantId?: number | null;
   name?: string;
   showOnSite?: boolean;
+  availableTypes?: ItemCategoryAvailableType;
 }
 
 export function useItemCategories(params: UseItemCategoriesParams = {}) {
-  const { page = 0, size = 20, tenantId, name, showOnSite } = params;
+  const { page = 0, size = 20, tenantId, name, showOnSite, availableTypes } =
+    params;
   return useQuery<PageResponse<ItemCategoryResponse>>({
-    queryKey: ["item-categories", { page, size, tenantId, name, showOnSite }],
+    queryKey: [
+      "item-categories",
+      { page, size, tenantId, name, showOnSite, availableTypes },
+    ],
     queryFn: async () => {
       const { data } = await api.get<PageResponse<ItemCategoryResponse>>(
         "/api/v1/item-categories",
@@ -30,6 +36,7 @@ export function useItemCategories(params: UseItemCategoriesParams = {}) {
             ...(tenantId != null ? { tenantId } : {}),
             ...(name ? { name } : {}),
             ...(showOnSite != null ? { showOnSite } : {}),
+            ...(availableTypes ? { availableTypes } : {}),
           },
         },
       );

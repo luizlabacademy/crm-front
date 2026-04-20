@@ -187,6 +187,7 @@ export interface LandingPageConfig {
   businessInfo: LandingPageBusinessInfo;
   slides: LandingPageSlide[];
   services: LandingPageService[];
+  showOnlyServicesWithPhotos?: boolean;
 }
 
 // ─── Coupon Types ─────────────────────────────────────────────────────────────

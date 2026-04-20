@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Plus,
   Trash2,
@@ -21,21 +21,48 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { UpgradeNeededModal, PriceTableModal } from "@/features/billing/components/UpgradeModals";
+import { PhotoUploader } from "@/components/shared/PhotoUploader";
+import {
+  useItemCategories,
+  useCreateItemCategory,
+  useItemCategoriesCatalog,
+  useUpdateItemCategory,
+} from "@/features/catalog/categories/api/useItemCategories";
+import type {
+  ItemCategoryAvailableType,
+  ItemCategoryRequest,
+  ItemCategoryResponse,
+} from "@/features/catalog/categories/types/itemCategoryTypes";
+import { TablePagination } from "@/components/shared/TablePagination";
+import {
+  getDefaultPageSize,
+  setDefaultPageSize,
+} from "@/lib/pagination/pageSizePreference";
 import type {
   LandingPageConfig,
   LandingPageSlide,
-  LandingPageService,
   LandingPageTheme,
 } from "@/features/marketing/types/marketingTypes";
 
 // ─── Storage key ──────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "crm_landing_page_config";
+const LANDING_SERVICE_CATEGORIES_KEY = "crm_landing_service_categories";
+
+interface LandingServiceCategory {
+  id: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  showOnSite: boolean;
+  availableTypes: ItemCategoryAvailableType[];
+}
 
 // ─── Default data ─────────────────────────────────────────────────────────────
 
 const DEFAULT_CONFIG: LandingPageConfig = {
   theme: "rose",
+  showOnlyServicesWithPhotos: false,
   businessInfo: {
     salonName: "Studio Belle",
     tagline: "Beleza, Cuidado e Bem-Estar",
@@ -139,7 +166,14 @@ const DEFAULT_CONFIG: LandingPageConfig = {
 function loadConfig(): LandingPageConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as LandingPageConfig;
+    if (raw) {
+      const parsed = JSON.parse(raw) as LandingPageConfig;
+      return {
+        ...DEFAULT_CONFIG,
+        ...parsed,
+        showOnlyServicesWithPhotos: parsed.showOnlyServicesWithPhotos ?? false,
+      };
+    }
   } catch {
     // ignore
   }
@@ -148,6 +182,10 @@ function loadConfig(): LandingPageConfig {
 
 function saveConfig(config: LandingPageConfig) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+}
+
+function saveServiceCategories(categories: LandingServiceCategory[]) {
+  localStorage.setItem(LANDING_SERVICE_CATEGORIES_KEY, JSON.stringify(categories));
 }
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
@@ -226,10 +264,58 @@ export function LandingPageConfigPage() {
   );
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [priceTableOpen, setPriceTableOpen] = useState(false);
+  const [serviceSearch, setServiceSearch] = useState("");
+  const [servicePage, setServicePage] = useState(0);
+  const [servicePageSize, setServicePageSize] = useState(() => getDefaultPageSize());
+  const [serviceModalOpen, setServiceModalOpen] = useState(false);
+  const [serviceModalMode, setServiceModalMode] = useState<"create" | "edit">(
+    "create",
+  );
+  const [editingCategory, setEditingCategory] = useState<ItemCategoryResponse | null>(null);
+  const [modalName, setModalName] = useState("");
+  const [modalDescription, setModalDescription] = useState("");
+  const [modalShowOnSite, setModalShowOnSite] = useState(true);
+
+  const { data: serviceListData, isLoading: isLoadingServices, isError: isErrorServices, refetch: refetchServiceList } =
+    useItemCategories({
+      page: servicePage,
+      size: servicePageSize,
+      name: serviceSearch.trim() || undefined,
+      availableTypes: "SERVICE",
+    });
+  const createCategoryMutation = useCreateItemCategory();
+  const updateCategoryMutation = useUpdateItemCategory();
+
+  const { data: allCategories = [], refetch: refetchCategoriesCatalog } =
+    useItemCategoriesCatalog();
+  const serviceCategories = useMemo(
+    () =>
+      allCategories.filter((cat) => cat.availableTypes?.includes("SERVICE")),
+    [allCategories],
+  );
+  const landingServiceCategories = useMemo(() => {
+    const categories = serviceCategories
+      .filter(
+        (cat) =>
+          !config.showOnlyServicesWithPhotos ||
+          Boolean(cat.photo && cat.photo.trim()),
+      )
+      .map<LandingServiceCategory>((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        description: cat.description ?? "",
+        imageUrl: cat.photo ?? "",
+        showOnSite: cat.showOnSite ?? true,
+        availableTypes: cat.availableTypes ?? [],
+      }));
+
+    return categories;
+  }, [config.showOnlyServicesWithPhotos, serviceCategories]);
 
   // Persist on every save action
   function handleSave() {
     saveConfig(config);
+    saveServiceCategories(landingServiceCategories);
     toast.success("Landing page salva com sucesso!");
   }
 
@@ -240,6 +326,10 @@ export function LandingPageConfigPage() {
       saveConfig(DEFAULT_CONFIG);
     }
   }, []);
+
+  useEffect(() => {
+    saveServiceCategories(landingServiceCategories);
+  }, [landingServiceCategories]);
 
   // ── Theme ──
   function setTheme(theme: LandingPageTheme) {
@@ -303,36 +393,76 @@ export function LandingPageConfigPage() {
     });
   }
 
-  // ── Services ──
-  function addService() {
-    const svc: LandingPageService = {
-      id: `svc-${Date.now()}`,
-      name: "",
-      description: "",
-      imageUrl: "",
-      price: "",
-    };
-    setConfig((prev) => ({ ...prev, services: [...prev.services, svc] }));
+  async function handleSubmitServiceModal(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const name = modalName.trim();
+    if (!name) {
+      toast.error("Nome da categoria obrigatorio.");
+      return;
+    }
+
+    try {
+      if (serviceModalMode === "edit" && editingCategory) {
+        const mergedTypes = Array.from(
+          new Set<ItemCategoryAvailableType>([
+            ...(editingCategory.availableTypes ?? []),
+            "SERVICE",
+          ]),
+        );
+
+        const updateBody: ItemCategoryRequest = {
+          tenantId: editingCategory.tenantId,
+          name,
+          description: modalDescription.trim() || null,
+          availableTypes: mergedTypes,
+          showOnSite: modalShowOnSite,
+        };
+
+        await updateCategoryMutation.mutateAsync({
+          id: editingCategory.id,
+          body: updateBody,
+        });
+        toast.success("Categoria de servico atualizada.");
+      } else {
+        const defaultTenantId = allCategories[0]?.tenantId ?? 1;
+        const createBody: ItemCategoryRequest = {
+          tenantId: defaultTenantId,
+          name,
+          description: modalDescription.trim() || null,
+          availableTypes: ["SERVICE"],
+          showOnSite: modalShowOnSite,
+        };
+        await createCategoryMutation.mutateAsync(createBody);
+        toast.success("Categoria de servico criada.");
+      }
+
+      await Promise.all([refetchServiceList(), refetchCategoriesCatalog()]);
+      setServiceModalOpen(false);
+      setEditingCategory(null);
+      setModalName("");
+      setModalDescription("");
+      setModalShowOnSite(true);
+    } catch {
+      toast.error("Erro ao salvar categoria de servico.");
+    }
   }
 
-  function updateService(
-    id: string,
-    field: keyof LandingPageService,
-    value: string,
-  ) {
-    setConfig((prev) => ({
-      ...prev,
-      services: prev.services.map((s) =>
-        s.id === id ? { ...s, [field]: value } : s,
-      ),
-    }));
+  function openCreateServiceModal() {
+    setServiceModalMode("create");
+    setEditingCategory(null);
+    setModalName("");
+    setModalDescription("");
+    setModalShowOnSite(true);
+    setServiceModalOpen(true);
   }
 
-  function removeService(id: string) {
-    setConfig((prev) => ({
-      ...prev,
-      services: prev.services.filter((s) => s.id !== id),
-    }));
+  function openEditServiceModal(category: ItemCategoryResponse) {
+    setServiceModalMode("edit");
+    setEditingCategory(category);
+    setModalName(category.name);
+    setModalDescription(category.description ?? "");
+    setModalShowOnSite(category.showOnSite ?? true);
+    setServiceModalOpen(true);
   }
 
   // ── Landing page URL ──
@@ -741,84 +871,303 @@ export function LandingPageConfigPage() {
       {/* ─── Tab: Services ─── */}
       {activeTab === "services" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Adicione os serviços oferecidos com imagem, descrição e preço.
-            </p>
-            <button
-              onClick={addService}
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-            >
-              <Plus size={13} />
-              Novo Serviço
-            </button>
-          </div>
+          {serviceModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-5 sm:p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {serviceModalMode === "edit"
+                        ? "Editar Categoria de Servico"
+                        : "Nova Categoria de Servico"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      O tipo SERVICE e mantido automaticamente para categorias
+                      criadas/editadas nesta aba.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setServiceModalOpen(false)}
+                    className="rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
+                  >
+                    Fechar
+                  </button>
+                </div>
 
-          {config.services.length === 0 && (
-            <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
-              <Globe size={32} className="opacity-30" />
-              <p className="text-sm">Nenhum serviço adicionado.</p>
+                {serviceModalMode === "edit" && editingCategory && (
+                  <div className="mb-4 rounded-2xl border border-border bg-card p-4">
+                    <PhotoUploader
+                      fileType="CATEGORY"
+                      tenantId={editingCategory.tenantId}
+                      entityId={editingCategory.id}
+                      fallbackUrl={editingCategory.photo ?? null}
+                      disabled={
+                        createCategoryMutation.isPending ||
+                        updateCategoryMutation.isPending
+                      }
+                      displayName={editingCategory.name}
+                      subtitle="Servico"
+                      shape="square"
+                    />
+                  </div>
+                )}
+
+                {serviceModalMode === "create" && (
+                  <div className="mb-4 rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                    Salve a categoria para habilitar o envio de foto.
+                  </div>
+                )}
+
+                <form className="space-y-4" onSubmit={handleSubmitServiceModal}>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">
+                      Nome <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      value={modalName}
+                      onChange={(e) => setModalName(e.target.value)}
+                      placeholder="Ex: Corte e finalizacao"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">
+                      Descricao
+                    </label>
+                    <textarea
+                      value={modalDescription}
+                      onChange={(e) => setModalDescription(e.target.value)}
+                      placeholder="Descreva a categoria"
+                      rows={3}
+                      className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={modalShowOnSite}
+                        onChange={(e) => setModalShowOnSite(e.target.checked)}
+                        className="h-4 w-4 rounded border-input accent-primary"
+                      />
+                      Exibir no site/landing page
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setServiceModalOpen(false)}
+                      className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={
+                        createCategoryMutation.isPending ||
+                        updateCategoryMutation.isPending
+                      }
+                      className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    >
+                      {createCategoryMutation.isPending ||
+                      updateCategoryMutation.isPending
+                        ? "Salvando..."
+                        : serviceModalMode === "edit"
+                          ? "Salvar Categoria"
+                          : "Criar Categoria"}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {config.services.map((svc) => (
-              <div
-                key={svc.id}
-                className="rounded-xl border border-border bg-card overflow-hidden"
-              >
-                {svc.imageUrl && (
-                  <img
-                    src={svc.imageUrl}
-                    alt={svc.name}
-                    className="h-36 w-full object-cover"
-                  />
-                )}
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {svc.name || "Novo Serviço"}
-                    </span>
-                    <button
-                      onClick={() => removeService(svc.id)}
-                      className="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-                      title="Remover"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-
-                  <Field
-                    label="Nome"
-                    value={svc.name}
-                    onChange={(v) => updateService(svc.id, "name", v)}
-                    placeholder="Ex: Corte Feminino"
-                  />
-                  <Field
-                    label="Descrição"
-                    value={svc.description}
-                    onChange={(v) => updateService(svc.id, "description", v)}
-                    placeholder="Descrição breve do serviço..."
-                    multiline
-                  />
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field
-                      label="URL da Imagem"
-                      value={svc.imageUrl}
-                      onChange={(v) => updateService(svc.id, "imageUrl", v)}
-                      placeholder="https://..."
-                    />
-                    <Field
-                      label="Preço"
-                      value={svc.price}
-                      onChange={(v) => updateService(svc.id, "price", v)}
-                      placeholder="R$ 0,00"
-                    />
-                  </div>
-                </div>
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Categorias de Servico</p>
+                <p className="text-xs text-muted-foreground">
+                  Exibe somente categorias com tipo SERVICE.
+                </p>
               </div>
-            ))}
+              <button
+                type="button"
+                onClick={openCreateServiceModal}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+              >
+                <Plus size={13} />
+                Nova Categoria
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={config.showOnlyServicesWithPhotos ?? false}
+                onChange={(e) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    showOnlyServicesWithPhotos: e.target.checked,
+                  }))
+                }
+                className="h-4 w-4 rounded border-input accent-primary"
+              />
+              Exibir no site / landing page apenas servicos com fotos
+              </label>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Fonte de dados: categorias do catalogo com tipo SERVICE e exibir no
+              site habilitado.
+            </p>
           </div>
+
+          <div className="relative max-w-sm">
+            <input
+              type="text"
+              value={serviceSearch}
+              onChange={(e) => {
+                setServiceSearch(e.target.value);
+                setServicePage(0);
+              }}
+              placeholder="Buscar categoria por nome..."
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Thumb
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Nome
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Descricao
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Exibir no site
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Acoes
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {isLoadingServices ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i}>
+                      <td colSpan={5} className="px-4 py-3">
+                        <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                      </td>
+                    </tr>
+                  ))
+                ) : isErrorServices ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-8 text-center text-sm text-destructive"
+                    >
+                      Erro ao carregar categorias de servico.
+                    </td>
+                  </tr>
+                ) : (serviceListData?.content ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-12 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <Globe size={32} className="text-muted-foreground/30" />
+                        <p className="text-sm text-muted-foreground">
+                          Nenhuma categoria de servico encontrada.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  (serviceListData?.content ?? []).map((category) => (
+                    <tr
+                      key={category.id}
+                      className="hover:bg-muted/20 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        {category.photo ? (
+                          <img
+                            src={category.photo}
+                            alt={category.name}
+                            className="h-10 w-10 rounded-md border border-border object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-muted">
+                            <Image size={14} className="text-muted-foreground" />
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-medium">{category.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {category.description?.trim() || (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+                            category.showOnSite
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-muted text-muted-foreground",
+                          )}
+                        >
+                          {category.showOnSite ? "Sim" : "Nao"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditServiceModal(category)}
+                            className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            title="Editar"
+                          >
+                            <span className="text-xs">Editar</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <TablePagination
+              page={servicePage}
+              totalPages={serviceListData?.totalPages ?? 0}
+              totalElements={serviceListData?.totalElements ?? 0}
+              pageSize={servicePageSize}
+              onPageSizeChange={(size) => {
+                setDefaultPageSize(size);
+                setServicePageSize(size);
+                setServicePage(0);
+              }}
+              onFirst={() => setServicePage(0)}
+              onPrev={() => setServicePage((p) => Math.max(0, p - 1))}
+              onNext={() => setServicePage((p) => p + 1)}
+              onLast={() =>
+                setServicePage(Math.max((serviceListData?.totalPages ?? 1) - 1, 0))
+              }
+            />
+          </div>
+
+          {landingServiceCategories.length === 0 && (
+            <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-xs text-muted-foreground">
+              Nenhuma categoria qualificada para exibir na landing no momento.
+            </div>
+          )}
         </div>
       )}
 

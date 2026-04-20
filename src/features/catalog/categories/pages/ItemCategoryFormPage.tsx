@@ -18,6 +18,7 @@ import { PhotoUploader } from "@/components/shared/PhotoUploader";
 
 const schema = z.object({
   name: z.string().min(1, "Nome obrigatorio"),
+  description: z.string().optional(),
   showOnSite: z.boolean(),
   availableTypes: z
     .array(z.enum(["PRODUCT", "SERVICE"]))
@@ -56,6 +57,7 @@ export function ItemCategoryFormPage() {
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
+      description: "",
       showOnSite: false,
       availableTypes: ["PRODUCT", "SERVICE"],
     },
@@ -65,6 +67,7 @@ export function ItemCategoryFormPage() {
     if (existing) {
       reset({
         name: existing.name,
+        description: existing.description ?? "",
         showOnSite: existing.showOnSite ?? false,
         availableTypes: existing.availableTypes ?? ["PRODUCT", "SERVICE"],
       });
@@ -76,6 +79,7 @@ export function ItemCategoryFormPage() {
       const body = {
         tenantId: existing?.tenantId ?? 1,
         name: values.name,
+        description: values.description?.trim() || null,
         showOnSite: values.showOnSite,
         availableTypes: values.availableTypes as ItemCategoryAvailableType[],
       };
@@ -168,6 +172,16 @@ export function ItemCategoryFormPage() {
             )}
           />
           <FieldError message={errors.name?.message} />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">Descricao</label>
+          <textarea
+            {...register("description")}
+            placeholder="Descreva a categoria"
+            rows={3}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 placeholder:text-muted-foreground resize-none"
+          />
         </div>
 
         <div className="space-y-1.5">
