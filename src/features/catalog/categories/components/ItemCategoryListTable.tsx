@@ -6,7 +6,7 @@ import type { ItemCategoryResponse } from "@/features/catalog/categories/types/i
 function StatusBadge({ active, showOnSite }: { active?: boolean | null; showOnSite?: boolean | null }) {
   if (active === false) {
     return (
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground">
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-slate-200 text-slate-700">
         Desativado | Não exibir no site
       </span>
     );
@@ -21,7 +21,7 @@ function StatusBadge({ active, showOnSite }: { active?: boolean | null; showOnSi
   }
 
   return (
-    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground">
+    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-amber-100 text-amber-700">
       Ativo | Não exibir no site
     </span>
   );
