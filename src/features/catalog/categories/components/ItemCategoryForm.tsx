@@ -180,7 +180,7 @@ export function ItemCategoryForm({
         {!hideTypesField && (
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">
-              Tipos aceitos <span className="text-destructive">*</span>
+              Tipos de itens aceitos <span className="text-destructive">*</span>
             </label>
             <Controller
               name="availableTypes"

@@ -13,7 +13,8 @@
       "Bash(npx tsc *)",
       "Bash(npx eslint *)",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(curl -s http://localhost:5173/health)"
+      "Bash(curl -s http://localhost:5173/health)",
+      "Bash(npx vitest *)"
     ]
   }
 }

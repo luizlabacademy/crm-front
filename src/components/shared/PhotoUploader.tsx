@@ -3,7 +3,7 @@ import { Camera, Eye, Loader2, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { cn } from "@/lib/utils";
-import { useUploadFile, useUploads } from "@/features/uploads/api/useUploads";
+import { useUploadFile, useUploads, useDeleteUpload } from "@/features/uploads/api/useUploads";
 import {
   getUploadViewUrl,
   type UploadFileType,
@@ -43,6 +43,7 @@ export function PhotoUploader({
     enabled: enabledQuery,
   });
   const uploadMutation = useUploadFile();
+  const deleteMutation = useDeleteUpload();
 
   const current = uploads[0] ?? null;
   const currentUrl = current ? getUploadViewUrl(current) : null;
@@ -76,6 +77,14 @@ export function PhotoUploader({
     setPreview(tempUrl);
 
     try {
+      if (current) {
+        await deleteMutation.mutateAsync({
+          id: current.id,
+          fileType,
+          entityId,
+        });
+      }
+
       await uploadMutation.mutateAsync({
         file,
         fileType,
@@ -240,6 +249,7 @@ export function PhotoUploaderCompact({
     enabled: enabledQuery,
   });
   const uploadMutation = useUploadFile();
+  const deleteMutation = useDeleteUpload();
   const current = uploads[0] ?? null;
   const url = current ? getUploadViewUrl(current) : fallbackUrl ?? null;
   const shapeClass = shape === "round" ? "rounded-full" : "rounded-lg";
@@ -249,6 +259,14 @@ export function PhotoUploaderCompact({
     event.target.value = "";
     if (!file || !entityId) return;
     try {
+      if (current) {
+        await deleteMutation.mutateAsync({
+          id: current.id,
+          fileType,
+          entityId,
+        });
+      }
+
       await uploadMutation.mutateAsync({
         file,
         fileType,
