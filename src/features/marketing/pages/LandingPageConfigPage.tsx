@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -23,9 +23,10 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { UpgradeNeededModal, PriceTableModal } from "@/features/billing/components/UpgradeModals";
-import { PhotoUploader } from "@/components/shared/PhotoUploader";
 import { SlideGalleryModal } from "@/features/marketing/components/SlideGalleryModal";
 import { SlideSourcePickerPanel } from "@/features/marketing/components/SlideSourcePickerPanel";
+import { ItemCategoryForm } from "@/features/catalog/categories/components/ItemCategoryForm";
+import { ItemCategoryListTable } from "@/features/catalog/categories/components/ItemCategoryListTable";
 import {
   useItemCategories,
   useCreateItemCategory,
@@ -469,9 +470,6 @@ export function LandingPageConfigPage() {
     "create",
   );
   const [editingCategory, setEditingCategory] = useState<ItemCategoryResponse | null>(null);
-  const [modalName, setModalName] = useState("");
-  const [modalDescription, setModalDescription] = useState("");
-  const [modalShowOnSite, setModalShowOnSite] = useState(true);
   type SlideSourceTarget =
     | { mode: "new" }
     | { mode: "replace"; slideId: string };
@@ -1013,75 +1011,15 @@ export function LandingPageConfigPage() {
     }
   }
 
-  async function handleSubmitServiceModal(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const name = modalName.trim();
-    const description = modalDescription.trim();
-    if (!name) {
-      toast.error("Nome da categoria obrigatorio.");
-      return;
-    }
-
-    try {
-      if (serviceModalMode === "edit" && editingCategory) {
-        const mergedTypes = Array.from(
-          new Set<ItemCategoryAvailableType>([
-            ...(editingCategory.availableTypes ?? []),
-            "SERVICE",
-          ]),
-        );
-
-        const updateBody: ItemCategoryRequest = {
-          tenantId: resolveTenantId(editingCategory.tenantId),
-          name,
-          description: description || null,
-          availableTypes: mergedTypes,
-          showOnSite: modalShowOnSite,
-        };
-
-        await updateCategoryMutation.mutateAsync({
-          id: editingCategory.id,
-          body: updateBody,
-        });
-        toast.success("Categoria de servico atualizada.");
-      } else {
-        const createBody: ItemCategoryRequest = {
-          tenantId: resolveTenantId(),
-          name,
-          description: description || null,
-          availableTypes: ["SERVICE"],
-          showOnSite: modalShowOnSite,
-        };
-        await createCategoryMutation.mutateAsync(createBody);
-        toast.success("Categoria de servico criada.");
-      }
-
-      await Promise.allSettled([refetchServiceList(), refetchCategoriesCatalog()]);
-      setServiceModalOpen(false);
-      setEditingCategory(null);
-      setModalName("");
-      setModalDescription("");
-      setModalShowOnSite(true);
-    } catch {
-      toast.error("Erro ao salvar categoria de servico.");
-    }
-  }
-
   function openCreateServiceModal() {
     setServiceModalMode("create");
     setEditingCategory(null);
-    setModalName("");
-    setModalDescription("");
-    setModalShowOnSite(true);
     setServiceModalOpen(true);
   }
 
   function openEditServiceModal(category: ItemCategoryResponse) {
     setServiceModalMode("edit");
     setEditingCategory(category);
-    setModalName(category.name);
-    setModalDescription(category.description ?? "");
-    setModalShowOnSite(category.showOnSite ?? true);
     setServiceModalOpen(true);
   }
 
@@ -1658,91 +1596,70 @@ export function LandingPageConfigPage() {
                   </button>
                 </div>
 
-                {serviceModalMode === "edit" && editingCategory && (
-                  <div className="mb-4 rounded-2xl border border-border bg-card p-4">
-                    <PhotoUploader
-                      fileType="CATEGORY"
-                      tenantId={editingCategory.tenantId}
-                      entityId={editingCategory.id}
-                      fallbackUrl={editingCategory.photo ?? null}
-                      disabled={
-                        createCategoryMutation.isPending ||
-                        updateCategoryMutation.isPending
+                <ItemCategoryForm
+                  mode={serviceModalMode}
+                  existing={editingCategory}
+                  onSubmit={async (values) => {
+                    const name = values.name.trim();
+                    const description = values.description?.trim();
+                    if (!name) {
+                      toast.error("Nome da categoria obrigatorio.");
+                      return;
+                    }
+
+                    try {
+                      if (serviceModalMode === "edit" && editingCategory) {
+                        const mergedTypes = Array.from(
+                          new Set<ItemCategoryAvailableType>([
+                            ...(editingCategory.availableTypes ?? []),
+                            "SERVICE",
+                          ]),
+                        );
+
+                        const updateBody: ItemCategoryRequest = {
+                          tenantId: resolveTenantId(editingCategory.tenantId),
+                          name,
+                          description: description || null,
+                          availableTypes: mergedTypes,
+                          showOnSite: values.showOnSite,
+                          active: true,
+                        };
+
+                        await updateCategoryMutation.mutateAsync({
+                          id: editingCategory.id,
+                          body: updateBody,
+                        });
+                        toast.success("Categoria de servico atualizada.");
+                      } else {
+                        const createBody: ItemCategoryRequest = {
+                          tenantId: resolveTenantId(),
+                          name,
+                          description: description || null,
+                          availableTypes: ["SERVICE"],
+                          showOnSite: values.showOnSite,
+                          active: true,
+                        };
+                        await createCategoryMutation.mutateAsync(createBody);
+                        toast.success("Categoria de servico criada.");
                       }
-                      shape="square"
-                    />
-                  </div>
-                )}
 
-                {serviceModalMode === "create" && (
-                  <div className="mb-4 rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                    Salve a categoria para habilitar o envio de foto.
-                  </div>
-                )}
-
-                <form className="space-y-4" onSubmit={handleSubmitServiceModal}>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">
-                      Nome <span className="text-destructive">*</span>
-                    </label>
-                    <input
-                      value={modalName}
-                      onChange={(e) => setModalName(e.target.value)}
-                      placeholder="Ex: Corte e finalizacao"
-                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">
-                      Descricao
-                    </label>
-                    <textarea
-                      value={modalDescription}
-                      onChange={(e) => setModalDescription(e.target.value)}
-                      placeholder="Descreva a categoria"
-                      rows={3}
-                      className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-
-                  <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                    <label className="inline-flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={modalShowOnSite}
-                        onChange={(e) => setModalShowOnSite(e.target.checked)}
-                        className="h-4 w-4 rounded border-input accent-primary"
-                      />
-                      Exibir no site/landing page
-                    </label>
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setServiceModalOpen(false)}
-                      className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-accent"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={
-                        createCategoryMutation.isPending ||
-                        updateCategoryMutation.isPending
-                      }
-                      className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                    >
-                      {createCategoryMutation.isPending ||
-                      updateCategoryMutation.isPending
-                        ? "Salvando..."
-                        : serviceModalMode === "edit"
-                          ? "Salvar Categoria"
-                          : "Criar Categoria"}
-                    </button>
-                  </div>
-                </form>
+                      await Promise.allSettled([refetchServiceList(), refetchCategoriesCatalog()]);
+                      setServiceModalOpen(false);
+                      setEditingCategory(null);
+                    } catch {
+                      toast.error("Erro ao salvar categoria de servico.");
+                    }
+                  }}
+                  isSubmitting={false}
+                  isSaving={
+                    createCategoryMutation.isPending ||
+                    updateCategoryMutation.isPending
+                  }
+                  showPhotoUploader={true}
+                  hideTypesField={true}
+                  forceTypes={["SERVICE"]}
+                  onCancel={() => setServiceModalOpen(false)}
+                />
               </div>
             </div>
           )}
@@ -1788,176 +1705,17 @@ export function LandingPageConfigPage() {
             />
           </div>
 
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Thumb
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Nome
-                  </th>
-                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
-                    Descricao
-                  </th>
-                  <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">
-                    Exibir no site
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Acoes
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {isLoadingServices ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i}>
-                      <td colSpan={5} className="px-4 py-3">
-                        <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                      </td>
-                    </tr>
-                  ))
-                ) : isErrorServices ? (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-8 text-center text-sm text-destructive"
-                    >
-                      Erro ao carregar categorias de servico.
-                    </td>
-                  </tr>
-                ) : serviceRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Globe size={32} className="text-muted-foreground/30" />
-                        <p className="text-sm text-muted-foreground">
-                          Nenhuma categoria de servico encontrada.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  serviceRows.map((category, index) => {
-                    const isMovingUp =
-                      serviceReorderingAction?.id === category.id &&
-                      serviceReorderingAction.direction === "up";
-                    const isMovingDown =
-                      serviceReorderingAction?.id === category.id &&
-                      serviceReorderingAction.direction === "down";
-                    const isReorderingService = serviceReorderingAction !== null;
-
-                    return (
-                    <tr
-                      key={category.id}
-                      className="cursor-pointer hover:bg-muted/20 transition-colors"
-                      onClick={() => openEditServiceModal(category)}
-                    >
-                      <td className="px-4 py-3">
-                        {category.photo ? (
-                          <img
-                            src={category.photo}
-                            alt={category.name}
-                            className="h-10 w-10 rounded-md border border-border object-cover"
-                          />
-                        ) : (
-                          <span className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-muted">
-                            <Image size={14} className="text-muted-foreground" />
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{category.name}</div>
-                        <div className="mt-1 md:hidden">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-                              category.showOnSite
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-muted text-muted-foreground",
-                            )}
-                          >
-                            {category.showOnSite ? "Exibir no site" : "Nao exibir no site"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                        {category.description?.trim() || (
-                          <span className="text-muted-foreground/50">—</span>
-                        )}
-                      </td>
-                      <td className="hidden px-4 py-3 md:table-cell">
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-                            category.showOnSite
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {category.showOnSite ? "Exibir no site" : "Nao exibir no site"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void moveServiceCategory(category.id, "up");
-                              }}
-                              disabled={index === 0 || isReorderingService}
-                              className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
-                              title="Mover para cima"
-                            >
-                              {isMovingUp ? (
-                                <Loader2 size={20} className="animate-spin" />
-                              ) : (
-                                <ChevronUp size={20} />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void moveServiceCategory(category.id, "down");
-                              }}
-                              disabled={index === serviceRows.length - 1 || isReorderingService}
-                              className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-40"
-                              title="Mover para baixo"
-                            >
-                              {isMovingDown ? (
-                                <Loader2 size={20} className="animate-spin" />
-                              ) : (
-                                <ChevronDown size={20} />
-                              )}
-                            </button>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditServiceModal(category);
-                            }}
-                            className="rounded-md p-2.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                            title="Editar"
-                          >
-                            <Pencil size={20} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                  })
-                )}
-              </tbody>
-            </table>
-
-            {/* Pagination removed for services: always show all to ease reordering */}
-          </div>
+          <ItemCategoryListTable
+            categories={serviceRows}
+            isLoading={isLoadingServices}
+            isError={isErrorServices}
+            onEdit={openEditServiceModal}
+            onMoveUp={(id) => moveServiceCategory(id, "up")}
+            onMoveDown={(id) => moveServiceCategory(id, "down")}
+            reorderingAction={serviceReorderingAction}
+            emptyIcon="globe"
+            emptyMessage="Nenhuma categoria de servico encontrada."
+          />
 
           {landingServiceCategories.length === 0 && (
             <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-xs text-muted-foreground">

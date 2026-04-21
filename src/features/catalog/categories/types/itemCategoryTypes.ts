@@ -8,6 +8,7 @@ export interface ItemCategoryResponse {
   name: string;
   description?: string | null;
   showOnSite?: boolean | null;
+  active?: boolean | null;
   sortOrder?: number | null;
   availableTypes: ItemCategoryAvailableType[];
   photo?: string | null;
@@ -20,6 +21,7 @@ export interface ItemCategoryRequest {
   name: string;
   description?: string | null;
   showOnSite: boolean;
+  active: boolean;
   sortOrder?: number;
   availableTypes: ItemCategoryAvailableType[];
 }

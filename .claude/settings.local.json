@@ -12,7 +12,8 @@
       "WebFetch(domain:api-crm.luizlab.com)",
       "Bash(npx tsc *)",
       "Bash(npx eslint *)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(curl -s http://localhost:5173/health)"
     ]
   }
 }
