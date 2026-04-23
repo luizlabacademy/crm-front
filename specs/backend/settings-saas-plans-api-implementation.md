@@ -11,7 +11,6 @@ Guiar implementacao backend para atender o frontend com API de Planos SaaS, gara
 Documentos relacionados:
 - `specs/frontend/api/settings-saas-plans.md`
 - `specs/frontend/api-error-response-guidelines.md`
-- `specs/backend/migrations/settings_saas_plans.md`
 
 ## 2. Escopo funcional
 

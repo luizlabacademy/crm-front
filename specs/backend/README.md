@@ -48,7 +48,6 @@ Para visao consolidada do que o frontend precisa do backend em todos os dominios
 | Documento | Dominio | Status |
 |-----------|---------|--------|
 | [settings-saas-plans-api-implementation.md](./settings-saas-plans-api-implementation.md) | Planos SaaS | Detalhado |
-| [migrations/settings_saas_plans.md](./migrations/settings_saas_plans.md) | Planos SaaS (DDL) | Detalhado |
 
 ## 6. Diretriz para novas specs backend
 
