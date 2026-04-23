@@ -393,7 +393,7 @@ export function ConversionRateChart() {
                 }
               />
               <Area
-                type="monotone"
+                type="linear"
                 dataKey="value"
                 stroke="#66BB6A"
                 strokeWidth={2}
@@ -442,7 +442,7 @@ export function ConversionRateChart() {
                 }
               />
               <Line
-                type="monotone"
+                type="linear"
                 dataKey="value"
                 stroke="#66BB6A"
                 strokeWidth={2.5}
