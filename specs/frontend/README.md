@@ -58,6 +58,7 @@ Documentação funcional de todas as telas, guidelines e fluxos do front-end do 
 | [frontend-guidelines.md](./frontend-guidelines.md) | Governança, convenções de código e fluxo de trabalho |
 | [routing-guidelines.md](./routing-guidelines.md) | Mapa completo de rotas do SPA |
 | [api-integration-guidelines.md](./api-integration-guidelines.md) | Matriz tela × endpoint, autenticação e lacunas |
+| [api-error-response-guidelines.md](./api-error-response-guidelines.md) | Padrão global de respostas de sucesso e erro |
 
 ---
 
@@ -152,6 +153,14 @@ Documentação funcional de todas as telas, guidelines e fluxos do front-end do 
 | [screens/admin/tenant-form.md](./screens/admin/tenant-form.md) | Tenants — Cadastro e Edição |
 | [screens/admin/worker-list.md](./screens/admin/worker-list.md) | Funcionários — Listagem |
 | [screens/admin/worker-form.md](./screens/admin/worker-form.md) | Funcionários — Cadastro e Edição |
+| [screens/admin/plan-list.md](./screens/admin/plan-list.md) | Planos — Listagem |
+| [screens/admin/plan-form.md](./screens/admin/plan-form.md) | Planos — Cadastro e Edição |
+
+### Comercial
+
+| Arquivo | Tela |
+|---------|------|
+| [screens/public/plans.md](./screens/public/plans.md) | Planos Públicos (Pricing Table) |
 
 ### Dados Geográficos
 

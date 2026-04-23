@@ -7,6 +7,7 @@ Documentar a integração entre o front-end e o backend CRM: autenticação, con
 Documentos relacionados:
 - `frontend-guidelines.md` — convenções gerais (seção 8: API e HTTP)
 - `tech-stack.md` — axios, TanStack Query
+- `api-error-response-guidelines.md` — contrato global de respostas e erros
 
 ---
 
@@ -70,6 +71,11 @@ Documentos relacionados:
 ### Soft delete
 - Campo `active` (boolean) presente na maioria dos recursos.
 - `active = false` desativa sem excluir. `DELETE` é exclusão definitiva.
+
+### Erros e respostas padronizadas
+- Seguir o padrão global em `api-error-response-guidelines.md`.
+- Toda nova API deve explicitar `200/201/204` e `400/401/403/404/5xx`.
+- Erros de validação devem retornar lista por campo (`errors[]`) para mapeamento inline no frontend.
 
 ### Senha
 - Campo `passwordHash` no `UserRequest` — o frontend deve enviar a senha em **plain text** nesse campo; o backend gera o hash BCrypt.
