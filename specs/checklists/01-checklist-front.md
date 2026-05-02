@@ -1,0 +1,17 @@
+# Checklist de Integracao Front com API
+
+| Task | Pagina | Descricao | Data Feito |
+|---|---|---|---|
+| FRONT-001 | Dashboard | Integrar Dashboard aos endpoints `GET /api/v1/dashboard/funnel`, `GET /api/v1/dashboard/conversion-rate`, `GET /api/v1/dashboard/recent-messages`, `GET /api/v1/dashboard/recent-orders`, `GET /api/v1/dashboard/campaign-options`; mapear filtros/loading/erro; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-002 | Campaigns | Integrar Campaigns aos endpoints `GET /api/v1/campaigns` e `GET /api/v1/campaigns/contact-lists`; aplicar filtros e paginacao; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-003 | Conversations | Integrar Conversations aos endpoints `GET /api/v1/conversations/contacts`, `GET /api/v1/conversations/messages/{contactId}`, `GET /api/v1/conversations/catalog-items`, `GET /api/v1/conversations/recent-orders`, `GET /api/v1/conversations/channels`; alinhar fluxo contato/mensagens; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-004 | Account | Integrar Account aos endpoints `GET /api/v1/account/profile` e `GET /api/v1/account/notifications`; validar fluxo com JWT e erros 401/403; conferir contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-005 | Marketing Campaigns | Integrar tela de campanhas de marketing ao endpoint `GET /api/v1/marketing/campaigns`; ajustar metricas exibidas; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-006 | Marketing Automation | Integrar automacao ao endpoint `GET /api/v1/marketing/automation`; mapear templates e regras por trigger; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-007 | Leads Board | Integrar Leads Board aos endpoints `GET /api/v1/marketing/leads`, `GET /api/v1/marketing/all-leads`, `GET /api/v1/marketing/all-campaigns`; garantir filtros e consistencia dos seletores; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-008 | Contact List | Integrar Contact List ao endpoint `GET /api/v1/marketing/contacts`; aplicar busca e filtro por tag; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-009 | Coupons | Integrar Coupons ao endpoint `GET /api/v1/marketing/coupons`; mapear tipo, validade e uso; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-010 | Marketing Affiliates e Cashback | Integrar modulos aos endpoints `GET /api/v1/marketing/affiliates` e `GET /api/v1/marketing/cashback`; ajustar comissoes e regras de cashback; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-011 | Expenses | Integrar Expenses aos endpoints `GET /api/v1/expenses/accounts`, `GET /api/v1/expenses/categories`, `GET /api/v1/expenses/cost-centers`, `GET /api/v1/expenses/paid`, `GET /api/v1/expenses/pending`; aplicar filtros de status/periodo/centro de custo; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-012 | Settings | Integrar Settings ao endpoint `GET /api/v1/settings/commerce`; mapear pagamento e entrega; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
+| FRONT-013 | Bot | Integrar Bot ao endpoint `GET /bot/scheduling-journey`; mapear prompts, dias, horarios e categorias; validar contrato atualizado em `https://api-crm.luizlab.com/v3/api-docs`. |  |
