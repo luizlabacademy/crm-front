@@ -156,6 +156,11 @@
             "label": "Entrega",
             "to": "/settings/configuracoes/delivery",
             "icon": "truck"
+          },
+          {
+            "label": "Landing Pages SaaS",
+            "to": "/settings/configuracoes/saas-landing",
+            "icon": "layout-template"
           }
         ]
       },

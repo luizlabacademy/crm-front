@@ -206,6 +206,12 @@ const LandingPage = lazy(() =>
   })),
 );
 
+const SalonLandingPage = lazy(() =>
+  import("@/features/marketing/pages/SalonLandingPage").then((m) => ({
+    default: m.SalonLandingPage,
+  })),
+);
+
 const PlanPage = lazy(() =>
   import("@/features/billing/pages/PlanPage").then((m) => ({
     default: m.PlanPage,
@@ -264,6 +270,11 @@ const PaymentMethodsSettingsPage = lazy(() =>
 const DeliverySettingsPage = lazy(() =>
   import("@/features/account/pages/DeliverySettingsPage").then((m) => ({
     default: m.DeliverySettingsPage,
+  })),
+);
+const SaasLandingPagesSettingsPage = lazy(() =>
+  import("@/features/account/pages/SaasLandingPagesSettingsPage").then((m) => ({
+    default: m.SaasLandingPagesSettingsPage,
   })),
 );
 
@@ -347,6 +358,11 @@ export function AppRouter() {
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<LoginRoute />} />
           <Route path="/landing" element={<LandingPage />} />
+          <Route
+            path="/saas/landing"
+            element={<Navigate to="/saas/landing/salon" replace />}
+          />
+          <Route path="/saas/landing/salon" element={<SalonLandingPage />} />
 
           <Route element={<AuthenticatedLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -488,6 +504,10 @@ export function AppRouter() {
             <Route
               path="/settings/configuracoes/delivery"
               element={<DeliverySettingsPage />}
+            />
+            <Route
+              path="/settings/configuracoes/saas-landing"
+              element={<SaasLandingPagesSettingsPage />}
             />
           </Route>
 

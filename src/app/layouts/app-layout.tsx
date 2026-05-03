@@ -16,6 +16,7 @@ import {
   Globe,
   House,
   LayoutDashboard,
+  LayoutTemplate,
   Lock,
   LogOut,
   Maximize2,
@@ -129,6 +130,7 @@ interface FeatureIndexItem {
 
 const ICON_MAP: Record<string, LucideIcon> = {
   "layout-dashboard": LayoutDashboard,
+  "layout-template": LayoutTemplate,
   "message-circle": MessageCircle,
   "clipboard-list": ClipboardList,
   "shopping-cart": ShoppingCart,
