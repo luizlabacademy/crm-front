@@ -147,7 +147,7 @@ function Navbar() {
           className="hidden items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-400 md:flex"
         >
           <MessageCircle className="h-4 w-4" />
-          Testar grátis
+          Começar grátis
         </a>
 
         <button className="text-emerald-100 md:hidden" onClick={() => setMobileOpen((v) => !v)}>
@@ -169,23 +169,26 @@ function Navbar() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden bg-gray-950 pb-20 pt-28 sm:pt-32">
+    <section className="relative overflow-hidden bg-gradient-to-b from-gray-950 via-[#081a14] to-gray-950 pb-20 pt-28 sm:pt-32">
       <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_20%_0%,rgba(74,222,128,0.14),transparent),radial-gradient(760px_360px_at_85%_90%,rgba(16,185,129,0.12),transparent)]" />
         <div className="absolute left-1/4 top-0 h-[480px] w-[480px] rounded-full bg-green-500/10 blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 h-[420px] w-[420px] rounded-full bg-emerald-600/10 blur-[100px]" />
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(167,243,208,0.6) 1px, transparent 0)", backgroundSize: "22px 22px" }} />
       </div>
 
       <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-12 lg:px-8">
-        <div>
+        <div className="relative">
+          <div className="pointer-events-none absolute -left-4 top-2 hidden h-40 w-px bg-gradient-to-b from-transparent via-green-400/60 to-transparent lg:block" />
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-500/25 bg-green-500/10 px-4 py-1.5 text-base text-green-300 sm:text-lg">
             <Scissors className="h-3.5 w-3.5" />
-            Feito para pequenos e médios salões
+            Sistema de gestão para Salões de Beleza
           </div>
           <h1 className="leading-tight text-white">
             <span className="block text-3xl font-extrabold sm:text-5xl lg:text-6xl">
               CRM + WhatsApp Bot
             </span>
-            <span className="mt-1 block text-xl font-semibold text-emerald-100/90 sm:mt-2 sm:text-3xl lg:text-4xl">
+            <span className="mt-3 block text-xl font-semibold text-emerald-100/90 sm:mt-4 sm:text-3xl lg:text-4xl">
               Agendamentos automatizados.
             </span>
           </h1>
@@ -193,7 +196,7 @@ function Hero() {
             Automatize atendimento, agendamento e reativação de clientes do seu salão com a mesma base do Menu do Chatbot que você já usa no sistema.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-6 py-3.5 text-base font-bold text-white transition hover:bg-green-400 sm:px-7 sm:py-4 sm:text-lg">
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_14px_32px_-18px_rgba(34,197,94,0.75)] transition hover:bg-green-400 sm:px-7 sm:py-4 sm:text-lg">
               <MessageCircle className="h-5 w-5" />
               Começar teste gratuito
               <ArrowRight className="h-4 w-4" />
@@ -206,7 +209,7 @@ function Hero() {
           <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-emerald-100/60">
             {[
               "Sem cartão de crédito",
-              "Plano Free Forever",
+              "Plano grátis",
               "Setup em minutos",
             ].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5">
@@ -217,8 +220,10 @@ function Hero() {
           </div>
         </div>
 
-        <div className="mx-auto h-[540px] w-full max-w-[360px] overflow-hidden sm:h-[620px] sm:max-w-[390px] lg:ml-auto lg:mr-0">
-          <WhatsAppEmulator flowState={DEFAULT_BOT_FLOW_STATE} />
+        <div className="mx-auto h-[540px] w-full max-w-[360px] overflow-visible pb-2 sm:h-[620px] sm:max-w-[390px] lg:ml-auto lg:mr-0">
+          <div className="relative h-full w-full overflow-hidden rounded-[42px] shadow-[0_28px_80px_-34px_rgba(16,185,129,0.7)]">
+            <WhatsAppEmulator flowState={DEFAULT_BOT_FLOW_STATE} />
+          </div>
         </div>
       </div>
     </section>
@@ -544,7 +549,7 @@ function FinalCta() {
             className="mt-7 inline-flex items-center gap-2 rounded-xl bg-green-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-green-400 sm:px-7 sm:py-3.5 sm:text-base"
           >
             <MessageCircle className="h-4 w-4" />
-            Testar 14 dias grátis
+            Começar grátis
             <ArrowRight className="h-4 w-4" />
           </a>
 
