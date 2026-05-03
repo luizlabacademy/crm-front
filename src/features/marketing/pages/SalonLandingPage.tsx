@@ -235,16 +235,33 @@ function HowItWorks() {
     },
     {
       icon: <Rocket className="h-6 w-6" />,
-      title: "Habilite a Landing Page e comece a vender",
+      title: "Escolha sua Landing Page e comece a vender",
       description:
         "Em poucos minutos seu salao ja recebe agendamentos e novos clientes pelo WhatsApp.",
-      highlight: "Venda no mesmo dia",
+      highlight: "Venda na mesma hora",
     },
   ] as const;
 
   return (
-    <section id="como-funciona" className="bg-gray-950 py-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <section id="como-funciona" className="relative overflow-hidden bg-gray-950 py-20">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(1200px_500px_at_50%_-20%,rgba(74,222,128,0.12),transparent),radial-gradient(800px_360px_at_8%_20%,rgba(16,185,129,0.1),transparent),radial-gradient(900px_420px_at_92%_85%,rgba(20,184,166,0.1),transparent)]" />
+        <div className="absolute -left-28 top-2 h-80 w-80 rounded-full bg-green-400/8 blur-3xl" />
+        <div className="absolute right-[30%] top-10 h-60 w-60 rounded-full bg-emerald-400/8 blur-3xl" />
+        <div className="absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-teal-400/8 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/12 via-transparent to-gray-950/70" />
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(134,239,172,0.55) 1px, transparent 0)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(16,185,129,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(16,185,129,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-[0.04]" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
             Configure rápido e comece a vender em minutos
@@ -258,26 +275,27 @@ function HowItWorks() {
           </div>
         </div>
 
-        <div className="relative grid gap-6 md:grid-cols-3">
-          <div className="pointer-events-none absolute left-[19%] right-[19%] top-[52px] hidden h-px bg-gradient-to-r from-transparent via-green-500/30 to-transparent md:block" />
+        <div className="relative grid gap-5 md:grid-cols-3">
+          <div className="pointer-events-none absolute left-[18%] right-[18%] top-[98px] z-0 hidden h-0.5 bg-gradient-to-r from-transparent via-green-400/45 to-transparent md:block" />
           {steps.map((step, idx) => (
             <div
               key={step.title}
-              className="relative rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center transition hover:-translate-y-0.5 hover:border-green-500/35"
+              className="relative z-10 rounded-2xl bg-transparent p-6 text-center transition hover:-translate-y-0.5"
             >
-              <div className="mb-5 flex items-center justify-center">
-                <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-green-500/25 bg-green-500/12 text-green-400 shadow-[0_0_0_6px_rgba(34,197,94,0.07)] [&_svg]:h-8 [&_svg]:w-8">
+              <span className="mb-3 inline-block text-3xl font-extrabold text-green-400/90">
+                {String(idx + 1).padStart(2, "0")}
+              </span>
+              <div className="mb-4 flex items-center justify-center">
+                <span className="relative z-20 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-green-500/25 bg-emerald-950 text-green-400 shadow-[0_0_0_4px_rgba(3,7,18,0.85)] [&_svg]:h-8 [&_svg]:w-8">
                   {step.icon}
                 </span>
               </div>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-green-300/80">
-                PASSO {String(idx + 1).padStart(2, "0")}
-              </p>
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-green-300/70">
+
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-green-300/70">
                 {step.highlight}
               </p>
               <h3 className="text-lg font-semibold text-white">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-300/85">{step.description}</p>
+              <p className="mt-2 text-sm leading-relaxed text-gray-300/80">{step.description}</p>
             </div>
           ))}
         </div>
