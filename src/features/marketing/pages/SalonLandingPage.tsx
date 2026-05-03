@@ -198,7 +198,7 @@ function Hero() {
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-6 py-3.5 text-base font-bold text-white shadow-[0_14px_32px_-18px_rgba(34,197,94,0.75)] transition hover:bg-green-400 sm:px-7 sm:py-4 sm:text-lg">
               <MessageCircle className="h-5 w-5" />
-              Começar teste gratuito
+              Começar grátis
               <ArrowRight className="h-4 w-4" />
             </a>
             <a href="#funcionalidades" className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-700 px-6 py-3.5 text-base font-semibold text-emerald-100 transition hover:border-emerald-500 hover:text-white sm:px-7 sm:py-4 sm:text-lg">
