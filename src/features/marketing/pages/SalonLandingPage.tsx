@@ -5,7 +5,6 @@ import {
   Calendar,
   CheckCircle,
   ChevronDown,
-  ChevronsUpDown,
   Clock3,
   Menu,
   MessageCircle,
@@ -26,11 +25,15 @@ const WHATSAPP_MESSAGE = encodeURIComponent(
 );
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
 
+type PlanCategory = "autonomo" | "empresarial";
+
+const BUSINESS_MULTIPLIER = 1.5;
+
 const plans = [
   {
     id: "go",
     name: "Go",
-    price: "R$ 0",
+    basePrice: 0,
     subtitle: "Plano Free",
     features: [
       "CRM",
@@ -45,7 +48,7 @@ const plans = [
   {
     id: "plus",
     name: "Plus",
-    price: "R$ 39",
+    basePrice: 39,
     subtitle: "Profissional Autônomo",
     features: [
       "CRM completo",
@@ -53,8 +56,6 @@ const plans = [
       "E-mail marketing",
       "Automação de marketing",
       "Campanhas de marketing",
-      "Backups automáticos",
-      "Suporte via e-mail",
     ],
     cta: "Assinar Plus",
     highlighted: false,
@@ -62,19 +63,51 @@ const plans = [
   {
     id: "pro",
     name: "Pro",
-    price: "R$ 129",
+    basePrice: 129,
     subtitle: "Empresarial",
     features: [
       "Tudo do Plus",
       "Usuários e permissões",
       "Integrações avançadas",
       "Relatórios e histórico",
-      "Suporte via chat em horário comercial",
     ],
     cta: "Assinar Pro",
     highlighted: true,
   },
 ] as const;
+
+function formatPlanPrice(price: number) {
+  const minimumFractionDigits = Number.isInteger(price) ? 0 : 2;
+  return price.toLocaleString("pt-BR", {
+    minimumFractionDigits,
+    maximumFractionDigits: 2,
+  });
+}
+
+function getPlanPrice(basePrice: number, planId: string, category: PlanCategory) {
+  if (planId === "go") return basePrice;
+  return category === "empresarial" ? basePrice * BUSINESS_MULTIPLIER : basePrice;
+}
+
+function getPlanFeatures(
+  baseFeatures: readonly string[],
+  planId: string,
+  category: PlanCategory,
+) {
+  if (planId === "plus") {
+    return [...baseFeatures, "Backups automáticos", "Suporte via e-mail"];
+  }
+
+  if (planId === "pro") {
+    const proFeatures = [...baseFeatures, "Suporte via chat em horário comercial"];
+    if (category === "empresarial") {
+      proFeatures.push("SLA de 30 minutos para suporte", "+ R$ 49,90 por filial");
+    }
+    return proFeatures;
+  }
+
+  return baseFeatures;
+}
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -142,19 +175,24 @@ function Hero() {
         <div className="absolute bottom-0 right-1/4 h-[420px] w-[420px] rounded-full bg-emerald-600/10 blur-[100px]" />
       </div>
 
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-12 lg:px-8">
         <div>
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-500/25 bg-green-500/10 px-4 py-1.5 text-sm text-green-300">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-500/25 bg-green-500/10 px-4 py-1.5 text-base text-green-300 sm:text-lg">
             <Scissors className="h-3.5 w-3.5" />
             Feito para pequenos e médios salões
           </div>
-          <h1 className="text-3xl font-extrabold leading-tight text-white sm:text-5xl lg:text-6xl">
-            CRM + WhatsApp Bot para manter sua agenda cheia
+          <h1 className="leading-tight text-white">
+            <span className="block text-3xl font-extrabold sm:text-5xl lg:text-6xl">
+              CRM + WhatsApp Bot
+            </span>
+            <span className="mt-1 block text-xl font-semibold text-emerald-100/90 sm:mt-2 sm:text-3xl lg:text-4xl">
+              Agendamentos automatizados.
+            </span>
           </h1>
-          <p className="mt-4 max-w-xl text-base text-emerald-100/70 sm:text-lg">
+          <p className="mt-7 max-w-xl text-base text-emerald-100/70 sm:text-lg">
             Automatize atendimento, agendamento e reativação de clientes do seu salão com a mesma base do Menu do Chatbot que você já usa no sistema.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-500 px-6 py-3.5 text-base font-bold text-white transition hover:bg-green-400 sm:px-7 sm:py-4 sm:text-lg">
               <MessageCircle className="h-5 w-5" />
               Começar teste gratuito
@@ -165,10 +203,10 @@ function Hero() {
               <ChevronDown className="h-4 w-4" />
             </a>
           </div>
-          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-emerald-100/60">
+          <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-emerald-100/60">
             {[
               "Sem cartão de crédito",
-              "14 dias grátis",
+              "Plano Free Forever",
               "Setup em minutos",
             ].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5">
@@ -179,7 +217,7 @@ function Hero() {
           </div>
         </div>
 
-        <div className="mx-auto h-[540px] w-full max-w-[360px] overflow-hidden sm:h-[620px] sm:max-w-[390px]">
+        <div className="mx-auto h-[540px] w-full max-w-[360px] overflow-hidden sm:h-[620px] sm:max-w-[390px] lg:ml-auto lg:mr-0">
           <WhatsAppEmulator flowState={DEFAULT_BOT_FLOW_STATE} />
         </div>
       </div>
@@ -189,24 +227,63 @@ function Hero() {
 
 function Features() {
   const items = [
-    { icon: <Bot className="h-6 w-6" />, title: "Menu do Chatbot reaproveitado", text: "A mesma estrutura de menu usada no painel para fluxo de atendimento e agendamento." },
-    { icon: <Calendar className="h-6 w-6" />, title: "Agendamento automático", text: "Cliente escolhe serviço, dia, horário e profissional direto no WhatsApp." },
-    { icon: <Repeat2 className="h-6 w-6" />, title: "Reativação de clientes", text: "Fluxos automáticos para trazer de volta clientes que estão sem retorno." },
-    { icon: <MessageCircle className="h-6 w-6" />, title: "Atendimento 24h", text: "Respostas automaticas para duvidas frequentes, mesmo fora do horario comercial." },
-    { icon: <CheckCircle className="h-6 w-6" />, title: "Confirmacao e lembrete", text: "Mensagens de confirmacao e lembrete para reduzir faltas e reagendamentos de ultima hora." },
-    { icon: <Shield className="h-6 w-6" />, title: "Historico completo no CRM", text: "Tudo registrado por cliente: servicos, conversas e preferencias para vender melhor." },
+    {
+      icon: <Bot className="h-6 w-6" />,
+      title: "Menu do Chatbot reaproveitado",
+      text: "A mesma estrutura de menu usada no painel para fluxo de atendimento e agendamento.",
+      card: "from-emerald-500/10 via-teal-500/5 to-transparent border-emerald-400/20",
+      iconWrap: "bg-emerald-500/12 text-emerald-300",
+    },
+    {
+      icon: <Calendar className="h-6 w-6" />,
+      title: "Agendamento automático",
+      text: "Cliente escolhe serviço, dia, horário e profissional direto no WhatsApp.",
+      card: "from-sky-500/10 via-cyan-500/5 to-transparent border-sky-400/20",
+      iconWrap: "bg-sky-500/12 text-sky-300",
+    },
+    {
+      icon: <Repeat2 className="h-6 w-6" />,
+      title: "Reativação de clientes",
+      text: "Fluxos automáticos para trazer de volta clientes que estão sem retorno.",
+      card: "from-violet-500/10 via-indigo-500/5 to-transparent border-violet-400/20",
+      iconWrap: "bg-violet-500/12 text-violet-300",
+    },
+    {
+      icon: <MessageCircle className="h-6 w-6" />,
+      title: "Atendimento 24h",
+      text: "Respostas automaticas para duvidas frequentes, mesmo fora do horario comercial.",
+      card: "from-teal-500/10 via-emerald-500/5 to-transparent border-teal-400/20",
+      iconWrap: "bg-teal-500/12 text-teal-300",
+    },
+    {
+      icon: <CheckCircle className="h-6 w-6" />,
+      title: "Confirmacao e lembrete",
+      text: "Mensagens de confirmacao e lembrete para reduzir faltas e reagendamentos de ultima hora.",
+      card: "from-amber-500/10 via-yellow-500/5 to-transparent border-amber-400/20",
+      iconWrap: "bg-amber-500/12 text-amber-300",
+    },
+    {
+      icon: <Shield className="h-6 w-6" />,
+      title: "Historico completo no CRM",
+      text: "Tudo registrado por cliente: servicos, conversas e preferencias para vender melhor.",
+      card: "from-fuchsia-500/10 via-pink-500/5 to-transparent border-fuchsia-400/20",
+      iconWrap: "bg-fuchsia-500/12 text-fuchsia-300",
+    },
   ];
 
   return (
     <section id="funcionalidades" className="bg-gray-900 py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-10 text-center">
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Funcionalidades para salões que querem crescer</h2>
+          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Principais funcionalidades</h2>
         </div>
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
-            <div key={item.title} className="rounded-2xl border border-emerald-900/40 bg-gradient-to-br from-green-500/10 to-emerald-700/10 p-6">
-              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-black/30 text-green-400">{item.icon}</div>
+            <div
+              key={item.title}
+              className={`group rounded-2xl border bg-gradient-to-br p-6 shadow-[0_10px_30px_-20px_rgba(16,185,129,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_-22px_rgba(16,185,129,0.45)] ${item.card}`}
+            >
+              <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${item.iconWrap} ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-105`}>{item.icon}</div>
               <h3 className="text-lg font-semibold text-white">{item.title}</h3>
               <p className="mt-2 text-sm text-emerald-100/70">{item.text}</p>
             </div>
@@ -305,6 +382,9 @@ function HowItWorks() {
 }
 
 function Pricing() {
+  const [selectedCategory, setSelectedCategory] =
+    useState<PlanCategory>("autonomo");
+
   return (
     <section id="planos" className="bg-gray-900 py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -314,16 +394,47 @@ function Pricing() {
             Mesmos planos da página de planos
           </div>
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Escolha seu plano</h2>
+
+          <div className="mx-auto mt-6 inline-flex items-center rounded-full bg-white/10 p-1 ring-1 ring-white/10">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("autonomo")}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+                selectedCategory === "autonomo"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-white/75 hover:text-white"
+              }`}
+            >
+              Profissional Autônomo
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("empresarial")}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+                selectedCategory === "empresarial"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-white/75 hover:text-white"
+              }`}
+            >
+              Empresarial
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => (
             <div key={plan.id} className={`rounded-2xl border p-6 ${plan.highlighted ? "border-green-500/60 bg-gradient-to-b from-green-500/15 to-emerald-900/15" : "border-gray-800 bg-gray-900"}`}>
               <h3 className={`text-2xl font-bold ${plan.highlighted ? "text-green-400" : "text-white"}`}>{plan.name}</h3>
-              <p className="text-sm text-gray-400">{plan.subtitle}</p>
-               <p className="mt-4 text-4xl font-extrabold text-white">{plan.price}<span className="text-sm text-gray-400"> / mês</span></p>
-              <ul className="mt-5 space-y-2">
-                {plan.features.map((f) => (
+              <p className="text-sm text-gray-400">
+                {plan.id === "go"
+                  ? plan.subtitle
+                  : selectedCategory === "empresarial"
+                    ? "Empresarial"
+                    : "Profissional Autônomo"}
+              </p>
+               <p className="mt-4 text-4xl font-extrabold text-white">R$ {formatPlanPrice(getPlanPrice(plan.basePrice, plan.id, selectedCategory))}<span className="text-sm text-gray-400"> / mês</span></p>
+               <ul className="mt-5 space-y-2">
+                {getPlanFeatures(plan.features, plan.id, selectedCategory).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
                     <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                     {f}
@@ -360,20 +471,27 @@ function Faq() {
         <h2 className="mb-8 text-center text-3xl font-extrabold text-white">Perguntas frequentes</h2>
         <div className="space-y-3">
           {faqs.map(([q, a], i) => (
-            <div key={q} className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950">
+            <div
+              key={q}
+              className="overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-white/[0.03] to-white/[0.01] shadow-[0_10px_28px_-24px_rgba(16,185,129,0.55)] transition-colors duration-300"
+            >
               <button
-                className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-white"
+                className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-white transition-colors hover:bg-white/[0.02]"
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
               >
-                <span className="text-sm font-medium sm:text-base">{q}</span>
-                <ChevronsUpDown
-                  className={`h-4 w-4 flex-shrink-0 text-emerald-300 transition-transform ${
+                <span className="text-sm font-semibold text-white sm:text-base">{q}</span>
+                <ChevronDown
+                  className={`h-4 w-4 flex-shrink-0 text-emerald-300 transition-transform duration-300 ${
                     open === i ? "rotate-180" : ""
                   }`}
                 />
               </button>
-              {open === i && <p className="px-5 pb-5 text-sm text-gray-400">{a}</p>}
+              {open === i && (
+                <div className="border-t border-white/10 bg-emerald-500/[0.04]">
+                  <p className="px-5 py-4 text-sm leading-relaxed text-emerald-50/95">{a}</p>
+                </div>
+              )}
             </div>
           ))}
         </div>
