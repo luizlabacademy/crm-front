@@ -18,7 +18,6 @@ import {
   X,
   TrendingUp,
   Clock,
-  HeadphonesIcon,
   Repeat2,
   Target,
   Bell,
@@ -611,7 +610,7 @@ function HowItWorksSection() {
           {/* Connector line (desktop) */}
           <div className="hidden lg:block absolute top-16 left-[calc(12.5%+24px)] right-[calc(12.5%+24px)] h-px bg-gradient-to-r from-transparent via-green-500/40 to-transparent" />
 
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <div key={step.number} className="relative text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500/20 to-emerald-600/20 border border-green-500/30 rounded-2xl text-green-400 mb-4 relative z-10">
                 {step.icon}

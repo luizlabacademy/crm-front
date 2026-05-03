@@ -17,8 +17,6 @@ import { FlowCanvas } from "../components";
 import { TemplateModal, stripHtml } from "../components/TemplateModal";
 import { WhatsAppEmulator } from "../components/WhatsAppEmulator";
 import {
-  BOT_OPERATION,
-  BOT_OPTION_TYPE,
   type BotFlowState,
   type BotTemplate,
 } from "../types";
